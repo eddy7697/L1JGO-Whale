@@ -57,20 +57,32 @@ Go Engine（網路層、ECS 實體系統、世界管理、持久化）
 
 ### Docker Compose（僅供開發環境使用）
 
-專案根目錄的 `docker-compose.yml` 僅供開發環境使用，內建開發用資料庫帳密，並將 PostgreSQL 的 `5432` 埠開放至主機網路介面，不適合直接用於正式環境。
+專案根目錄的 `docker-compose.yml` 僅供開發環境使用，預設將 PostgreSQL 的 `5432` 埠開放至主機網路介面，不適合直接用於正式環境。
 
-安裝並啟動 Docker 後，在專案根目錄執行：
+安裝並啟動 Docker 後，先在專案根目錄複製本機設定範本（已有 `.env` 時直接編輯，不要覆蓋）：
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Linux / macOS 可使用 `cp .env.example .env`。編輯 `.env` 的 `POSTGRES_USER`、`POSTGRES_PASSWORD`、`POSTGRES_DB` 與 `POSTGRES_HOST_PORT`，再啟動服務：
 
 ```bash
 docker compose up -d --build
 ```
 
-- PostgreSQL：主機連線使用 `localhost:5432`，資料庫名稱為 `l1jgo`；其他電腦可使用主機 IP 連線，須由防火牆與網路允許。
+`.env.example` 的密碼刻意留白，未填寫時 Compose 會拒絕啟動。密碼可用單引號包住（例如 `POSTGRES_PASSWORD='你的密碼'`），讓 `$`、`#` 與空白保持原值。Compose 會將同一組帳密提供給資料庫與遊戲伺服器，不必另外修改 TOML 中的帳密。
+
+`.env`、`.env.*` 及 `config/*.local.toml` 已由 `.gitignore` 與 `.dockerignore` 排除；只有不含密碼的 `.env.example` 範本納入版控。Compose 啟動時讀取 `.env`，既有 shell 中同名的環境變數優先於 `.env`。檢查設定可用 `docker compose config --quiet`；不帶 `--quiet` 會輸出包含密碼的解析結果。
+
+- PostgreSQL：主機連線預設使用 `localhost:5432`，可透過 `POSTGRES_HOST_PORT` 修改主機埠；帳號與資料庫名稱以 `.env` 為準。其他電腦可使用主機 IP 連線，須由防火牆與網路允許。容器間固定使用 `postgres:5432`。
 - 遊戲伺服器：主機連線使用 `localhost:7002`，映射至容器的 `7001` 埠。
 - 資料庫持久化：`pgdata` named volume 掛載至 `/var/lib/postgresql/data`，重啟或重建容器後資料仍會保留。資料由 Docker 管理，不在專案目錄內，因此不會被 Git 追蹤，無須加入 `.gitignore`。
 - 血盟紋章持久化：專案內的 `./emblem/` 掛載至 `/app/emblem`，已在 `.gitignore` 與 `.dockerignore` 排除，避免提交或加入映像建構內容。
 
 停止服務可執行 `docker compose down`，資料庫 volume 會保留。**`docker compose down -v` 會刪除資料庫 volume 與其中的資料**，僅在確定要清除開發資料時使用。
+
+`POSTGRES_USER`、`POSTGRES_PASSWORD` 與 `POSTGRES_DB` 僅在資料 volume 首次初始化時建立帳號與資料庫。**既有 volume 不會因修改 `.env` 而自動變更帳密**；需先在資料庫內修改，再同步更新 `.env` 並重新執行 `docker compose up -d`。若要保留原資料，請勿用刪除 volume 的方式換密碼。舊版曾提交的密碼仍可能存在 Git 歷史中，此設定方式不會清除歷史紀錄。
 
 以下為不使用 Docker Compose 時的本機啟動方式。
 
@@ -89,7 +101,7 @@ CREATE DATABASE l1jgo;
 
 ### 2. 修改設定檔
 
-複製並編輯設定檔 `server/config/server.toml`：
+將 `config/server.toml` 複製為 `config/server.local.toml`，再於這份不納入版控的檔案設定個人帳密：
 
 ```toml
 [database]
@@ -104,21 +116,27 @@ drop_rate = 1     # 掉寶倍率
 gold_rate = 1     # 金幣倍率
 ```
 
-完整設定說明請參考 [server/config/server.toml](server/config/server.toml)，每個欄位都有中文註解。
+完整設定說明請參考 [config/server.toml](config/server.toml)，每個欄位都有中文註解。也可保留 `dsn = "sslmode=disable"` 並在執行環境設定 `PGHOST`、`PGPORT`、`PGUSER`、`PGPASSWORD`、`PGDATABASE`。Go 執行檔不會自動載入 Compose 使用的 `.env`；TOML 中明確指定的連線欄位優先於 `PG*` 環境變數。
 
 ### 3. 編譯並啟動
 
 ```bash
-cd server
 go build -o l1jgo ./cmd/l1jgo
-./l1jgo
+L1JGO_CONFIG=config/server.local.toml ./l1jgo
 ```
 
-或使用 Makefile：
+PowerShell：
+
+```powershell
+go build -o l1jgo.exe ./cmd/l1jgo
+$env:L1JGO_CONFIG = "config/server.local.toml"
+./l1jgo.exe
+```
+
+或使用 Makefile（同樣在專案根目錄執行）：
 
 ```bash
-cd server
-make run
+L1JGO_CONFIG=config/server.local.toml make run
 ```
 
 ### 4. 連線遊戲

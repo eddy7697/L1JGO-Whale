@@ -10,3 +10,6 @@ clan.md
 map.zip
 *.zip
 emblem/
+.env
+.env.*
+config/*.local.toml

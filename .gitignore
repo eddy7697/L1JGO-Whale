@@ -38,3 +38,9 @@ sqlconv.exe
 
 # Docker 開發環境的血盟紋章掛載資料（資料庫使用 Docker 管理的 named volume）
 /emblem/
+
+# 本機環境與私人設定（僅提交不含密碼的範本）
+.env
+.env.*
+!.env.example
+/config/*.local.toml

@@ -11,7 +11,9 @@ language = 3               # 語系代碼：0=美國, 3=台灣, 4=日本, 5=中�
 
 # ── 資料庫連線設定 ──────────────────────────────────────────
 [database]
-dsn = "postgres://postgres:aa123456@localhost:5432/l1jgo?sslmode=disable"
+# 連線資訊由 PGHOST、PGPORT、PGUSER、PGPASSWORD、PGDATABASE 環境變數提供。
+# 若使用含帳密的 DSN，請寫入 config/server.local.toml 並以 L1JGO_CONFIG 指定。
+dsn = "sslmode=disable"
 max_open_conns = 20           # 最大連線數
 max_idle_conns = 5            # 閒置連線數
 conn_max_lifetime = "30m"     # 連線最大存活時間

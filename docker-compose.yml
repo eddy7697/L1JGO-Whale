@@ -1,6 +1,6 @@
 # ============================================================
 #  L1JGO-Whale Docker Compose（僅供開發環境使用）
-#  用法：docker compose up -d
+#  用法：先複製 .env.example 為 .env 並填入設定，再執行 docker compose up -d
 # ============================================================
 
 services:
@@ -8,15 +8,15 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: aa123456
-      POSTGRES_DB: l1jgo
+      POSTGRES_USER: ${POSTGRES_USER:?請在 .env 設定 POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?請在 .env 設定 POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?請在 .env 設定 POSTGRES_DB}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data  # Docker 管理的持久化資料，不存放於專案目錄
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
       interval: 5s
       timeout: 3s
       retries: 10
@@ -24,6 +24,12 @@ services:
   # ── L1JGO-Whale 遊戲伺服器 ────────────────────────────────
   l1jgo:
     build: .
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:?請在 .env 設定 POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?請在 .env 設定 POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:?請在 .env 設定 POSTGRES_DB}
     depends_on:
       postgres:
         condition: service_healthy

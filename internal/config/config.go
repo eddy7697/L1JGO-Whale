@@ -170,7 +170,7 @@ func defaults() *Config {
 			Language: 3, // Taiwan
 		},
 		Database: DatabaseConfig{
-			DSN:             "postgres://l1jgo:l1jgo@localhost:5432/l1jgo?sslmode=disable",
+			DSN:             "sslmode=disable", // connection details come from PG* environment variables
 			MaxOpenConns:    20,
 			MaxIdleConns:    5,
 			ConnMaxLifetime: 30 * time.Minute,
