@@ -207,16 +207,17 @@ func TestSkillNpcElementalDebuffsApplyToNpcLikeJava(t *testing.T) {
 			rand.Seed(1)
 			ws := world.NewState()
 			caster := addSkillTestPlayer(ws, &world.PlayerInfo{
-				SessionID: 1,
-				Session:   newSkillTestSession(t, 1),
-				CharID:    7531,
-				Name:      "caster",
-				X:         100,
-				Y:         100,
-				MapID:     900,
-				ShowID:    70,
-				Level:     80,
-				Intel:     30,
+				SessionID:   1,
+				Session:     newSkillTestSession(t, 1),
+				CharID:      7531,
+				AccessLevel: 200, // 此測試驗證效果與視野；成功率另由 Java 機率測試驗證。
+				Name:        "caster",
+				X:           100,
+				Y:           100,
+				MapID:       900,
+				ShowID:      70,
+				Level:       80,
+				Intel:       30,
 			})
 			sameShow := addSkillTestPlayer(ws, &world.PlayerInfo{
 				SessionID: 2,

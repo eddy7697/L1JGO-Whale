@@ -54,6 +54,7 @@ func TestSkillWeaponBreakPlayerWeaponCapsAtJavaEnchantPlusFive(t *testing.T) {
 		Session:     newSkillTestSession(t, 1),
 		CharID:      1001,
 		Name:        "weapon-break-caster",
+		AccessLevel: 200, // 固定命中，僅驗證耐久上限與成功後封包。
 		X:           100,
 		Y:           100,
 		MapID:       4,
@@ -124,7 +125,9 @@ func TestClearNpcCancellationStateClearsWeaponBreak(t *testing.T) {
 }
 
 // Java `L1AttackPc.damagePcWeaponDurability()` 第 3400-3410 行排除三類武器：
-//   _weaponType == 0（赤手）/ == 20（弓）/ == 62（鐵手甲）
+//
+//	_weaponType == 0（赤手）/ == 20（弓）/ == 62（鐵手甲）
+//
 // 三者皆 return 不做破壞判定。Go 原本只排除 bow，缺少 claw（鐵手甲）排除，
 // 導致鋼爪攻擊 buff 89 玩家時錯誤觸發武器破壞。本測試鎖定 PvP 路徑下 claw
 // 不會進入破壞判定，攻擊者武器耐久維持 0。

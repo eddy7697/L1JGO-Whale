@@ -154,7 +154,7 @@ func (s *SkillSystem) applyAreaOfSilence(caster *world.PlayerInfo, skill *data.S
 		if target == nil || target.CharID == caster.CharID || target.Dead {
 			continue
 		}
-		if playerDebuffSkills[skillAreaOfSilence] && !s.checkPlayerMRResist(caster, target) {
+		if playerDebuffSkills[skillAreaOfSilence] && !s.checkPlayerMRResist(caster, target, skillAreaOfSilence) {
 			continue
 		}
 		old := target.RemoveBuff(skillAreaOfSilence)

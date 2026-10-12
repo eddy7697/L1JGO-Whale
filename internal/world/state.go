@@ -379,7 +379,8 @@ type PrivateShopBuy struct {
 // ActiveBuff tracks a single active buff/debuff on a player.
 type ActiveBuff struct {
 	SkillID   int32
-	TicksLeft int // remaining ticks (0 = permanent until cancelled)
+	TicksLeft int       // remaining ticks (0 = permanent until cancelled)
+	ExpiresAt time.Time // monotonic deadline; prevents delayed world ticks extending timed effects
 	// Stat deltas applied when buff started (reversed on removal)
 	DeltaAC            int16
 	DeltaStr           int16
@@ -440,6 +441,9 @@ func (p *PlayerInfo) GetBuff(skillID int32) *ActiveBuff {
 
 // AddBuff adds or replaces a buff. Returns the old buff if replaced, for stat reversal.
 func (p *PlayerInfo) AddBuff(buff *ActiveBuff) *ActiveBuff {
+	if buff.TicksLeft > 0 && buff.ExpiresAt.IsZero() {
+		buff.ExpiresAt = time.Now().Add(time.Duration(buff.TicksLeft) * 200 * time.Millisecond)
+	}
 	if p.ActiveBuffs == nil {
 		p.ActiveBuffs = make(map[int32]*ActiveBuff)
 	}

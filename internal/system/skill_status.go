@@ -688,12 +688,12 @@ func (s *SkillSystem) executeNpcDebuffSkill(sess *net.Session, player *world.Pla
 		if npc.Paralyzed || npc.HasDebuff(33) || npc.HasDebuff(4001) {
 			return
 		}
-		npc.AddDebuff(33, 25)
+		npc.AddDebuff(33, curseDelayTicks)
 		handler.BroadcastToPlayers(nearby, handler.BuildPoison(npc.ID, 2))
 		if skill.CastGfx > 0 {
 			handler.BroadcastToPlayers(nearby, handler.BuildSkillEffect(npc.ID, skill.CastGfx))
 		}
-		s.deps.Log.Info(fmt.Sprintf("木乃伊詛咒(階段一)  施法者=%s  NPC=%s  延遲=5秒", player.Name, npc.Name))
+		s.deps.Log.Info(fmt.Sprintf("木乃伊詛咒(階段一)  施法者=%s  NPC=%s  延遲=8秒", player.Name, npc.Name))
 
 	case 11: // 毒咒 — 對 NPC 施加傷害毒（Java: L1DamagePoison.doInfection, 3000ms, 5dmg）
 		if !s.checkNpcMRResist(player, npc, skill.SkillID) {
@@ -892,16 +892,20 @@ func broadcastWeakElementalEffects(npc *world.NpcInfo, nearby []*world.PlayerInf
 	}
 }
 
-// checkNpcMRResist 檢查 NPC 魔法抗性。
-func (s *SkillSystem) checkNpcMRResist(caster *world.PlayerInfo, npc *world.NpcInfo, _ int32) bool {
-	prob := 50 + (int(caster.Level)-int(npc.Level))*5 + int(caster.Intel)*2 - int(npc.MR)
-	if prob < 5 {
-		prob = 5
+// checkNpcMRResist uses Eddy L1Magic.calcProbabilityMagic for player -> NPC effects.
+func (s *SkillSystem) checkNpcMRResist(caster *world.PlayerInfo, npc *world.NpcInfo, skillID int32) bool {
+	if caster.IsGM() {
+		return true
 	}
-	if prob > 95 {
-		prob = 95
+	if s.deps.Skills == nil {
+		return false
 	}
-	return world.RandInt(100) < prob
+	sk := s.deps.Skills.Get(skillID)
+	if sk == nil || (npc.HasDebuff(157) && skillID != 27 && skillID != 44) {
+		return false
+	}
+	prob := javaPlayerDebuffProbability(caster, int(npc.Level), int(npc.MR), sk, world.RandInt)
+	return world.RandInt(100) < min(90, prob)
 }
 
 // playerDebuffSkills 需要對玩家目標進行 MR 抗性判定的 debuff 技能。
@@ -922,34 +926,34 @@ var playerDebuffSkills = map[int32]bool{
 	103: true, // 暗黑盲咒
 	133: true, // 弱化屬性
 	152: true, // 究極緩速術
-	153: true, // 魔法消除（Java L1MagicPc.calcProbabilityMagic case ERASE_MAGIC 用 ConfigElfSkill 5/10/15 + INT/MR；Go 走 generic checkPlayerMRResist 屬 broader gap）
+	153: true, // 魔法消除
 	157: true, // 大地屏障
 	161: true, // 封印禁地
 	167: true, // 風之枷鎖
 	173: true, // 污濁之水
 	174: true, // 精準射擊
-	183: true, // 護衛毀滅（Java L1MagicNpc.calcProbabilityMagic case GUARD_BRAKE 標準等級差公式；只對 PC 套用 AC+10）
-	188: true, // 恐懼無助（Java L1MagicNpc.calcProbabilityMagic case RESIST_FEAR 與 GUARD_BRAKE 共用標準等級差公式；只對 PC 套用 dodge_down+5）
-	193: true, // 驚悚死神（Java L1MagicNpc.calcProbabilityMagic case HORROR_OF_DEATH 與 GUARD_BRAKE/RESIST_FEAR/THUNDER_GRAB 共用標準等級差公式；對 PC addStr(-3)+addInt(-3)）
-	212: true, // 幻想（Java L1MagicPc.calcProbabilityMagic case PHANTASM 用 ConfigIllusionstSkill 5/10/15 + RegistSleep；Go 用 generic checkPlayerMRResist 屬 broader gap）
-	217: true, // 恐慌（Java L1MagicPc.calcProbabilityMagic 對 PANIC 走 default 含 probabilityDice+magichit+baseInt-getTargetMr；Go 用 generic checkPlayerMRResist 屬 broader gap）
+	183: true, // 護衛毀滅
+	188: true, // 恐懼無助
+	193: true, // 驚悚死神
+	212: true, // 幻想
+	217: true, // 恐慌
 }
 
-// checkPlayerMRResist 對玩家目標的魔法抗性判定（debuff 用）。
-// 簡化版公式（Java L1MagicPc.calcProbabilityMagic 的核心概念）：
-//
-//	prob = 50 + (casterLevel - targetLevel) * 3 + casterINT - targetMR
-//	clamp(prob, 10, 90)
-//	success = rand(100) < prob
-func (s *SkillSystem) checkPlayerMRResist(caster, target *world.PlayerInfo) bool {
-	prob := 50 + (int(caster.Level)-int(target.Level))*3 + int(caster.Intel) - int(target.MR)
-	if prob < 10 {
-		prob = 10
+// checkPlayerMRResist uses skill-specific dice and the matching status resistance.
+func (s *SkillSystem) checkPlayerMRResist(caster, target *world.PlayerInfo, skillID int32) bool {
+	if caster.IsGM() {
+		return true
 	}
-	if prob > 90 {
-		prob = 90
+	if s.deps.Skills == nil {
+		return false
 	}
-	return world.RandInt(100) < prob
+	sk := s.deps.Skills.Get(skillID)
+	if sk == nil || (target.HasBuff(157) && skillID != 27 && skillID != 44) {
+		return false
+	}
+	prob := javaPlayerDebuffProbability(caster, int(target.Level), int(target.MR), sk, world.RandInt)
+	prob = javaApplyStatusResistance(prob, skillID, target)
+	return world.RandInt(100) < min(90, prob)
 }
 
 // calcArmorBreakProb 破壞盔甲對玩家目標的機率判定。

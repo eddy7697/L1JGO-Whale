@@ -76,7 +76,7 @@ POTIONS = {
     -- ========== Blue potions (MP regen buff) — gfx 190 ==========
     -- Java: Potion.useBluePotion → STATUS_BLUE_POTION (1002)
     [40015]  = { type = "blue_potion", duration = 600,  gfx = 190 },  -- 藍色藥水 (10 min)
-    [140015] = { type = "blue_potion", duration = 700,  gfx = 190 },  -- 受祝福的藍色藥水
+    [140015] = { type = "blue_potion", duration = 1200, gfx = 190 },  -- 受祝福的藍色藥水（Eddy Potion.java）
     [40736]  = { type = "blue_potion", duration = 600,  gfx = 190 },  -- 智慧貨幣
     [49306]  = { type = "blue_potion", duration = 2400, gfx = 190 },  -- 福利藍色藥水 (40 min)
 
@@ -132,7 +132,7 @@ POTIONS = {
     -- Java: Potion.useWisdomPotion → STATUS_WISDOM_POTION (1004)
     -- Wizard only; non-wizard: msg 79, NOT consumed
     [40016]  = { type = "wisdom", duration = 300,  gfx = 750, sp = 2 },   -- 慎重藥水 (5 min)
-    [140016] = { type = "wisdom", duration = 360,  gfx = 750, sp = 2 },   -- 受祝福的慎重藥水
+    [140016] = { type = "wisdom", duration = 600,  gfx = 750, sp = 2 },   -- 受祝福的慎重藥水（Eddy Potion.java）
     [49307]  = { type = "wisdom", duration = 1000, gfx = 750, sp = 2 },   -- 福利慎重藥水 (~16.7 min)
 
     -- ========== Eva breath potions (underwater) ==========

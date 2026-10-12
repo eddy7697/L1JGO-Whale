@@ -1033,7 +1033,13 @@ func (s *NpcAISystem) executeNpcSkill(npc *world.NpcInfo, target *world.PlayerIn
 		}
 		// 透過 SkillManager 套用 buff/debuff 效果（麻痺、睡眠、減速等）
 		if s.deps.Skill != nil {
-			s.deps.Skill.ApplyNpcDebuff(target, skill)
+			if applier, ok := s.deps.Skill.(interface {
+				ApplyNpcDebuffFrom(*world.NpcInfo, *world.PlayerInfo, *data.SkillInfo, int)
+			}); ok {
+				applier.ApplyNpcDebuffFrom(npc, target, skill, leverage)
+			} else {
+				s.deps.Skill.ApplyNpcDebuff(target, skill)
+			}
 		}
 	}
 	return true
@@ -2628,9 +2634,9 @@ func removeNpcDebuffEffect(npc *world.NpcInfo, skillID int32, ws *world.State) {
 	case 157: // 大地屏障 — 解除凍結 + 灰色色調
 		npc.Paralyzed = false
 		handler.BroadcastToPlayers(nearby, clearPoison)
-	case 33: // 木乃伊詛咒 階段一到期 → 進入階段二（真正麻痺 4 秒）
+	case 33: // 木乃伊詛咒 階段一到期 → 進入階段二（麻痺 16 秒）
 		npc.Paralyzed = true
-		npc.AddDebuff(4001, 20) // 4 秒 = 20 ticks
+		npc.AddDebuff(4001, curseParalysisTicks)
 	case 4001: // 木乃伊詛咒 階段二到期 — 解除麻痺
 		npc.Paralyzed = false
 		handler.BroadcastToPlayers(nearby, clearPoison)

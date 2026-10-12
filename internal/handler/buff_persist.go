@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"time"
+
 	"github.com/l1jgo/server/internal/persist"
 	"github.com/l1jgo/server/internal/world"
 )
@@ -13,6 +15,7 @@ func BuffRowsFromPlayer(p *world.PlayerInfo) []persist.BuffRow {
 	}
 
 	rows := make([]persist.BuffRow, 0, len(p.ActiveBuffs))
+	now := time.Now()
 	for _, buff := range p.ActiveBuffs {
 		// Skip state-only buffs that shouldn't persist across login
 		if buff.SetInvisible || buff.SetParalyzed || buff.SetSleeped {
@@ -20,6 +23,13 @@ func BuffRowsFromPlayer(p *world.PlayerInfo) []persist.BuffRow {
 		}
 
 		remainSec := buff.TicksLeft / 5 // ticks → seconds
+		if !buff.ExpiresAt.IsZero() {
+			remaining := buff.ExpiresAt.Sub(now)
+			if remaining <= 0 {
+				continue
+			}
+			remainSec = min(remainSec, int((remaining+time.Second-1)/time.Second))
+		}
 		if remainSec <= 0 {
 			continue // expired
 		}

@@ -149,7 +149,7 @@ func (s *ItemUseSystem) UseConsumable(sess *net.Session, player *world.PlayerInf
 		case "haste":
 			if pot.Duration > 0 {
 				s.ApplyHaste(sess, player, pot.Duration, int32(pot.GfxID))
-				consumed = true
+				consumed = player.HasteItemEquipped == 0 // Java returns before removeItem with haste equipment.
 			}
 
 		case "brave":
@@ -205,8 +205,8 @@ func (s *ItemUseSystem) UseConsumable(sess *net.Session, player *world.PlayerInf
 			}
 
 		case "cure_poison":
-			// 移除中毒 debuff。
-			handler.RemoveBuffAndRevert(player, 35, s.deps) // skill 35 = POISON
+			// Java C_ItemUSe: curePoison；毒由獨立計時器管理，35 是高級治癒術。
+			CurePoison(player, s.deps)
 			consumed = true
 			gfx := int32(pot.GfxID)
 			if gfx == 0 {
@@ -934,8 +934,7 @@ func (s *ItemUseSystem) UseFixedTeleportScroll(sess *net.Session, player *world.
 const lootingRange = 15
 
 // GiveDrops 為擊殺的 NPC 擲骰掉落物品。
-// 若擊殺者所在隊伍為自動分配模式（PartyTypeAutoShare），
-// 則按仇恨比例加權隨機分配給範圍內的隊伍成員（Java: DropShare.java）。
+// Eddy DropTable: 先依有效攻擊者仇恨選得主，再依其隊伍設定分配數量。
 func (s *ItemUseSystem) GiveDrops(killer *world.PlayerInfo, npc *world.NpcInfo) {
 	if s.deps.Drops == nil {
 		return
@@ -945,23 +944,17 @@ func (s *ItemUseSystem) GiveDrops(killer *world.PlayerInfo, npc *world.NpcInfo) 
 		return
 	}
 
-	// 收集自動分配候選人
-	candidates := s.collectAutoShareCandidates(killer, npc)
+	// Java first selects an eligible attacker by hate, then shares with that player's party.
+	candidates := s.collectLootAttackers(killer, npc)
 
 	dropRate := s.deps.Config.Rates.DropRate
 	goldRate := s.deps.Config.Rates.GoldRate
 
 	for _, drop := range dropList {
-		chance := drop.Chance
-		if drop.ItemID == world.AdenaItemID {
-			if goldRate > 0 {
-				chance = int(float64(chance) * goldRate)
-			}
-		} else {
-			if dropRate > 0 {
-				chance = int(float64(chance) * dropRate)
-			}
+		if dropRate <= 0 || (drop.ItemID == world.AdenaItemID && goldRate <= 0) {
+			continue
 		}
+		chance := int(float64(drop.Chance) * dropRate)
 		if chance > 1000000 {
 			chance = 1000000
 		}
@@ -986,60 +979,14 @@ func (s *ItemUseSystem) GiveDrops(killer *world.PlayerInfo, npc *world.NpcInfo) 
 			}
 		}
 
-		// 選擇接收者：自動分配 → 加權隨機；否則 → killer
-		receiver := killer
-		if len(candidates) > 1 {
+		// 無有效攻擊者時落在怪物位置，否則依仇恨選擇接收者。
+		var receiver *world.PlayerInfo
+		if len(candidates) > 0 {
 			receiver = weightedRandomByHate(candidates, npc.HateList)
 		}
 
-		if receiver.Inv.IsFull() {
-			// 接收者背包滿，退回給 killer
-			if receiver.CharID != killer.CharID {
-				receiver = killer
-			}
-			if receiver.Inv.IsFull() {
-				continue // 兩者都滿，跳過
-			}
-		}
-
-		s.giveDropToPlayer(receiver, drop, qty)
+		s.distributeMonsterDrop(receiver, npc, drop, qty)
 	}
-}
-
-// collectAutoShareCandidates 收集自動分配候選人（同隊伍、同地圖、拾取範圍內、活人）。
-func (s *ItemUseSystem) collectAutoShareCandidates(killer *world.PlayerInfo, npc *world.NpcInfo) []*world.PlayerInfo {
-	if killer.PartyID == 0 {
-		return nil
-	}
-	party := s.deps.World.Parties.GetParty(killer.CharID)
-	if party == nil || party.PartyType != world.PartyTypeAutoShare {
-		return nil
-	}
-
-	candidates := make([]*world.PlayerInfo, 0, len(party.Members))
-	for _, memberID := range party.Members {
-		member := s.deps.World.GetByCharID(memberID)
-		if member == nil || member.Dead || member.MapID != npc.MapID {
-			continue
-		}
-		// 檢查與 NPC 的距離（Java: DropShare 用 LOOTING_RANGE）
-		dx := member.X - npc.X
-		if dx < 0 {
-			dx = -dx
-		}
-		dy := member.Y - npc.Y
-		if dy < 0 {
-			dy = -dy
-		}
-		dist := dx
-		if dy > dist {
-			dist = dy
-		}
-		if dist <= lootingRange {
-			candidates = append(candidates, member)
-		}
-	}
-	return candidates
 }
 
 // weightedRandomByHate 按仇恨值加權隨機選擇一個玩家。
@@ -1082,17 +1029,15 @@ func weightedRandomByHate(candidates []*world.PlayerInfo, hateList map[uint64]in
 }
 
 // giveDropToPlayer 將掉落物品加入指定玩家背包並發送封包通知。
-func (s *ItemUseSystem) giveDropToPlayer(receiver *world.PlayerInfo, drop data.DropItem, qty int32) {
+func (s *ItemUseSystem) giveDropToPlayer(receiver *world.PlayerInfo, drop data.DropItem, qty int32) bool {
 	itemInfo := s.deps.Items.Get(drop.ItemID)
 	if itemInfo == nil {
-		return
+		return false
 	}
 
 	sendDropNotice := func() {
 		if drop.ItemID == world.AdenaItemID {
 			handler.SendShowDrop(receiver.Session, handler.ShowDropAdena, qty)
-			msg := fmt.Sprintf("獲得 %d 金幣", qty)
-			handler.SendGlobalChat(receiver.Session, 9, msg)
 			return
 		}
 
@@ -1103,12 +1048,10 @@ func (s *ItemUseSystem) giveDropToPlayer(receiver *world.PlayerInfo, drop data.D
 		if qty > 1 {
 			msg := fmt.Sprintf("獲得 %s (%d)", name, qty)
 			handler.SendItemBoard(receiver.Session, uint16(itemInfo.InvGfx), msg)
-			handler.SendGlobalChat(receiver.Session, 9, msg)
 			return
 		}
 		msg := fmt.Sprintf("獲得 %s", name)
 		handler.SendItemBoard(receiver.Session, uint16(itemInfo.InvGfx), msg)
-		handler.SendGlobalChat(receiver.Session, 9, msg)
 	}
 
 	if s.deps.ItemCreate != nil {
@@ -1129,17 +1072,17 @@ func (s *ItemUseSystem) giveDropToPlayer(receiver *world.PlayerInfo, drop data.D
 				GiveItemWithOptions(sess *net.Session, player *world.PlayerInfo, itemID, count int32, opts ItemCreateOptions) (*world.InvItem, bool)
 			}); ok {
 				if _, ok := creator.GiveItemWithOptions(receiver.Session, receiver, drop.ItemID, qty, opts); !ok {
-					return
+					return false
 				}
 				sendDropNotice()
-				return
+				return true
 			}
 		} else {
 			if _, ok := s.deps.ItemCreate.GiveItem(receiver.Session, receiver, drop.ItemID, qty); !ok {
-				return
+				return false
 			}
 			sendDropNotice()
-			return
+			return true
 		}
 	}
 
@@ -1172,6 +1115,7 @@ func (s *ItemUseSystem) giveDropToPlayer(receiver *world.PlayerInfo, drop data.D
 
 	// 通知玩家掉落
 	sendDropNotice()
+	return true
 }
 
 // ---------- 加速/勇敢效果 ----------
@@ -1179,9 +1123,25 @@ func (s *ItemUseSystem) giveDropToPlayer(receiver *world.PlayerInfo, drop data.D
 // ApplyHaste 套用加速效果（移動+攻擊速度）。
 // Java ref: Potion.useGreenPotion → setSkillEffect(STATUS_HASTE, time*1000) + setMoveSpeed(1)
 func (s *ItemUseSystem) ApplyHaste(sess *net.Session, player *world.PlayerInfo, durationSec int, gfxID int32) {
+	s.BroadcastEffect(sess, player, gfxID)
+	// Java Potion.useGreenPotion: 加速裝備優先，藥水不能建立另一個到期計時器。
+	if player.HasteItemEquipped > 0 {
+		return
+	}
 	// 移除衝突加速/減速 buff
 	for _, conflictID := range []int32{43, 54, handler.SkillStatusHaste} {
 		handler.RemoveBuffAndRevert(player, conflictID, s.deps)
+	}
+	for _, slowID := range []int32{29, 76, 152} {
+		if player.HasBuff(slowID) {
+			handler.RemoveBuffAndRevert(player, slowID, s.deps)
+			player.MoveSpeed, player.HasteTicks = 0, 0
+			sendSpeedPacket(sess, player.CharID, 0, 0)
+			for _, other := range s.itemUseViewers(player, sess.ID) {
+				sendSpeedPacket(other.Session, player.CharID, 0, 0)
+			}
+			return
+		}
 	}
 
 	buff := &world.ActiveBuff{
@@ -1202,7 +1162,6 @@ func (s *ItemUseSystem) ApplyHaste(sess *net.Session, player *world.PlayerInfo, 
 	for _, other := range nearby {
 		sendSpeedPacket(other.Session, player.CharID, 1, 0)
 	}
-	s.BroadcastEffect(sess, player, gfxID)
 }
 
 // BroadcastEffect 向自己和附近玩家廣播特效。
@@ -1223,10 +1182,11 @@ func (s *ItemUseSystem) BroadcastEffect(sess *net.Session, player *world.PlayerI
 func (s *ItemUseSystem) applyBrave(sess *net.Session, player *world.PlayerInfo, durationSec int, braveType byte, gfxID int32) {
 	for _, conflictID := range []int32{
 		handler.SkillStatusBrave, handler.SkillStatusElfBrave,
-		42,  // HOLY_WALK
-		150, // MOVING_ACCELERATION
-		101, // WIND_WALK
-		52,  // BLOODLUST
+		52,   // HOLY_WALK
+		101,  // MOVING_ACCELERATION
+		150,  // WIND_WALK
+		186,  // BLOODLUST
+		1026, // STATUS_BRAVE2
 	} {
 		handler.RemoveBuffAndRevert(player, conflictID, s.deps)
 	}

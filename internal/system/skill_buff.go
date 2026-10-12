@@ -1,6 +1,8 @@
 package system
 
 import (
+	"time"
+
 	"github.com/l1jgo/server/internal/data"
 	"github.com/l1jgo/server/internal/handler"
 	"github.com/l1jgo/server/internal/net"
@@ -356,8 +358,19 @@ func applyElementalProtectionDelta(target *world.PlayerInfo, buff *world.ActiveB
 }
 
 // ApplyNpcDebuff NPC 對玩家施放 debuff 技能（麻痺/睡眠/減速等）。
-// 實際委派給 applyBuffEffect，由 NpcAISystem 透過 SkillManager 介面呼叫。
+// 毒、詛咒與致盲必須啟動對應的狀態流程，不能只套用通用 buff 圖示。
 func (s *SkillSystem) ApplyNpcDebuff(target *world.PlayerInfo, skill *data.SkillInfo) {
+	switch skill.SkillID {
+	case 33, 10101:
+		applyCurseParalysisToPlayer(target, s.deps)
+		return
+	case 11:
+		applyDamagePoisonToPlayer(target, 0, 5, s.deps)
+		return
+	case 20, 40:
+		s.applyCurseBlindEffect(target, skill)
+		return
+	}
 	s.applyBuffEffect(target, skill)
 }
 
@@ -501,6 +514,7 @@ func (s *SkillSystem) removeBuffAndRevert(target *world.PlayerInfo, skillID int3
 	if old != nil {
 		s.revertBuffStats(target, old)
 		s.cancelBuffIcon(target, skillID)
+		s.restoreSpeedAfterBuffRemoved(target, old)
 		// 日光術（技能 2）：buff 被取消後更新光源
 		if skillID == 2 {
 			handler.UpdatePlayerLight(target, s.deps.World)
@@ -811,6 +825,10 @@ func (s *SkillSystem) clearHasteItemMoveSpeedForCancellation(target *world.Playe
 
 // tickPlayerBuffs 每 tick 遞減 buff 計時器並處理到期。
 func (s *SkillSystem) tickPlayerBuffs(p *world.PlayerInfo) {
+	s.tickPlayerBuffsAt(p, time.Now())
+}
+
+func (s *SkillSystem) tickPlayerBuffsAt(p *world.PlayerInfo, now time.Time) {
 	if p.ActiveBuffs == nil {
 		return
 	}
@@ -819,6 +837,14 @@ func (s *SkillSystem) tickPlayerBuffs(p *world.PlayerInfo) {
 			continue
 		}
 		buff.TicksLeft--
+		if !buff.ExpiresAt.IsZero() {
+			remaining := buff.ExpiresAt.Sub(now)
+			wallTicks := 0
+			if remaining > 0 {
+				wallTicks = int((remaining + 200*time.Millisecond - 1) / (200 * time.Millisecond))
+			}
+			buff.TicksLeft = min(buff.TicksLeft, wallTicks)
+		}
 		if buff.TicksLeft <= 0 {
 			s.revertBuffStats(p, buff)
 			delete(p.ActiveBuffs, skillID)
@@ -829,16 +855,7 @@ func (s *SkillSystem) tickPlayerBuffs(p *world.PlayerInfo) {
 				s.deps.Polymorph.UndoPoly(p)
 			}
 
-			if buff.SetMoveSpeed > 0 {
-				p.MoveSpeed = 0
-				p.HasteTicks = 0
-				s.sendSpeedToAll(p, 0, 0)
-			}
-			if buff.SetBraveSpeed > 0 {
-				p.BraveSpeed = 0
-				p.BraveTicks = 0
-				s.sendBraveToAll(p, 0, 0)
-			}
+			s.restoreSpeedAfterBuffRemoved(p, buff)
 
 			// 麻痺/睡眠/致盲到期
 			if buff.SetParalyzed {
@@ -1038,7 +1055,7 @@ func (s *SkillSystem) executeBuffSkill(sess *net.Session, player *world.PlayerIn
 		if skill.SkillID == 87 {
 			success = s.checkShockStunPlayerSuccess(player, target)
 		} else {
-			success = s.checkPlayerMRResist(player, target)
+			success = s.checkPlayerMRResist(player, target, skill.SkillID)
 		}
 		if !success {
 			if skill.SkillID != 87 {
@@ -1119,13 +1136,14 @@ func (s *SkillSystem) executeBuffSkill(sess *net.Session, player *world.PlayerIn
 		}
 
 	case 33: // 木乃伊詛咒 — 對玩家施加詛咒麻痺
-		if target.CharID != player.CharID && !target.Paralyzed && target.CurseType == 0 &&
-			!target.HasBuff(157) && !target.HasBuff(50) && !target.HasBuff(80) {
-			target.CurseType = 1
-			target.CurseTicksLeft = 25
-			BroadcastPlayerPoison(target, 2, s.deps)
-			handler.SendServerMessage(target.Session, 212)
+		if target.CharID != player.CharID {
+			applyCurseParalysisToPlayer(target, s.deps)
 		}
+		if skill.CastGfx > 0 {
+			handler.BroadcastToPlayers(nearby, handler.BuildSkillEffect(target.CharID, skill.CastGfx))
+		}
+		s.sendYiweiPostCastStatusRefresh(target)
+		return
 
 	case 37: // 聖潔之光 — 解毒 + 解詛咒 + 解麻痺/睡眠/致盲
 		CurePoison(target, s.deps)

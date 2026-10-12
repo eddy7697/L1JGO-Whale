@@ -43,13 +43,13 @@ BUFF_DEFS = {
 
     [42] = { str = 5, exclusions = {109} },                                  -- Physical Enchant STR（Java REPEATEDSKILLS[5]={42,109} 與 DRESS_MIGHTY 互斥）
 
-    [43] = { move_speed = 1, exclusions = {29, 76, 54} },                    -- Haste
+    [43] = { move_speed = 1, exclusions = {29, 76, 152, 54, 1001} },          -- Haste
 
     [47] = { dmg_mod = -5, hit_mod = -1 },                                     -- Weakness 弱化術 (debuff)
 
     [50] = { paralyzed = true },                                              -- Ice Lance (freeze)
-    [52] = { brave_speed = 4, exclusions = {101, 150, 155, 186} },            -- Holy Walk
-    [54] = { move_speed = 1, exclusions = {43, 29, 76} },                    -- Greater Haste
+    [52] = { brave_speed = 4, exclusions = {101, 150, 155, 186, 1000, 1016, 1026} }, -- Holy Walk
+    [54] = { move_speed = 1, exclusions = {43, 29, 76, 152, 1001} },          -- Greater Haste
 
     [55] = { hit_mod = 2, dmg_mod = 5, ac = 10 },                            -- Berserker
     [56] = { dmg_mod = -6, ac = 12 },                                         -- Disease 疾病術 (debuff: DMG-6, AC+12)

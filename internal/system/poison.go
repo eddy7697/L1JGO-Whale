@@ -9,6 +9,20 @@ import (
 
 const poisonTickMillis = 200
 
+// Eddy L1BuffUtil: CURSE_PARALYZE/2 延遲 8000ms，麻痺 16000ms。
+const curseDelayTicks = 8000 / poisonTickMillis
+const curseParalysisTicks = 16000 / poisonTickMillis
+
+func applyCurseParalysisToPlayer(p *world.PlayerInfo, deps *handler.Deps) bool {
+	if p == nil || p.Dead || p.CurseType != 0 || p.HasBuff(157) || p.HasBuff(50) || p.HasBuff(80) || p.HasBuff(194) {
+		return false
+	}
+	p.CurseType, p.CurseTicksLeft = 1, curseDelayTicks
+	broadcastPlayerPoison(p, 2, deps)
+	handler.SendServerMessage(p.Session, 212)
+	return true
+}
+
 // --- 毒系統（Java L1DamagePoison / L1SilencePoison / L1ParalysisPoison）---
 //
 // PoisonType 值：
@@ -22,8 +36,8 @@ const poisonTickMillis = 200
 //
 // CurseType 值：
 //   0 = 無詛咒
-//   1 = 詛咒延遲中（灰色色調，可移動，25 tick = 5 秒後轉階段二）
-//   2 = 詛咒已麻痺（灰色色調，不可移動，20 tick = 4 秒後解除）
+//   1 = 詛咒延遲中（灰色色調，可移動，40 tick = 8 秒後轉階段二）
+//   2 = 詛咒已麻痺（灰色色調，不可移動，80 tick = 16 秒後解除）
 
 // TickCatapultSilence 每 tick 檢查投石車沉默砲彈到期。
 // 由 BuffTickSystem (Phase 2) 呼叫。
@@ -115,7 +129,7 @@ func TickPlayerCurse(p *world.PlayerInfo, deps *handler.Deps) {
 		switch p.CurseType {
 		case 1: // 延遲階段到期 → 進入麻痺階段
 			p.CurseType = 2
-			p.CurseTicksLeft = 20 // 4 秒 = 20 ticks
+			p.CurseTicksLeft = curseParalysisTicks
 			p.Paralyzed = true
 			handler.SendParalysis(p.Session, handler.ParalysisApply) // 0x02
 

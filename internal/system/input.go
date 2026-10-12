@@ -571,58 +571,9 @@ func sendServerMessageArgsPacket(sess *net.Session, msgID uint16, args ...string
 	sess.Send(w.Bytes())
 }
 
-// buffRowsFromPlayer converts active buffs to persist.BuffRow for DB save.
-// Duplicated from handler.BuffRowsFromPlayer to avoid circular imports.
-const skillShapeChange int32 = 67
-
+// buffRowsFromPlayer shares the same expiry-aware snapshot as autosave and logout.
 func buffRowsFromPlayer(p *world.PlayerInfo) []persist.BuffRow {
-	if len(p.ActiveBuffs) == 0 {
-		return nil
-	}
-	rows := make([]persist.BuffRow, 0, len(p.ActiveBuffs))
-	for _, buff := range p.ActiveBuffs {
-		if buff.SetInvisible || buff.SetParalyzed || buff.SetSleeped {
-			continue
-		}
-		remainSec := buff.TicksLeft / 5
-		if remainSec <= 0 {
-			continue
-		}
-		row := persist.BuffRow{
-			CharID:        p.CharID,
-			SkillID:       buff.SkillID,
-			RemainingTime: remainSec,
-			DeltaAC:       buff.DeltaAC,
-			DeltaStr:      buff.DeltaStr,
-			DeltaDex:      buff.DeltaDex,
-			DeltaCon:      buff.DeltaCon,
-			DeltaWis:      buff.DeltaWis,
-			DeltaIntel:    buff.DeltaIntel,
-			DeltaCha:      buff.DeltaCha,
-			DeltaMaxHP:    buff.DeltaMaxHP,
-			DeltaMaxMP:    buff.DeltaMaxMP,
-			DeltaHitMod:   buff.DeltaHitMod,
-			DeltaDmgMod:   buff.DeltaDmgMod,
-			DeltaSP:       buff.DeltaSP,
-			DeltaMR:       buff.DeltaMR,
-			DeltaHPR:      buff.DeltaHPR,
-			DeltaMPR:      buff.DeltaMPR,
-			DeltaBowHit:   buff.DeltaBowHit,
-			DeltaBowDmg:   buff.DeltaBowDmg,
-			DeltaFireRes:  buff.DeltaFireRes,
-			DeltaWaterRes: buff.DeltaWaterRes,
-			DeltaWindRes:  buff.DeltaWindRes,
-			DeltaEarthRes: buff.DeltaEarthRes,
-			DeltaDodge:    buff.DeltaDodge,
-			SetMoveSpeed:  buff.SetMoveSpeed,
-			SetBraveSpeed: buff.SetBraveSpeed,
-		}
-		if buff.SkillID == skillShapeChange {
-			row.PolyID = p.PolyID
-		}
-		rows = append(rows, row)
-	}
-	return rows
+	return handler.BuffRowsFromPlayer(p)
 }
 
 // cleanupCompanions removes all companion entities owned by a disconnecting player.
