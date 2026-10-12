@@ -144,7 +144,7 @@ type PlayerInfo struct {
 	// 玩家任何 NPC 動作（包含關閉對話）都會清空此欄位。
 	LiveDialog *LiveDialogState
 
-	LastMoveTime int64 // time.Now().UnixNano() of last accepted move (0 = no throttle)
+	LastMoveTime int64 // time.Now().UnixNano() of last processed valid move request (0 = none)
 
 	TempCharGfx int32 // 0=use ClassID; >0=current polymorph GFX sprite
 	PolyID      int32 // current polymorph poly_id (for equip/skill checks; 0=not polymorphed)

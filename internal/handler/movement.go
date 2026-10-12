@@ -38,26 +38,25 @@ func applyDungeonTeleportEffect(player *world.PlayerInfo) {
 }
 
 // HandleMove processes C_MOVE (opcode 29).
-// Java C_MoveChar 依語系處理 heading：
-//
-//	language=3 (Taiwan): heading ^= 0x49，且忽略客戶端 X/Y，使用伺服器座標
-//	language=5 (China) 等其他語系: heading 不做 XOR，使用客戶端傳來的 X/Y
-//
-// 我們統一使用伺服器座標（安全性考量），但 heading 解碼必須依語系區分。
+// Java C_MoveChar 依 wire 值域判別明文 heading（0~7）與台版 XOR 0x49。
+// 每包只表示走一格；點擊遠處後的連續步伐由客戶端逐包送出。
+// 座標仍使用伺服器狀態，不把客戶端 X/Y 當成移動目的地。
 func HandleMove(sess *net.Session, r *packet.Reader, deps *Deps) {
+	// ReadC 在截短封包會回傳 0；先檢查 HH C，避免誤認成向北移動。
+	if r.Remaining() < 5 {
+		return
+	}
 	_ = r.ReadH() // client X（安全考量統一忽略，使用伺服器端座標）
 	_ = r.ReadH() // client Y（同上）
 	rawHeading := r.ReadC()
 
-	// heading 解碼：台版客戶端 XOR 0x49，其他語系（簡體等）直接使用原始值
-	var heading int16
-	if deps.Config.Server.Language == 3 {
+	// E:\L1JTW-Eddy C_MoveChar：登入器可送明文，不可僅依語系強制 XOR。
+	// 兩種合法值域不重疊；除此之外的 heading 一律拒絕。
+	heading := int16(rawHeading)
+	if heading > 7 {
 		heading = int16(rawHeading ^ 0x49)
-	} else {
-		heading = int16(rawHeading)
 	}
-
-	if heading < 0 || heading > 7 {
+	if heading > 7 {
 		return
 	}
 
@@ -72,18 +71,11 @@ func HandleMove(sess *net.Session, r *packet.Reader, deps *Deps) {
 		return
 	}
 
-	// --- 移動速度驗證（反加速外掛） ---
-	// 一般走路 ~200ms，加速 ~133ms。套用 50% 容許值（避免 tick 批次處理導致誤判）。
-	// 誤判時靜默丟棄（不觸發 rejectMove），避免全畫面彈回造成卡頓。
-	now := time.Now().UnixNano()
-	minInterval := int64(100_000_000) // 200ms * 50% = 100ms
-	if player.MoveSpeed == 1 {
-		minInterval = 66_000_000 // 133ms * 50% = 66ms
-	}
-	if player.LastMoveTime > 0 && (now-player.LastMoveTime) < minInterval {
-		return // 靜默丟棄：不發封包、不更新座標、不更新 LastMoveTime
-	}
-	player.LastMoveTime = now
+	// InputSystem 一次輪詢可批次分派多包，處理間隔不是客戶端送包間隔。
+	// 不可在此用牆鐘間隔丟棄後續步伐，否則伺服器座標會永久落後。
+	// Java C_MoveChar 對加速檢查 R_DETECTED 仍會移動；只在 R_DISPOSED 中止。
+	// 網路層仍保留每連線 PPS 上限；此時間僅記錄最後處理的移動要求。
+	player.LastMoveTime = time.Now().UnixNano()
 
 	// 永遠使用伺服器端座標（安全性考量，所有語系統一）
 	curX := player.X

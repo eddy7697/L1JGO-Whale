@@ -43,6 +43,9 @@ func (s *CombatSystem) AddExp(player *world.PlayerInfo, expGain int32) {
 
 func (s *CombatSystem) Update(_ time.Duration) {
 	for _, req := range s.requests {
+		if req.FromClient && s.handleClientAttackMiss(req) {
+			continue
+		}
 		if req.IsMelee {
 			s.processMeleeAttack(req.AttackerSessionID, req.TargetID)
 		} else {
@@ -50,6 +53,106 @@ func (s *CombatSystem) Update(_ time.Duration) {
 		}
 	}
 	s.requests = s.requests[:0]
+}
+
+// handleClientAttackMiss 保留原生封包的一次請求、一次動作流程。
+// Eddy C_Attack 對死亡／消失目標仍呼叫 actionPc；L1Attack.calcHit 的
+// 射程／視線失敗也只會變成 MISS，不會省略之後的 action()。
+// 回傳 true 表示已拒絕或回覆空揮，不能再進入傷害／仇恨處理。
+func (s *CombatSystem) handleClientAttackMiss(req handler.AttackRequest) bool {
+	player := s.deps.World.GetBySession(req.AttackerSessionID)
+	if player == nil || player.Dead || player.Paralyzed || player.Sleeped {
+		return true
+	}
+
+	x, y := req.TargetX, req.TargetY
+	missingOrDead := true
+	knownTarget := false
+	if npc := s.deps.World.GetNpc(req.TargetID); npc != nil {
+		knownTarget = true
+		if npc.MapID != player.MapID || npc.ShowID != player.ShowID || npcBlocksDirectPlayerAttackLikeJava(npc) {
+			return true
+		}
+		x, y = npc.X, npc.Y
+		missingOrDead = npc.Dead
+	} else if target := s.deps.World.GetByCharID(req.TargetID); target != nil {
+		knownTarget = true
+		if target.CharID == player.CharID || target.MapID != player.MapID || target.ShowID != player.ShowID {
+			return true
+		}
+		x, y = target.X, target.Y
+		missingOrDead = target.Dead
+	}
+
+	distance := abs32(player.X - x)
+	if dy := abs32(player.Y - y); dy > distance {
+		distance = dy
+	}
+	// Java C_Attack 對已知實體的跨地圖／超過 20 格請求直接拒絕。
+	if knownTarget && distance > 20 {
+		return true
+	}
+	if missingOrDead {
+		// 即使屍體仍留在世界，Java 的空揮仍使用封包附帶的座標。
+		s.sendClientAttackMiss(player, req.TargetID, req.TargetX, req.TargetY)
+		return true
+	}
+
+	attackRange := int32(2)
+	if !req.IsMelee {
+		attackRange = 10
+	}
+	if distance > attackRange || !s.canPhysicalAttackReachTarget(player, player.MapID, x, y) {
+		s.sendClientAttackMiss(player, req.TargetID, x, y)
+		return true
+	}
+	// 弓的最後一支箭用完後，下一個請求仍需回覆普通空揮動作。
+	if !req.IsMelee && s.deps.Items != nil {
+		if weapon := player.Equip.Weapon(); weapon != nil && weapon.ItemID != 190 {
+			if info := s.deps.Items.Get(weapon.ItemID); info != nil && (info.Type == "bow" || info.Type == "singlebow") && FindArrow(player, s.deps) == nil {
+				s.sendClientAttackMiss(player, req.TargetID, x, y)
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (s *CombatSystem) sendClientAttackMiss(player *world.PlayerInfo, targetID, x, y int32) {
+	if player.AbsoluteBarrier && s.deps.Skill != nil {
+		s.deps.Skill.CancelAbsoluteBarrier(player)
+	}
+	if player.Invisible && s.deps.Skill != nil {
+		s.deps.Skill.CancelInvisibility(player)
+	}
+	player.Heading = CalcHeading(player.X, player.Y, x, y)
+
+	// Java actionPc 依裝備與箭矢決定動畫；遠攻 opcode 本身不代表有箭。
+	arrowAction := false
+	if weapon := player.Equip.Weapon(); weapon != nil && s.deps.Items != nil {
+		if info := s.deps.Items.Get(weapon.ItemID); info != nil && (info.Type == "bow" || info.Type == "singlebow") {
+			arrow := FindArrow(player, s.deps)
+			arrowAction = arrow != nil || weapon.ItemID == 190
+			if arrow != nil {
+				if player.Inv.RemoveItem(arrow.ObjectID, 1) {
+					handler.SendRemoveInventoryItem(player.Session, arrow.ObjectID)
+				} else {
+					handler.SendItemCountUpdate(player.Session, arrow)
+				}
+			}
+		}
+	}
+	nearby := s.deps.World.GetNearbyPlayersInShow(player.X, player.Y, player.MapID, player.SessionID, player.ShowID)
+	if arrowAction {
+		handler.SendArrowAttackPacket(player.Session, player.CharID, targetID, 0, player.Heading, player.X, player.Y, x, y)
+		for _, viewer := range nearby {
+			handler.SendArrowAttackPacket(viewer.Session, player.CharID, targetID, 0, player.Heading, player.X, player.Y, x, y)
+		}
+		return
+	}
+	data := handler.BuildAttackPacket(player.CharID, targetID, 0, player.Heading)
+	player.Session.Send(data)
+	handler.BroadcastToPlayers(nearby, data)
 }
 
 // ==================== 近戰攻擊 ====================

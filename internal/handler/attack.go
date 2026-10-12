@@ -43,14 +43,22 @@ func FindArrow(player *world.PlayerInfo, deps *Deps) *world.InvItem {
 // Thin handler: parse packet → queue to CombatSystem (Phase 2).
 // Format: [D targetID][H x][H y]
 func HandleAttack(sess *net.Session, r *packet.Reader, deps *Deps) {
+	queueClientAttack(sess, r, deps, true)
+}
+
+func queueClientAttack(sess *net.Session, r *packet.Reader, deps *Deps, melee bool) {
+	// 攻擊必須包含完整的 D/H/H；截短封包不能變成 target=0 的空揮。
+	if r.Remaining() < 8 {
+		return
+	}
 	player := deps.World.GetBySession(sess.ID)
-	if player == nil || player.Paralyzed || player.Sleeped {
+	if player == nil || player.Dead || player.Paralyzed || player.Sleeped {
 		return
 	}
 
 	targetID := r.ReadD()
-	_ = r.ReadH() // target x (unused, we use server position)
-	_ = r.ReadH() // target y (unused)
+	x := int32(r.ReadH())
+	y := int32(r.ReadH())
 
 	if deps.Combat == nil {
 		return
@@ -58,7 +66,10 @@ func HandleAttack(sess *net.Session, r *packet.Reader, deps *Deps) {
 	deps.Combat.QueueAttack(AttackRequest{
 		AttackerSessionID: sess.ID,
 		TargetID:          targetID,
-		IsMelee:           true,
+		IsMelee:           melee,
+		TargetX:           x,
+		TargetY:           y,
+		FromClient:        true,
 	})
 }
 
@@ -66,21 +77,5 @@ func HandleAttack(sess *net.Session, r *packet.Reader, deps *Deps) {
 // Thin handler: parse packet → queue to CombatSystem (Phase 2).
 // Format: [D targetID][H x][H y]
 func HandleFarAttack(sess *net.Session, r *packet.Reader, deps *Deps) {
-	player := deps.World.GetBySession(sess.ID)
-	if player == nil || player.Paralyzed || player.Sleeped {
-		return
-	}
-
-	targetID := r.ReadD()
-	_ = r.ReadH()
-	_ = r.ReadH()
-
-	if deps.Combat == nil {
-		return
-	}
-	deps.Combat.QueueAttack(AttackRequest{
-		AttackerSessionID: sess.ID,
-		TargetID:          targetID,
-		IsMelee:           false,
-	})
+	queueClientAttack(sess, r, deps, false)
 }

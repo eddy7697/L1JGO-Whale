@@ -1,3 +1,5 @@
+- 依使用者指定的 `E:\L1JTW-Eddy` Java 封包流程修正原生移動：`C_MOVE(29)` 同時接受明文與 XOR `0x49` 方向，取消以 handler 執行間隔丟棄合法步伐，避免批次輸入造成座標落後；保留伺服器座標與網路 PPS 上限。點擊目的地仍由客戶端逐格送包，沒有新增伺服器自走。
+- 對齊同一 Java 專案的原生攻擊回應：保留 `C_ATTACK(229)` / `C_FAR_ATTACK(123)` 的目標座標，對合法的空揮與射程／視線未命中補回攻擊動作，維持地圖、ShowID 與不可行動狀態檢查。連續攻擊仍是一個客戶端要求對應一次動作，沒有新增伺服器自動攻擊計時器；新增封包與 InputSystem／CombatSystem 整合回歸，滑鼠手勢仍需真實客戶端驗收。
 - 補齊魔法娃娃 `dmg_reduction` 實際受傷減免：`Doll_DmgDown` 套入的 `EquipBonuses.DmgReduction` 現在會進入既有 incoming damage 減傷 helper，NPC→PC、PvP 與已接入該 helper 的攻擊魔法路徑不再只追蹤欄位。
 - 修正魔法娃娃召喚缺圖崩潰：`dolls.yaml` 的 `gfx_id` 改為客戶端 sprite gfx，而非 NPC template id；野狼寶寶等 15 筆既有娃娃召喚不再把 801xx/921xx 編號寫進物件封包，並新增資料回歸測試鎖定 yiwei/client gfx 對照。
 - 對齊 yiwei 龍門 NPC 生成/抵達/移除語義：`DragonDoorSystem.SpawnKeeper` 現在依 `L1SpawnUtil.spawn(pc, npcID, 0, 7200)` 使用玩家座標、heading 固定 5，並繼承玩家 ShowID；生成、抵達死亡動作與移除廣播改走 Go 現有 `GetNearbyPlayersInShow`，避免不同副本/ShowID 玩家看到龍門 NPC。

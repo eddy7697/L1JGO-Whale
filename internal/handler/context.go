@@ -19,7 +19,10 @@ import (
 type AttackRequest struct {
 	AttackerSessionID uint64
 	TargetID          int32
-	IsMelee           bool // true=melee (C_ATTACK), false=ranged (C_FAR_ATTACK)
+	IsMelee           bool  // true=melee (C_ATTACK), false=ranged (C_FAR_ATTACK)
+	TargetX           int32 // 客戶端座標供目標死亡／消失時播放空揮動作
+	TargetY           int32
+	FromClient        bool // 區分原生攻擊封包與技能產生的內部攻擊
 }
 
 // CombatQueue accepts attack requests from handlers for deferred Phase 2 processing.
