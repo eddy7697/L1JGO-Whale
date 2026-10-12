@@ -35,3 +35,6 @@ PLAN.md
 portalconv.exe
 teleconv.exe
 sqlconv.exe
+
+# Docker 開發環境的血盟紋章掛載資料（資料庫使用 Docker 管理的 named volume）
+/emblem/

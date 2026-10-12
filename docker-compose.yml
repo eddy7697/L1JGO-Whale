@@ -1,5 +1,5 @@
 # ============================================================
-#  L1JGO-Whale Docker Compose
+#  L1JGO-Whale Docker Compose（僅供開發環境使用）
 #  用法：docker compose up -d
 # ============================================================
 
@@ -14,7 +14,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data  # Docker 管理的持久化資料，不存放於專案目錄
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s

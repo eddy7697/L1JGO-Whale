@@ -55,6 +55,25 @@ Go Engine（網路層、ECS 實體系統、世界管理、持久化）
 
 ## 快速開始
 
+### Docker Compose（僅供開發環境使用）
+
+專案根目錄的 `docker-compose.yml` 僅供開發環境使用，內建開發用資料庫帳密，並將 PostgreSQL 的 `5432` 埠開放至主機網路介面，不適合直接用於正式環境。
+
+安裝並啟動 Docker 後，在專案根目錄執行：
+
+```bash
+docker compose up -d --build
+```
+
+- PostgreSQL：主機連線使用 `localhost:5432`，資料庫名稱為 `l1jgo`；其他電腦可使用主機 IP 連線，須由防火牆與網路允許。
+- 遊戲伺服器：主機連線使用 `localhost:7002`，映射至容器的 `7001` 埠。
+- 資料庫持久化：`pgdata` named volume 掛載至 `/var/lib/postgresql/data`，重啟或重建容器後資料仍會保留。資料由 Docker 管理，不在專案目錄內，因此不會被 Git 追蹤，無須加入 `.gitignore`。
+- 血盟紋章持久化：專案內的 `./emblem/` 掛載至 `/app/emblem`，已在 `.gitignore` 與 `.dockerignore` 排除，避免提交或加入映像建構內容。
+
+停止服務可執行 `docker compose down`，資料庫 volume 會保留。**`docker compose down -v` 會刪除資料庫 volume 與其中的資料**，僅在確定要清除開發資料時使用。
+
+以下為不使用 Docker Compose 時的本機啟動方式。
+
 ### 環境需求
 
 - **Go** 1.23 以上
