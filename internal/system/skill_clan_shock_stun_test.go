@@ -4093,6 +4093,7 @@ func TestSkillClanShockStunNpcCasterSkipsGmInvisibleTargetLikeJava(t *testing.T)
 		Y:           100,
 		MapID:       4,
 		AccessLevel: 200,
+		GMInvisible: true,
 		Invisible:   true,
 		Sleeped:     true,
 	})
@@ -4154,6 +4155,7 @@ func TestSkillClanShockStunNpcCasterGmInvisibleTargetDoesNotConsumeMpLikeJava(t 
 		Y:           100,
 		MapID:       4,
 		AccessLevel: 200,
+		GMInvisible: true,
 		Invisible:   true,
 	})
 	npc := &world.NpcInfo{
@@ -4644,6 +4646,7 @@ func TestSkillClanShockStunPlayerCasterSkipsGmInvisibleTargetLikeJava(t *testing
 		MapID:       4,
 		Level:       1,
 		AccessLevel: 200,
+		GMInvisible: true,
 		Invisible:   true,
 		Sleeped:     true,
 		RegistStun:  -100,
@@ -4922,6 +4925,7 @@ func TestSkillClanShockStunMobAreaShockStunMatchesJava(t *testing.T) {
 		Y:           100,
 		MapID:       4,
 		AccessLevel: 200,
+		GMInvisible: true,
 		Invisible:   true,
 	})
 	npc := &world.NpcInfo{

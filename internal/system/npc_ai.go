@@ -479,7 +479,7 @@ func (s *NpcAISystem) tickGuardAI(npc *world.NpcInfo) {
 	var target *world.PlayerInfo
 	if npc.AggroTarget != 0 {
 		target = s.world.GetBySession(npc.AggroTarget)
-		if target == nil || target.Dead || target.MapID != npc.MapID {
+		if target == nil || target.Dead || target.IsGMInvisible() || target.MapID != npc.MapID {
 			npc.AggroTarget = 0
 			target = nil
 		}
@@ -495,7 +495,7 @@ func (s *NpcAISystem) tickGuardAI(npc *world.NpcInfo) {
 		nearby := s.nearbyNpcViewersAt(npc, npc.X, npc.Y, npc.MapID)
 		bestDist := int32(999)
 		for _, p := range nearby {
-			if p.Dead || p.Invisible {
+			if p.Dead || p.IsInvisible() {
 				continue
 			}
 			// Java L1GuardInstance.searchTarget(): 只追殺通緝犯（isWanted）
@@ -744,7 +744,7 @@ func (s *NpcAISystem) npcMeleeAttack(npc *world.NpcInfo, target *world.PlayerInf
 		return
 	}
 
-	target.HP -= int32(damage)
+	target.ApplyDamage(int32(damage))
 	target.Dirty = true
 	if target.HP <= 0 {
 		target.HP = 0
@@ -818,7 +818,7 @@ func (s *NpcAISystem) npcRangedAttack(npc *world.NpcInfo, target *world.PlayerIn
 		return
 	}
 
-	target.HP -= int32(damage)
+	target.ApplyDamage(int32(damage))
 	target.Dirty = true
 	if target.HP <= 0 {
 		target.HP = 0
@@ -949,7 +949,7 @@ func (s *NpcAISystem) executeNpcSkill(npc *world.NpcInfo, target *world.PlayerIn
 				}
 				dmg = applyNpcMagicLeverageLikeJava(dmg, leverage)
 				dmg = applyDragonEyeMagicDamageReductionLikeYiwei(p, dmg, world.RandInt(100), nearby)
-				p.HP -= int32(dmg)
+				p.ApplyDamage(int32(dmg))
 				p.Dirty = true
 				if p.HP <= 0 {
 					p.HP = 0
@@ -995,7 +995,7 @@ func (s *NpcAISystem) executeNpcSkill(npc *world.NpcInfo, target *world.PlayerIn
 				npc.X, npc.Y, target.X, target.Y)
 			handler.BroadcastToPlayers(nearby, skillAtkData)
 
-			target.HP -= int32(damage)
+			target.ApplyDamage(int32(damage))
 			target.Dirty = true
 			if target.HP <= 0 {
 				target.HP = 0
@@ -1546,7 +1546,7 @@ func (s *NpcAISystem) executeNpcPhysicalSkill(npc *world.NpcInfo, target *world.
 			handler.SendParalysis(hitTarget.Session, handler.SleepRemove)
 		}
 
-		hitTarget.HP -= int32(damage)
+		hitTarget.ApplyDamage(int32(damage))
 		hitTarget.Dirty = true
 		if hitTarget.HP <= 0 {
 			hitTarget.HP = 0
@@ -1607,7 +1607,7 @@ func npcPhysicalSkillBoxContainsLikeJava(npc *world.NpcInfo, target *world.Playe
 }
 
 func (s *NpcAISystem) npcCanAttackPosition(npc *world.NpcInfo, target *world.PlayerInfo) bool {
-	if npc == nil || target == nil || target.Dead || target.MapID != npc.MapID || target.ShowID != npc.ShowID {
+	if npc == nil || target == nil || target.Dead || target.IsGMInvisible() || target.MapID != npc.MapID || target.ShowID != npc.ShowID {
 		return false
 	}
 	attackRange := int(npc.Ranged)
@@ -1628,7 +1628,7 @@ func (s *NpcAISystem) npcNearbyPlayersLikeJava(npc *world.NpcInfo) []*world.Play
 }
 
 func (s *NpcAISystem) npcCanKeepTargetLikeJava(npc *world.NpcInfo, target *world.PlayerInfo) bool {
-	if npc == nil || target == nil || target.HP <= 0 || target.Dead {
+	if npc == nil || target == nil || target.HP <= 0 || target.Dead || target.IsGMInvisible() {
 		return false
 	}
 	if target.MapID != npc.MapID || target.ShowID != npc.ShowID {
@@ -1641,7 +1641,7 @@ func (s *NpcAISystem) npcCanKeepTargetLikeJava(npc *world.NpcInfo, target *world
 	if target.Invisible && !inHate {
 		return false
 	}
-	if target.AccessLevel >= 200 && !inHate {
+	if (target.IsGM() || target.IsMonitor() || target.IsGMInvisible()) && !inHate {
 		return false
 	}
 	if !inHate {
@@ -1656,13 +1656,13 @@ func (s *NpcAISystem) npcCanKeepTargetLikeJava(npc *world.NpcInfo, target *world
 }
 
 func (s *NpcAISystem) npcCanAcquireTargetLikeJava(npc *world.NpcInfo, target *world.PlayerInfo) bool {
-	if npc == nil || target == nil || target.HP <= 0 || target.Dead {
+	if npc == nil || target == nil || target.HP <= 0 || target.Dead || target.IsGMInvisible() {
 		return false
 	}
 	if target.MapID != npc.MapID || target.ShowID != npc.ShowID {
 		return false
 	}
-	if target.AccessLevel >= 200 || target.Invisible {
+	if target.IsGM() || target.IsMonitor() || target.IsInvisible() {
 		return false
 	}
 	return s.npcHasMoveDirectionToTargetLikeJava(npc, target) && s.npcHasTargetSightLikeJava(npc, target)
@@ -1795,7 +1795,7 @@ func npcSkillTargetInRangeLikeJava(npc *world.NpcInfo, target *world.PlayerInfo,
 }
 
 func npcSkillPlayerTargetAllowedLikeJava(npc *world.NpcInfo, target *world.PlayerInfo) bool {
-	if npc == nil || target == nil || target.HP <= 0 || target.Dead {
+	if npc == nil || target == nil || target.HP <= 0 || target.Dead || target.IsGMInvisible() {
 		return false
 	}
 	if target.MapID != npc.MapID || target.ShowID != npc.ShowID {

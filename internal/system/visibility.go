@@ -47,6 +47,7 @@ func (s *VisibilitySystem) Update(_ time.Duration) {
 		s.updateGroundItemVisibility(p)
 		s.updateGroundEffectVisibility(p)
 		s.updateDoorVisibility(p)
+		handler.UpdateGMWorldView(p, s.deps)
 	})
 }
 
@@ -62,7 +63,7 @@ func (s *VisibilitySystem) updatePlayerVisibility(p *world.PlayerInfo) {
 
 		// 隱身玩家不可見（Java: isInvisble() 檢查）
 		// 自己永遠看得到自己（但 GetNearbyPlayers 已排除自己）
-		if other.Invisible {
+		if !p.CanSeePlayer(other) {
 			// 如果之前看得到、現在隱身了 → 從畫面移除
 			if _, known := p.Known.Players[other.CharID]; known {
 				handler.SendRemoveObject(p.Session, other.CharID)

@@ -262,6 +262,7 @@ func TestSkillDetectionSkipsGmInvisiblePlayerLikeJava(t *testing.T) {
 		MapID:       4,
 		ShowID:      21,
 		AccessLevel: 200,
+		GMInvisible: true,
 		Invisible:   true,
 	})
 	viewer := addSkillTestPlayer(ws, &world.PlayerInfo{
@@ -301,6 +302,7 @@ func TestSkillDetectionSkipsGmInvisibleCasterLikeJava(t *testing.T) {
 		MapID:       4,
 		ShowID:      31,
 		AccessLevel: 200,
+		GMInvisible: true,
 		Invisible:   true,
 	})
 	caster.AddBuff(&world.ActiveBuff{SkillID: 60, TicksLeft: 100, SetInvisible: true})

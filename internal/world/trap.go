@@ -16,6 +16,8 @@ type trapTileKey struct {
 
 // TrapInstance 運行時陷阱實例。
 type TrapInstance struct {
+	Base     bool               // Java 的 trap base：只供 GM 顯示，不觸發
+	ID       int32              // GM 陷阱顯示使用的獨立世界物件 ID
 	Template *data.TrapTemplate // 陷阱範本
 	Spawn    *data.TrapSpawn    // 生成點定義
 	X        int32              // 當前座標 X
@@ -37,6 +39,7 @@ type trapRespawnEntry struct {
 type TrapManager struct {
 	byTile         map[trapTileKey][]*TrapInstance // 座標 → 該位置的陷阱列表
 	allTraps       []*TrapInstance                 // 所有陷阱實例
+	allBases       []*TrapInstance                 // 原始生成點（GM 顯示）
 	pendingRespawn []trapRespawnEntry              // 待重生佇列
 	mapChecker     MapPassableChecker              // 地圖通行性檢查（可選）
 }
@@ -75,6 +78,7 @@ func NewTrapManager(trapData *data.TrapData, checker MapPassableChecker) *TrapMa
 		// 每個生成點可產生多個陷阱實例
 		for j := int32(0); j < sp.Count; j++ {
 			inst := &TrapInstance{
+				ID:       NextNpcID(),
 				Template: tpl,
 				Spawn:    sp,
 				MapID:    int16(sp.MapID),
@@ -86,6 +90,7 @@ func NewTrapManager(trapData *data.TrapData, checker MapPassableChecker) *TrapMa
 			mgr.allTraps = append(mgr.allTraps, inst)
 			mgr.registerTile(inst)
 		}
+		mgr.allBases = append(mgr.allBases, &TrapInstance{ID: NextNpcID(), Base: true, Spawn: sp, X: sp.X, Y: sp.Y, MapID: int16(sp.MapID), Alive: true})
 	}
 
 	return mgr

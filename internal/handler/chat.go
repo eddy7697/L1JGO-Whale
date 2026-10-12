@@ -38,6 +38,10 @@ func HandleChat(sess *net.Session, r *packet.Reader, deps *Deps) {
 	if chatType == ChatNormal && HandleGMCommand(sess, player, text, deps) {
 		return
 	}
+	if IsGMChatProhibited(player, deps) {
+		SendServerMessage(sess, 242)
+		return
+	}
 
 	// 浮動傷害數字開關（Java: C_Chat 攔截 "dmg" / "DMG" 切換 is_attack_view）
 	if chatType == ChatNormal && (text == "dmg" || text == "DMG") {
@@ -80,16 +84,21 @@ func HandleChat(sess *net.Session, r *packet.Reader, deps *Deps) {
 		}
 
 	case ChatWorld:
+		if !GMWorldChatEnabled(deps) && !player.IsGM() {
+			return
+		}
 		// Java C_ChatGlobal.java:69-88 阻擋沉默狀態 (SILENCE/AREA_OF_SILENCE/STATUS_POISON_SILENCE) 廣播，GM 不受限。
-		if player.Silenced && player.AccessLevel < 200 {
+		if player.Silenced && !player.IsGM() {
 			return
 		}
 		// World/Global chat requires food and costs food (configurable)
-		if player.Food < int16(deps.Config.Gameplay.WorldChatMinFood) {
-			return
+		if !player.IsGM() {
+			if player.Food < int16(deps.Config.Gameplay.WorldChatMinFood) {
+				return
+			}
+			player.Food -= int16(deps.Config.Gameplay.WorldChatFoodCost)
+			sendPlayerStatus(sess, player)
 		}
-		player.Food -= int16(deps.Config.Gameplay.WorldChatFoodCost)
-		sendPlayerStatus(sess, player)
 
 		// World/Global chat: all players via S_MESSAGE (opcode 243)
 		msg := fmt.Sprintf("[%s] %s", player.Name, text)
@@ -101,6 +110,9 @@ func HandleChat(sess *net.Session, r *packet.Reader, deps *Deps) {
 		})
 
 	case ChatTrade:
+		if !GMWorldChatEnabled(deps) && !player.IsGM() {
+			return
+		}
 		// Trade chat: all players via S_MESSAGE (opcode 243)
 		msg := fmt.Sprintf("[%s] %s", player.Name, text)
 		sendGlobalChat(sess, ChatTrade, msg)
@@ -169,6 +181,10 @@ func HandleWhisper(sess *net.Session, r *packet.Reader, deps *Deps) {
 
 	player := deps.World.GetBySession(sess.ID)
 	if player == nil {
+		return
+	}
+	if IsGMChatProhibited(player, deps) {
+		SendServerMessage(sess, 242)
 		return
 	}
 

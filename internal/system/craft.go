@@ -197,7 +197,7 @@ func (s *CraftSystem) ExecuteCraft(sess *net.Session, player *world.PlayerInfo, 
 		handler.SendHpUpdate(sess, player)
 	}
 	if recipe.MPConsume > 0 {
-		player.MP -= int32(recipe.MPConsume)
+		player.SpendMP(int32(recipe.MPConsume))
 		if player.MP < 0 {
 			player.MP = 0
 		}

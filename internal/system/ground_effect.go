@@ -129,7 +129,7 @@ func npcCubeQuakeImmune(npc *world.NpcInfo) bool {
 func (s *GroundEffectSystem) applyCubePulse(effect *world.GroundEffect) {
 	nearby := s.world.GetNearbyPlayersInShow(effect.X, effect.Y, effect.MapID, 0, effect.ShowID)
 	for _, target := range nearby {
-		if target == nil || target.Dead {
+		if target == nil || target.Dead || target.IsGMInvisible() {
 			continue
 		}
 		if chebyshevDist(effect.X, effect.Y, target.X, target.Y) > 3 {
@@ -309,7 +309,7 @@ func (s *GroundEffectSystem) damagePlayerByCube(effect *world.GroundEffect, targ
 	if target.Sleeped {
 		breakPlayerSleepBySkill(target)
 	}
-	target.HP -= damage
+	target.ApplyDamage(damage)
 	target.Dirty = true
 	if target.HP <= 0 {
 		target.HP = 0
@@ -374,7 +374,7 @@ func (s *GroundEffectSystem) broadcastRemove(effect *world.GroundEffect) {
 func (s *GroundEffectSystem) applyFireWallDamage(effect *world.GroundEffect) {
 	nearby := s.world.GetNearbyPlayersInShow(effect.X, effect.Y, effect.MapID, 0, effect.ShowID)
 	for _, target := range nearby {
-		if target == nil || target.Dead || target.CharID == effect.OwnerCharID {
+		if target == nil || target.Dead || target.IsGMInvisible() || target.CharID == effect.OwnerCharID {
 			continue
 		}
 		if chebyshevDist(effect.X, effect.Y, target.X, target.Y) > 1 {
@@ -398,7 +398,7 @@ func (s *GroundEffectSystem) applyFireWallDamage(effect *world.GroundEffect) {
 		if target.Sleeped {
 			breakPlayerSleepBySkill(target)
 		}
-		target.HP -= damage
+		target.ApplyDamage(damage)
 		target.Dirty = true
 		if target.HP <= 0 {
 			target.HP = 0

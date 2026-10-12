@@ -21,12 +21,24 @@ func NewGMCommandSystem(deps *handler.Deps) *GMCommandSystem {
 
 // SetLevel 設定玩家等級（含經驗值、HP/MP 重算）。
 func (s *GMCommandSystem) SetLevel(sess *net.Session, player *world.PlayerInfo, level int) {
+	player.Dirty = true
 	player.Level = int16(level)
 	player.Exp = int32(s.deps.Scripting.ExpForLevel(level))
 
-	baseHP, baseMP := calcBaseHPMP(player.ClassType, player.Level, player.Con, player.Wis, s.deps)
-	player.MaxHP = baseHP
-	player.MaxMP = baseMP
+	// 重算基礎血魔時只用原始體質、精神；裝備及 buff 的加成仍有效，
+	// 必須重新加回，否則脫裝或 buff 到期時會再次扣除而傷及基礎值。
+	eq := player.EquipBonuses
+	con, wis := player.Con-int16(eq.AddCon), player.Wis-int16(eq.AddWis)
+	bonusHP, bonusMP := int32(eq.AddHP), int32(eq.AddMP)
+	for _, buff := range player.ActiveBuffs {
+		con -= buff.DeltaCon
+		wis -= buff.DeltaWis
+		bonusHP += buff.DeltaMaxHP
+		bonusMP += buff.DeltaMaxMP
+	}
+	baseHP, baseMP := calcBaseHPMP(player.ClassType, player.Level, con, wis, s.deps)
+	player.MaxHP = baseHP + bonusHP
+	player.MaxMP = baseMP + bonusMP
 	player.HP = player.MaxHP
 	player.MP = player.MaxMP
 
@@ -38,14 +50,13 @@ func (s *GMCommandSystem) SetLevel(sess *net.Session, player *world.PlayerInfo, 
 
 // SetHP 設定玩家 HP（含死亡復活處理）。
 func (s *GMCommandSystem) SetHP(sess *net.Session, player *world.PlayerInfo, hp int) {
+	player.Dirty = true
 	player.HP = int32(hp)
 	if player.HP > player.MaxHP {
 		player.MaxHP = player.HP
 	}
 	if player.HP > 0 && player.Dead {
-		player.Dead = false
-		player.LastMoveTime = 0
-		s.deps.World.OccupyEntity(player.MapID, player.X, player.Y, player.CharID)
+		s.reviveGMPlayer(player)
 	}
 	handler.SendHpUpdate(sess, player)
 	handler.SendPlayerStatus(sess, player)
@@ -53,6 +64,7 @@ func (s *GMCommandSystem) SetHP(sess *net.Session, player *world.PlayerInfo, hp 
 
 // SetMP 設定玩家 MP。
 func (s *GMCommandSystem) SetMP(sess *net.Session, player *world.PlayerInfo, mp int) {
+	player.Dirty = true
 	player.MP = int32(mp)
 	if player.MP > player.MaxMP {
 		player.MaxMP = player.MP
@@ -63,19 +75,36 @@ func (s *GMCommandSystem) SetMP(sess *net.Session, player *world.PlayerInfo, mp 
 
 // FullHeal 補滿 HP/MP（含死亡復活處理）。
 func (s *GMCommandSystem) FullHeal(sess *net.Session, player *world.PlayerInfo) {
+	player.Dirty = true
 	player.HP = player.MaxHP
 	player.MP = player.MaxMP
 	if player.Dead {
-		player.Dead = false
-		player.LastMoveTime = 0
-		s.deps.World.OccupyEntity(player.MapID, player.X, player.Y, player.CharID)
+		s.reviveGMPlayer(player)
 	}
 	handler.SendHpUpdate(sess, player)
 	handler.SendMpUpdate(sess, player)
 }
 
+func (s *GMCommandSystem) reviveGMPlayer(p *world.PlayerInfo) {
+	p.Dead = false
+	p.LastMoveTime = 0
+	if s.deps.Death != nil {
+		s.deps.Death.ClearPlayerTomb(p)
+	}
+	s.deps.World.OccupyEntity(p.MapID, p.X, p.Y, p.CharID)
+	data := handler.BuildResurrection(p, p.CharID, 0)
+	p.Session.Send(data)
+	for _, v := range s.deps.World.GetNearbyPlayersInShow(p.X, p.Y, p.MapID, p.SessionID, p.ShowID) {
+		if v.CanSeePlayer(p) {
+			v.Session.Send(data)
+			handler.SendPutObject(v.Session, p)
+		}
+	}
+}
+
 // SetStat 設定指定屬性值。
 func (s *GMCommandSystem) SetStat(sess *net.Session, player *world.PlayerInfo, stat string, value int16) {
+	player.Dirty = true
 	switch strings.ToLower(stat) {
 	case "str":
 		player.Str = value
@@ -104,6 +133,11 @@ func (s *GMCommandSystem) GiveItem(sess *net.Session, player *world.PlayerInfo, 
 	}
 
 	stackable := itemInfo.Stackable || itemID == world.AdenaItemID
+	if stackable {
+		if existing := player.Inv.FindByItemID(itemID); existing != nil && int64(existing.Count)+int64(count) > 2147483647 {
+			return
+		}
+	}
 	if s.deps.ItemCreate != nil {
 		if stackable {
 			if _, ok := s.deps.ItemCreate.GiveItem(sess, player, itemID, count); !ok {

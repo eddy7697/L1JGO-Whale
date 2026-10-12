@@ -180,7 +180,11 @@ func HandleMove(sess *net.Session, r *packet.Reader, deps *Deps) {
 	// 玩家進出視野由 VisibilitySystem（Phase 3, 每 400ms）獨立處理。
 	nearby := ws.GetNearbyPlayersInShow(destX, destY, player.MapID, sess.ID, player.ShowID)
 	data := BuildMoveObject(player.CharID, curX, curY, heading)
-	BroadcastToPlayers(nearby, data)
+	for _, viewer := range nearby {
+		if viewer.CanSeePlayer(player) {
+			viewer.Session.Send(data)
+		}
+	}
 }
 
 // rejectMove 碰撞拒絕：回彈玩家位置 + 重發所有附近實體。
@@ -203,6 +207,9 @@ func rejectMove(sess *net.Session, player *world.PlayerInfo, ws *world.State, de
 	// 3. 重發所有附近玩家 + 封鎖格子 + 填入 Known
 	nearbyPlayers := ws.GetNearbyPlayersInShow(px, py, player.MapID, sess.ID, player.ShowID)
 	for _, other := range nearbyPlayers {
+		if !player.CanSeePlayer(other) {
+			continue
+		}
 		SendPutObject(sess, other)
 		if player.Known != nil {
 			player.Known.Players[other.CharID] = world.KnownPos{X: other.X, Y: other.Y}
@@ -320,5 +327,9 @@ func HandleChangeDirection(sess *net.Session, r *packet.Reader, deps *Deps) {
 	// 廣播方向變更給附近玩家
 	nearby := deps.World.GetNearbyPlayersInShow(player.X, player.Y, player.MapID, sess.ID, player.ShowID)
 	chData := BuildChangeHeading(player.CharID, heading)
-	BroadcastToPlayers(nearby, chData)
+	for _, viewer := range nearby {
+		if viewer.CanSeePlayer(player) {
+			viewer.Session.Send(chData)
+		}
+	}
 }

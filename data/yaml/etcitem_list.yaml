@@ -46323,3 +46323,455 @@ items:
     delay_id: 0
     delay_time: 0
     food_volume: 0
+
+  # Java advanced_polymorph seed：50 張 GM 進階變身卡（不包含已占用的手冊 600100）
+  - item_id: 600101
+    name: 屠龍者變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600102
+    name: 特羅斯變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600103
+    name: 依詩蒂變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600104
+    name: 格立特變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600105
+    name: 絲莉安變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600106
+    name: 喬變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600107
+    name: 真死亡騎士變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600108
+    name: 真黑暗精靈變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600109
+    name: 狂暴將軍變身卡(82)
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600110
+    name: 真巴風特變身卡(82)
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600111
+    name: 真狂暴將軍變身卡(82)
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600112
+    name: 真巴風特變身卡(84)
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600113
+    name: 真狂暴將軍變身卡(84)
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600114
+    name: 焚焰真死亡騎士變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600115
+    name: 狂暴將軍變身卡(85)
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600116
+    name: 歐薇變身卡(85)
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600117
+    name: 紅色警衛(弓)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600118
+    name: 藍色警衛(弓)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600119
+    name: 綠色警衛(弓)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600120
+    name: 紅色警衛(槍)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600121
+    name: 藍色警衛(槍)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600122
+    name: 綠色警衛(槍)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600123
+    name: 王子變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600124
+    name: 公主變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600125
+    name: 騎士(男)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600126
+    name: 騎士(女)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600127
+    name: 精靈(男)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600128
+    name: 精靈(女)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600129
+    name: 法師(男)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600130
+    name: 法師(女)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600131
+    name: 黑暗精靈(男)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600132
+    name: 黑暗精靈(女)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600133
+    name: 龍騎士(男)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600134
+    name: 龍騎士(女)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600135
+    name: 幻術師(男)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600136
+    name: 幻術師(女)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600137
+    name: 戰士(男)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600138
+    name: 戰士(女)變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600139
+    name: 歐薇變身卡(82)
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600140
+    name: 鷹眼變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600141
+    name: 暗殺者變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600142
+    name: 暗黑射手變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600143
+    name: 艾莉絲變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600144
+    name: 大盾戰士變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600145
+    name: 惡靈刀手變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600146
+    name: 劍靈法師變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600147
+    name: 鋼爪刺客變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600148
+    name: 大甩刀戰士變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600149
+    name: 飄揚射手變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true
+  - item_id: 600150
+    name: 聖戰士變身卡
+    item_type: other
+    use_type: normal
+    material: paper
+    weight: 0
+    stackable: false
+    bless: 1
+    tradeable: true

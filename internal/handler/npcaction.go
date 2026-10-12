@@ -609,6 +609,12 @@ func TeleportPlayer(sess *net.Session, player *world.PlayerInfo, x, y int32, map
 }
 
 func teleportPlayer(sess *net.Session, player *world.PlayerInfo, x, y int32, mapID, heading int16, deps *Deps) {
+	teleportPlayerInShow(sess, player, x, y, mapID, heading, player.ShowID, deps)
+}
+
+// teleportPlayerInShow changes instance only after removing the character from
+// the old audience. GM recall/topc must enter the target's actual instance.
+func teleportPlayerInShow(sess *net.Session, player *world.PlayerInfo, x, y int32, mapID, heading int16, showID int32, deps *Deps) {
 	// 傳送時釋放血盟倉庫鎖定（Java: Teleportation.java 行 122-123）
 	if player.ClanID != 0 {
 		if clan := deps.World.Clans.GetClan(player.ClanID); clan != nil {
@@ -693,6 +699,22 @@ func teleportPlayer(sess *net.Session, player *world.PlayerInfo, x, y int32, map
 	}
 
 	// 2. 更新世界狀態位置（Java: moveVisibleObject + setLocation）
+	player.ShowID = showID
+	for _, pet := range ownedPets {
+		pet.ShowID = showID
+	}
+	for _, sum := range ownedSummons {
+		sum.ShowID = showID
+	}
+	for _, doll := range ownedDolls {
+		doll.ShowID = showID
+	}
+	if ownedFollower != nil {
+		ownedFollower.ShowID = showID
+	}
+	if ownedHierarch != nil {
+		ownedHierarch.ShowID = showID
+	}
 	deps.World.UpdatePosition(sess.ID, x, y, mapID, heading)
 
 	// 標記新格子不可通行（NPC 尋路用）
@@ -747,6 +769,9 @@ func teleportPlayer(sess *net.Session, player *world.PlayerInfo, x, y int32, map
 	// 4. 目的地附近玩家：顯示我 + 封鎖我的格子 + 填入 Known
 	newNearby := deps.World.GetNearbyPlayersInShow(x, y, mapID, sess.ID, player.ShowID)
 	for _, other := range newNearby {
+		if !other.CanSeePlayer(player) {
+			continue
+		}
 		SendPutObject(other.Session, player)
 	}
 
@@ -755,6 +780,9 @@ func teleportPlayer(sess *net.Session, player *world.PlayerInfo, x, y int32, map
 
 	// 6. 發送附近實體給自己 + 封鎖格子 + 填入 Known
 	for _, other := range newNearby {
+		if !player.CanSeePlayer(other) {
+			continue
+		}
 		SendPutObject(sess, other)
 		player.Known.Players[other.CharID] = world.KnownPos{X: other.X, Y: other.Y}
 	}

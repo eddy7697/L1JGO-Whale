@@ -18,12 +18,12 @@ const (
 )
 
 const (
-	loginOK              byte = 0x00
-	loginAlreadyExists   byte = 0x07
-	loginWrongPass       byte = 0x08 // REASON_ACCESS_FAILED — 一般登入失敗
-	loginAccountInUse    byte = 0x16
-	loginAutoNoAccount   byte = 155  // EVENT_ERROR_USER — BeanFun 自動登入帳號不存在
-	loginAutoWrongPass   byte = 149  // EVENT_ERROR_PASS — BeanFun 自動登入密碼錯誤
+	loginOK            byte = 0x00
+	loginAlreadyExists byte = 0x07
+	loginWrongPass     byte = 0x08 // REASON_ACCESS_FAILED — 一般登入失敗
+	loginAccountInUse  byte = 0x16
+	loginAutoNoAccount byte = 155 // EVENT_ERROR_USER — BeanFun 自動登入帳號不存在
+	loginAutoWrongPass byte = 149 // EVENT_ERROR_PASS — BeanFun 自動登入密碼錯誤
 )
 
 // HandleAuthBeanFun processes C_BeanFunLogin (opcode 210).
@@ -56,6 +56,13 @@ func handleLogin(sess *net.Session, r *packet.Reader, deps *Deps, auto bool) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	if banned, err := deps.AccountRepo.IsIPBanned(ctx, ip); err != nil || banned {
+		if err != nil {
+			deps.Log.Error("檢查 IP 封鎖失敗", zap.Error(err))
+		}
+		sendLoginResult(sess, loginWrongPass)
+		return
+	}
 
 	// 根據來源選擇錯誤碼（Java: auto=true → 155/149, auto=false → 8）
 	noAccountCode := loginWrongPass

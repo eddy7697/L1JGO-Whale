@@ -328,7 +328,7 @@ func (s *SkillSystem) GMClearAllStatuses(target *world.PlayerInfo) {
 		handler.SendParalysis(target.Session, handler.BindRemove)
 	}
 	if needInvisRemove {
-		handler.SendInvisible(target.Session, target.CharID, false)
+		handler.SendInvisible(target.Session, target.CharID, target.IsInvisible())
 		s.sendPlayerReappearToVisible(target)
 	}
 
@@ -474,11 +474,18 @@ func (s *SkillSystem) processSkill(req handler.SkillRequest) {
 		return
 	}
 
+	// Java checkTarget 排除 GM 隱身；在資源消耗前拒絕其他玩家鎖定。
+	if targetID != 0 && targetID != player.CharID {
+		if target := s.deps.World.GetByCharID(targetID); target != nil && target.IsGMInvisible() {
+			return
+		}
+	}
+
 	// --- 材料消耗檢查（Java: isItemConsume）---
 	if skill.ItemConsumeID > 0 && skill.ItemConsumeCount > 0 {
 		needItemID := int32(skill.ItemConsumeID)
 		slot := player.Inv.FindByItemID(needItemID)
-		if slot == nil || slot.Count < int32(skill.ItemConsumeCount) {
+		if !player.IsGM() && (slot == nil || slot.Count < int32(skill.ItemConsumeCount)) {
 			haveCount := int32(0)
 			if slot != nil {
 				haveCount = slot.Count
@@ -580,7 +587,7 @@ func (s *SkillSystem) processSkill(req handler.SkillRequest) {
 
 	if skillID != skillFinalBurn {
 		if mpConsume > 0 {
-			player.MP -= int32(mpConsume)
+			player.SpendMP(int32(mpConsume))
 			sendMpUpdate(sess, player)
 		}
 		if skill.HpConsume > 0 {
@@ -710,7 +717,7 @@ func isCastableWhileSilenced(skillID int32) bool {
 // consumeSkillResources 扣除 MP/HP/材料並設定冷卻。
 func (s *SkillSystem) consumeSkillResources(sess *net.Session, player *world.PlayerInfo, skill *data.SkillInfo) {
 	if skill.MpConsume > 0 {
-		player.MP -= int32(skill.MpConsume)
+		player.SpendMP(int32(skill.MpConsume))
 		sendMpUpdate(sess, player)
 	}
 	if skill.HpConsume > 0 {

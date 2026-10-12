@@ -246,9 +246,13 @@ func HandleEnterWorld(sess *net.Session, r *packet.Reader, deps *Deps) {
 	// --- 發送附近玩家（AOI）+ 封鎖格子 + 填入 Known ---
 	nearby := deps.World.GetNearbyPlayersInShow(ch.X, ch.Y, ch.MapID, sess.ID, player.ShowID)
 	for _, other := range nearby {
-		SendPutObject(sess, other)
-		player.Known.Players[other.CharID] = world.KnownPos{X: other.X, Y: other.Y}
-		SendPutObject(other.Session, player)
+		if player.CanSeePlayer(other) {
+			SendPutObject(sess, other)
+			player.Known.Players[other.CharID] = world.KnownPos{X: other.X, Y: other.Y}
+		}
+		if other.CanSeePlayer(player) {
+			SendPutObject(other.Session, player)
+		}
 	}
 
 	// --- 發送附近 NPC + 封鎖格子 + 填入 Known ---

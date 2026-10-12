@@ -1,17 +1,14 @@
 package handler
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/l1jgo/server/internal/data"
 	"github.com/l1jgo/server/internal/net"
 	"github.com/l1jgo/server/internal/net/packet"
-	"github.com/l1jgo/server/internal/persist"
 	"github.com/l1jgo/server/internal/world"
 	"go.uber.org/zap"
 )
@@ -20,6 +17,11 @@ import (
 // Returns true if the text was a GM command (consumed), false otherwise.
 func HandleGMCommand(sess *net.Session, player *world.PlayerInfo, text string, deps *Deps) bool {
 	if !strings.HasPrefix(text, ".") {
+		return false
+	}
+	// Java C_Chat only routes commands for GM/Monitor. Check here as well so
+	// another packet handler cannot accidentally bypass authorization.
+	if sess == nil || player == nil || !player.CanUseGMCommands() {
 		return false
 	}
 
@@ -31,10 +33,46 @@ func HandleGMCommand(sess *net.Session, player *world.PlayerInfo, text string, d
 
 	cmd := strings.ToLower(parts[0])
 	args := parts[1:]
+	spec := gmCommandIndex[cmd]
+	if spec == nil {
+		if cmd == "crazy" || cmd == "狂暴" {
+			gmMsg(sess, "Java 指令表雖列出 crazy，但參考專案缺少 L1Crazy 實作，無可對照的行為。")
+			return true
+		}
+		gmMsg(sess, "未知的 GM 指令：."+cmd+"，輸入 .help 查看指令。")
+		return true
+	}
+	if player.AccessLevel < spec.Level {
+		gmMsgf(sess, "你的權限不足以使用 .%s（需要 %d）。", spec.Name, spec.Level)
+		return true
+	}
+	cmd = spec.Name
+	if cmd == "r" {
+		if player.LastGMCommand == "" {
+			gmMsg(sess, "尚無可重複執行的指令。")
+			return true
+		}
+		last := player.LastGMCommand
+		if len(args) > 0 {
+			last = strings.Fields(last)[0] + " " + strings.Join(args, " ")
+		}
+		// Re-enter authorization: a previously allowed command may no longer be allowed.
+		return HandleGMCommand(sess, player, "."+last, deps)
+	}
+	player.LastGMCommand = strings.Join(append([]string{cmd}, args...), " ")
+	if deps != nil && deps.Log != nil {
+		deps.Log.Info("GM 指令", zap.Int32("char_id", player.CharID), zap.String("player", player.Name),
+			zap.Int16("access_level", player.AccessLevel), zap.String("command", cmd), zap.Strings("args", args))
+	}
+	if dispatchGMAdmin(sess, player, cmd, args, deps) || dispatchGMWorld(sess, player, cmd, args, deps) || dispatchGMCharacter(sess, player, cmd, args, deps) || dispatchGMPoints(sess, player, cmd, args, deps) {
+		return true
+	}
 
 	switch cmd {
+	case "cpshopreload":
+		gmCPShopReload(sess, deps)
 	case "help":
-		gmHelp(sess)
+		gmCommandHelp(sess, player, args)
 	case "level":
 		gmLevel(sess, player, args, deps)
 	case "hp":
@@ -55,7 +93,7 @@ func HandleGMCommand(sess *net.Session, player *world.PlayerInfo, text string, d
 		gmLawful(sess, player, args, deps)
 	case "spell":
 		gmSpell(sess, player, args, deps)
-	case "allskill":
+	case "addskill":
 		gmAllSkill(sess, player, deps)
 	case "spawn":
 		gmSpawn(sess, player, args, deps)
@@ -67,7 +105,7 @@ func HandleGMCommand(sess *net.Session, player *world.PlayerInfo, text string, d
 		gmSpeed(sess, player, args, deps)
 	case "who":
 		gmWho(sess, deps)
-	case "goto":
+	case "topc":
 		gmGoto(sess, player, args, deps)
 	case "recall":
 		gmRecall(sess, player, args, deps)
@@ -75,8 +113,6 @@ func HandleGMCommand(sess *net.Session, player *world.PlayerInfo, text string, d
 		gmExp(sess, player, args, deps)
 	case "class":
 		gmClass(sess, player, args, deps)
-	case "save":
-		gmSave(sess, player, deps)
 	case "rez", "resurrect":
 		gmRez(sess, player, args, deps)
 	case "ac":
@@ -95,12 +131,6 @@ func HandleGMCommand(sess *net.Session, player *world.PlayerInfo, text string, d
 		gmClearWall(sess, player, deps)
 	case "weather":
 		gmWeather(sess, player, args, deps)
-	case "buff":
-		gmBuff(sess, player, args, deps)
-	case "allbuff":
-		gmAllBuff(sess, player, deps)
-	case "clearbuff":
-		gmClearBuff(sess, player, deps)
 	case "poison":
 		gmPoison(sess, player, args, deps)
 	case "broken":
@@ -113,6 +143,8 @@ func HandleGMCommand(sess *net.Session, player *world.PlayerInfo, text string, d
 		gmClearTest(sess, player, deps)
 	case "invisible":
 		gmInvisible(sess, player, deps)
+	case "visible":
+		gmSetInvisible(sess, player, false, deps)
 	case "slottest":
 		gmSlotTest(sess, player, args)
 	case "slotexpand":
@@ -140,46 +172,6 @@ func gmMsgf(sess *net.Session, format string, a ...any) {
 
 // --- Commands ---
 
-func gmHelp(sess *net.Session) {
-	gmMsg(sess, "=== GM 指令列表 ===")
-	gmMsg(sess, ".level <等級>  — 設定等級(1-99)")
-	gmMsg(sess, ".hp <數值>  — 設定HP")
-	gmMsg(sess, ".mp <數值>  — 設定MP")
-	gmMsg(sess, ".heal  — 補滿HP/MP")
-	gmMsg(sess, ".stat <str|dex|con|wis|int|cha> <數值>  — 設定屬性")
-	gmMsg(sess, ".move <x> <y> [mapID]  — 傳送到座標")
-	gmMsg(sess, ".item <itemID|中文名> [數量] 或 .item <物品> +強化 [數量]  — 給予物品")
-	gmMsg(sess, ".gold <數量>  — 給予金幣")
-	gmMsg(sess, ".lawful <+/-數值> [角色名稱]  — 調整正義值")
-	gmMsg(sess, ".spell <skillID>  — 學習技能 (0=全部)")
-	gmMsg(sess, ".allskill  — 學習該職業所有技能")
-	gmMsg(sess, ".spawn <npcID> [數量]  — 召喚NPC")
-	gmMsg(sess, ".kill  — 殺死目標範圍內NPC")
-	gmMsg(sess, ".killall  — 殺死附近所有NPC")
-	gmMsg(sess, ".speed <0|1|2>  — 移動速度(0=正常,1=加速,2=勇水)")
-	gmMsg(sess, ".who  — 列出線上玩家")
-	gmMsg(sess, ".goto <玩家名>  — 傳送到玩家身邊")
-	gmMsg(sess, ".recall <玩家名>  — 召喚玩家到身邊")
-	gmMsg(sess, ".exp <數值>  — 給予經驗值")
-	gmMsg(sess, ".class <0-6>  — 變更職業外觀")
-	gmMsg(sess, ".rez [玩家名]  — 復活(自己或指定玩家)")
-	gmMsg(sess, ".poly <polyID> [玩家名]  — 變身(自己或指定玩家)")
-	gmMsg(sess, ".undopoly [玩家名]  — 解除變身")
-	gmMsg(sess, ".save  — 手動存檔")
-	gmMsg(sess, ".ac  — 顯示角色詳細資訊")
-	gmMsg(sess, ".loc [玩家名]  — 顯示自己或指定玩家的當下座標")
-	gmMsg(sess, ".wall [1|2|3]  — 測試牆壁: 1=隱形門 2=僅封包 3=可見門")
-	gmMsg(sess, ".clearwall  — 清除測試牆壁")
-	gmMsg(sess, ".buff <skillID>  — 強制套用buff(繞過驗證)")
-	gmMsg(sess, ".allbuff  — 套用所有常用buff")
-	gmMsg(sess, ".clearbuff  — 清除身上所有buff")
-	gmMsg(sess, ".poison [damage|silence|para]  — 施加中毒(預設沉默毒/卡司特毒)")
-	gmMsg(sess, ".broken [數值1-127]  — 將裝備武器耐久損壞值設為N(預設127極限損壞)")
-	gmMsg(sess, ".water [on|off]  — 切換海底地圖的水顯示(預設依地圖設定)")
-	gmMsg(sess, ".stresstest <npcID> [數量] [半徑]  — 壓力測試(預設10000隻,半徑50)")
-	gmMsg(sess, ".cleartest  — 清除所有壓力測試怪物")
-}
-
 func gmLevel(sess *net.Session, player *world.PlayerInfo, args []string, deps *Deps) {
 	if len(args) < 1 {
 		gmMsg(sess, "\\f3用法: .level <等級>")
@@ -202,7 +194,7 @@ func gmHP(sess *net.Session, player *world.PlayerInfo, args []string, deps *Deps
 		return
 	}
 	val, err := strconv.Atoi(args[0])
-	if err != nil || val < 0 {
+	if err != nil || val < 0 || int64(val) > 2147483647 {
 		gmMsg(sess, "\\f3無效的HP數值")
 		return
 	}
@@ -217,7 +209,7 @@ func gmMP(sess *net.Session, player *world.PlayerInfo, args []string, deps *Deps
 		return
 	}
 	val, err := strconv.Atoi(args[0])
-	if err != nil || val < 0 {
+	if err != nil || val < 0 || int64(val) > 2147483647 {
 		gmMsg(sess, "\\f3無效的MP數值")
 		return
 	}
@@ -278,6 +270,17 @@ func gmMove(sess *net.Session, player *world.PlayerInfo, args []string, deps *De
 			return
 		}
 	}
+	if x < 0 || x > 65535 || y < 0 || y > 65535 || mapID < 0 || mapID > 32767 {
+		gmMsg(sess, "座標或地圖編號超出範圍。")
+		return
+	}
+	if deps.MapData != nil {
+		info := deps.MapData.GetInfo(int16(mapID))
+		if info == nil || int32(x) < info.StartX || int32(x) > info.EndX || int32(y) < info.StartY || int32(y) > info.EndY {
+			gmMsg(sess, "目的地不在已知地圖範圍內。")
+			return
+		}
+	}
 
 	teleportPlayer(sess, player, int32(x), int32(y), int16(mapID), 5, deps)
 	gmMsgf(sess, "已傳送至 (%d, %d) 地圖 %d", x, y, mapID)
@@ -328,18 +331,46 @@ func gmItem(sess *net.Session, player *world.PlayerInfo, args []string, deps *De
 		return
 	}
 
-	if player.Inv.IsFull() {
+	stackable := itemInfo.Stackable || itemInfo.ItemID == world.AdenaItemID
+	existing := player.Inv.FindByItemID(itemInfo.ItemID)
+	if stackable && existing != nil && int64(existing.Count)+int64(count) > 2147483647 {
+		gmMsg(sess, "堆疊數量超出可儲存的範圍。")
+		return
+	}
+	neededSlots := 1
+	if stackable && existing != nil {
+		neededSlots = 0
+	} else if !stackable {
+		neededSlots = int(count)
+	}
+	if player.Inv.Size()+neededSlots > world.MaxInventorySize {
 		gmMsg(sess, "\\f3背包已滿")
 		return
 	}
+	before := gmInventoryItemCount(player, itemInfo.ItemID)
 
 	deps.GMCmd.GiveItem(sess, player, itemInfo.ItemID, count, enchant)
+	delivered := gmInventoryItemCount(player, itemInfo.ItemID) - before
+	if delivered <= 0 {
+		gmMsg(sess, "物品未加入背包，請確認負重與容量。")
+		return
+	}
 
 	name := itemInfo.Name
 	if enchant > 0 {
 		name = fmt.Sprintf("+%d %s", enchant, name)
 	}
-	gmMsgf(sess, "已給予 %s x%d", name, count)
+	gmMsgf(sess, "已給予 %s x%d", name, delivered)
+}
+
+func gmInventoryItemCount(p *world.PlayerInfo, id int32) int64 {
+	var count int64
+	for _, item := range p.Inv.Items {
+		if item.ItemID == id {
+			count += int64(item.Count)
+		}
+	}
+	return count
 }
 
 func parseGMItemArgs(args []string) (itemArg string, count int32, enchant int8, enchantSpecified bool, errMsg string) {
@@ -425,7 +456,7 @@ func isGMItemPositiveInt(s string) bool {
 		return false
 	}
 	v, _ := strconv.Atoi(s)
-	return v > 0
+	return v > 0 && int64(v) <= 2147483647
 }
 
 func isGMItemPlainInt(s string) bool {
@@ -440,6 +471,9 @@ func isGMItemPlainInt(s string) bool {
 // 數字 → 直接 Get(id)；非數字 → FindByName 完全相符優先，僅單筆時回傳。
 func resolveItemArg(deps *Deps, arg string) *data.ItemInfo {
 	if id, err := strconv.Atoi(arg); err == nil {
+		if id <= 0 || int64(id) > 2147483647 {
+			return nil
+		}
 		return deps.Items.Get(int32(id))
 	}
 	results := deps.Items.FindByName(arg)
@@ -455,12 +489,17 @@ func gmGold(sess *net.Session, player *world.PlayerInfo, args []string, deps *De
 		return
 	}
 	amount, err := strconv.Atoi(args[0])
-	if err != nil || amount <= 0 {
+	if err != nil || amount <= 0 || int64(amount)+int64(player.Inv.GetAdena()) > 2147483647 {
 		gmMsg(sess, "\\f3無效的金幣數量")
 		return
 	}
 
+	before := player.Inv.GetAdena()
 	deps.GMCmd.GiveGold(sess, player, int32(amount))
+	if player.Inv.GetAdena() <= before {
+		gmMsg(sess, "金幣未加入背包，請確認容量。")
+		return
+	}
 
 	gmMsgf(sess, "已給予 %d 金幣 (持有: %d)", amount, player.Inv.GetAdena())
 }
@@ -539,6 +578,7 @@ func gmSpell(sess *net.Session, player *world.PlayerInfo, args []string, deps *D
 			}
 		}
 		// Send full skill list
+		player.Dirty = true
 		sendAllSpells(sess, player, deps)
 		gmMsgf(sess, "已學會全部技能 (新增 %d 個)", count)
 		return
@@ -559,6 +599,7 @@ func gmSpell(sess *net.Session, player *world.PlayerInfo, args []string, deps *D
 	}
 
 	player.KnownSpells = append(player.KnownSpells, int32(skillID))
+	player.Dirty = true
 
 	// Send updated skill list
 	sendAllSpells(sess, player, deps)
@@ -579,33 +620,10 @@ func sendAllSpells(sess *net.Session, player *world.PlayerInfo, deps *Deps) {
 	sendSkillList(sess, spells)
 }
 
-// classSkillLevels maps ClassType → SkillLevel ranges for that class.
-// L1J skill_level groups:
-//
-//	1-10  = Wizard    11-12 = Royal(Prince)
-//	13-14 = Dark Elf  15    = Knight
-//	17-22 = Elf       23-25 = Dragon Knight
-//	26-28 = Illusionist
-var classSkillLevels = map[int16][]int{
-	0: {11, 12},                        // Prince/Royal
-	1: {15},                            // Knight
-	2: {17, 18, 19, 20, 21, 22},        // Elf
-	3: {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, // Wizard
-	4: {13, 14},                        // Dark Elf
-	5: {23, 24, 25},                    // Dragon Knight
-	6: {26, 27, 28},                    // Illusionist
-}
-
 func gmAllSkill(sess *net.Session, player *world.PlayerInfo, deps *Deps) {
-	levels, ok := classSkillLevels[player.ClassType]
-	if !ok {
+	if player.ClassType < 0 || player.ClassType > 6 || deps.Skills == nil {
 		gmMsg(sess, "\\f3未知的職業類型")
 		return
-	}
-
-	levelSet := make(map[int]bool, len(levels))
-	for _, lv := range levels {
-		levelSet[lv] = true
 	}
 
 	// Build set of already known spells
@@ -619,7 +637,7 @@ func gmAllSkill(sess *net.Session, player *world.PlayerInfo, deps *Deps) {
 		if sk.Name == "none" || sk.Name == "" {
 			continue
 		}
-		if !levelSet[sk.SkillLevel] {
+		if !gmClassCanLearnSkill(player.ClassType, sk.SkillID) {
 			continue
 		}
 		if knownSet[sk.SkillID] {
@@ -630,127 +648,86 @@ func gmAllSkill(sess *net.Session, player *world.PlayerInfo, deps *Deps) {
 		count++
 	}
 
+	player.Dirty = true
 	sendAllSpells(sess, player, deps)
+	BroadcastToPlayers(deps.World.GetNearbyPlayersInShow(player.X, player.Y, player.MapID, 0, player.ShowID), BuildSkillEffect(player.CharID, 227))
 
 	classNames := []string{"王族", "騎士", "精靈", "法師", "黑暗精靈", "龍騎士", "幻術師"}
 	gmMsgf(sess, "已學會 %s 全部技能 (新增 %d 個)", classNames[player.ClassType], count)
 }
 
+// Java L1AddSkill includes basic magic for royal/knight/elf/dark elf.
+func gmClassCanLearnSkill(class int16, id int32) bool {
+	switch class {
+	case 0:
+		return id >= 1 && id <= 16 || id >= 113 && id <= 120
+	case 1:
+		return id >= 1 && id <= 8 || id >= 87 && id <= 91
+	case 2:
+		return id >= 1 && id <= 48 || id >= 129 && id <= 176
+	case 3:
+		return id >= 1 && id <= 80
+	case 4:
+		return id >= 1 && id <= 16 || id >= 97 && id <= 111
+	case 5:
+		return id >= 181 && id <= 195
+	case 6:
+		return id >= 201 && id <= 220
+	default:
+		return false
+	}
+}
+
 func gmSpawn(sess *net.Session, player *world.PlayerInfo, args []string, deps *Deps) {
-	if len(args) < 1 {
-		gmMsg(sess, "\\f3用法: .spawn <npcID> [數量]")
+	if len(args) < 1 || len(args) > 3 || deps.Npcs == nil {
+		gmMsg(sess, "用法：.spawn <NPC ID|名稱> [數量 1-500] [範圍 0-100]")
 		return
 	}
-	npcID, err := strconv.Atoi(args[0])
-	if err != nil {
-		gmMsg(sess, "\\f3無效的NPC ID")
-		return
+	var npcID int32
+	id, err := strconv.ParseInt(args[0], 10, 32)
+	if err == nil {
+		npcID = int32(id)
+	} else if npc := deps.Npcs.FindByNameWithoutSpace(args[0]); npc != nil {
+		npcID = npc.NpcID
 	}
-	count := 1
-	if len(args) >= 2 {
-		c, err := strconv.Atoi(args[1])
-		if err == nil && c > 0 && c <= 50 {
-			count = c
-		}
-	}
-
-	if deps.Npcs == nil {
-		gmMsg(sess, "\\f3NPC模板未載入")
-		return
-	}
-
-	tmpl := deps.Npcs.Get(int32(npcID))
+	tmpl := deps.Npcs.Get(npcID)
 	if tmpl == nil {
-		gmMsgf(sess, "\\f3找不到NPC模板: %d", npcID)
+		gmMsg(sess, "找不到符合條件的 NPC。")
 		return
 	}
-
-	for i := 0; i < count; i++ {
-		// Spawn near player with slight random offset
-		x := player.X + int32(rand.Intn(5)) - 2
-		y := player.Y + int32(rand.Intn(5)) - 2
-
-		atkSpeed := tmpl.AtkSpeed
-		moveSpeed := tmpl.PassiveSpeed
-		if deps.SprTable != nil {
-			gfx := int(tmpl.GfxID)
-			if tmpl.AtkSpeed != 0 {
-				if v := deps.SprTable.GetAttackSpeed(gfx, data.ActAttack); v > 0 {
-					atkSpeed = int16(v)
-				}
-			}
-			if tmpl.PassiveSpeed != 0 {
-				if v := deps.SprTable.GetMoveSpeed(gfx, data.ActWalk); v > 0 {
-					moveSpeed = int16(v)
-				}
-			}
-		}
-
-		npc := &world.NpcInfo{
-			ID:                world.NextNpcID(),
-			NpcID:             tmpl.NpcID,
-			Impl:              tmpl.Impl,
-			GfxID:             tmpl.GfxID,
-			Name:              tmpl.Name,
-			NameID:            tmpl.NameID,
-			Level:             tmpl.Level,
-			X:                 x,
-			Y:                 y,
-			MapID:             player.MapID,
-			Heading:           int16(rand.Intn(8)),
-			HP:                tmpl.HP,
-			MaxHP:             tmpl.HP,
-			MP:                tmpl.MP,
-			MaxMP:             tmpl.MP,
-			AC:                tmpl.AC,
-			STR:               tmpl.STR,
-			DEX:               tmpl.DEX,
-			Intel:             tmpl.INT,
-			Exp:               tmpl.Exp,
-			Lawful:            tmpl.Lawful,
-			Size:              tmpl.Size,
-			MR:                tmpl.MR,
-			Undead:            tmpl.Undead,
-			UndeadType:        tmpl.UndeadType,
-			TurnUndeadable:    tmpl.EffectiveTurnUndeadable(),
-			TurnUndeadableSet: true,
-			Hard:              tmpl.Hard,
-			Agro:              tmpl.Agro,
-			Family:            tmpl.Family,
-			AgroFamily:        tmpl.AgroFamily,
-			AtkDmg:            int32(tmpl.Level) + int32(tmpl.STR)/3,
-			Ranged:            tmpl.Ranged,
-			AtkSpeed:          atkSpeed,
-			AtkMagicSpeed:     tmpl.AtkMagicSpeed,
-			SubMagicSpeed:     tmpl.SubMagicSpeed,
-			MoveSpeed:         moveSpeed,
-			PoisonAtk:         tmpl.PoisonAtk,
-			FireRes:           tmpl.FireRes,
-			WaterRes:          tmpl.WaterRes,
-			WindRes:           tmpl.WindRes,
-			EarthRes:          tmpl.EarthRes,
-			WeakAttr:          tmpl.WeakAttr,
-			WeaponRequired:    tmpl.WeaponRequired,
-			SpawnX:            x,
-			SpawnY:            y,
-			SpawnMapID:        player.MapID,
-			RespawnDelay:      0, // GM-spawned: no respawn
-		}
-		deps.World.AddNpc(npc)
-
-		// Broadcast to nearby players
-		nearby := deps.World.GetNearbyPlayersAt(npc.X, npc.Y, npc.MapID)
-		for _, viewer := range nearby {
-			SendNpcPack(viewer.Session, npc)
+	count, radius := 1, 0
+	if len(args) >= 2 {
+		count, err = strconv.Atoi(args[1])
+		if err != nil || count < 1 || count > 500 {
+			gmMsg(sess, "數量必須介於 1-500。")
+			return
 		}
 	}
-
-	gmMsgf(sess, "已召喚 %s (ID:%d) x%d", tmpl.Name, npcID, count)
+	if len(args) >= 3 {
+		radius, err = strconv.Atoi(args[2])
+		if err != nil || radius < 0 || radius > 100 {
+			gmMsg(sess, "範圍必須介於 0-100。")
+			return
+		}
+	}
+	spawner, ok := deps.GMCmd.(interface {
+		SpawnGMNPC(*world.PlayerInfo, int32, int, int) (int, error)
+	})
+	if !ok {
+		gmMsg(sess, "NPC 生成系統未初始化。")
+		return
+	}
+	spawned, err := spawner.SpawnGMNPC(player, npcID, count, radius)
+	if err != nil {
+		gmMsgf(sess, "召怪失敗：%v", err)
+		return
+	}
+	gmMsgf(sess, "已召喚 %s (ID:%d) x%d，範圍:%d", tmpl.Name, npcID, spawned, radius)
 }
 
 func gmKill(sess *net.Session, player *world.PlayerInfo, args []string, deps *Deps) {
 	// Kill nearby NPCs within 3 tiles
-	nearby := deps.World.GetNearbyNpcs(player.X, player.Y, player.MapID)
+	nearby := deps.World.GetNearbyNpcsInShow(player.X, player.Y, player.MapID, player.ShowID)
 	killed := 0
 	for _, npc := range nearby {
 		if npc.Dead {
@@ -772,7 +749,7 @@ func gmKill(sess *net.Session, player *world.PlayerInfo, args []string, deps *De
 			npc.HP = 0
 			npc.Dead = true
 			deps.World.NpcDied(npc)
-			viewers := deps.World.GetNearbyPlayersAt(npc.X, npc.Y, npc.MapID)
+			viewers := deps.World.GetNearbyPlayersInShow(npc.X, npc.Y, npc.MapID, 0, npc.ShowID)
 			for _, v := range viewers {
 				sendActionGfx(v.Session, npc.ID, 8)
 				SendNpcDeadPack(v.Session, npc)
@@ -788,7 +765,7 @@ func gmKill(sess *net.Session, player *world.PlayerInfo, args []string, deps *De
 }
 
 func gmKillAll(sess *net.Session, player *world.PlayerInfo, deps *Deps) {
-	nearby := deps.World.GetNearbyNpcs(player.X, player.Y, player.MapID)
+	nearby := deps.World.GetNearbyNpcsInShow(player.X, player.Y, player.MapID, player.ShowID)
 	killed := 0
 	for _, npc := range nearby {
 		if npc.Dead {
@@ -797,7 +774,7 @@ func gmKillAll(sess *net.Session, player *world.PlayerInfo, deps *Deps) {
 		npc.HP = 0
 		npc.Dead = true
 		deps.World.NpcDied(npc)
-		viewers := deps.World.GetNearbyPlayersAt(npc.X, npc.Y, npc.MapID)
+		viewers := deps.World.GetNearbyPlayersInShow(npc.X, npc.Y, npc.MapID, 0, npc.ShowID)
 		for _, v := range viewers {
 			sendActionGfx(v.Session, npc.ID, 8)
 			SendNpcDeadPack(v.Session, npc)
@@ -827,6 +804,11 @@ func gmSpeed(sess *net.Session, player *world.PlayerInfo, args []string, deps *D
 	player.BraveSpeed = 0
 	player.HasteTicks = 0
 	player.BraveTicks = 0
+	clearThird := player.HasBuff(SkillStatusThirdSpeed)
+	if clearThird {
+		player.RemoveBuff(SkillStatusThirdSpeed)
+		sess.Send(BuildLiquor(player.CharID, 0))
+	}
 
 	const dur = 3600       // 封包中的秒數
 	const ticks = 3600 * 5 // 內部 tick 數（1小時）
@@ -841,6 +823,7 @@ func gmSpeed(sess *net.Session, player *world.PlayerInfo, args []string, deps *D
 		player.MoveSpeed = 1
 		player.HasteTicks = ticks
 		sendSpeedPacket(sess, player.CharID, 1, dur)
+		sendBravePacket(sess, player.CharID, 0, 0)
 	case 2:
 		// 二段加速（移動 + 勇敢藥水）
 		player.MoveSpeed = 1
@@ -868,13 +851,15 @@ func gmSpeed(sess *net.Session, player *world.PlayerInfo, args []string, deps *D
 	}
 
 	// 廣播給附近玩家
-	nearby := deps.World.GetNearbyPlayers(player.X, player.Y, player.MapID, sess.ID)
+	nearby := deps.World.GetNearbyPlayersInShow(player.X, player.Y, player.MapID, sess.ID, player.ShowID)
 	for _, other := range nearby {
+		if !other.CanSeePlayer(player) {
+			continue
+		}
 		sendSpeedPacket(other.Session, player.CharID, player.MoveSpeed, 0)
-		if player.BraveSpeed > 0 {
-			sendBravePacket(other.Session, player.CharID, player.BraveSpeed, 0)
-		} else if spd == 0 {
-			sendBravePacket(other.Session, player.CharID, 0, 0)
+		sendBravePacket(other.Session, player.CharID, player.BraveSpeed, 0)
+		if clearThird {
+			other.Session.Send(BuildLiquor(player.CharID, 0))
 		}
 	}
 
@@ -905,7 +890,7 @@ func gmGoto(sess *net.Session, player *world.PlayerInfo, args []string, deps *De
 		return
 	}
 
-	teleportPlayer(sess, player, target.X, target.Y, target.MapID, 5, deps)
+	teleportPlayerInShow(sess, player, target.X, target.Y, target.MapID, 5, target.ShowID, deps)
 	gmMsgf(sess, "已傳送至 %s 身邊 (%d,%d) 地圖:%d", target.Name, target.X, target.Y, target.MapID)
 }
 
@@ -920,7 +905,7 @@ func gmRecall(sess *net.Session, player *world.PlayerInfo, args []string, deps *
 		return
 	}
 
-	teleportPlayer(target.Session, target, player.X, player.Y, player.MapID, 5, deps)
+	teleportPlayerInShow(target.Session, target, player.X, player.Y, player.MapID, 5, player.ShowID, deps)
 	gmMsgf(sess, "已召喚 %s 到身邊", target.Name)
 	gmMsg(target.Session, "你被GM召喚了")
 }
@@ -931,11 +916,15 @@ func gmExp(sess *net.Session, player *world.PlayerInfo, args []string, deps *Dep
 		return
 	}
 	val, err := strconv.Atoi(args[0])
-	if err != nil || val <= 0 {
+	if err != nil || val <= 0 || int64(val) > 2147483647 {
 		gmMsg(sess, "\\f3無效的經驗值")
 		return
 	}
 
+	if int64(player.Exp)+int64(val) > 2147483647 {
+		gmMsg(sess, "經驗值加總超出角色可儲存的範圍。")
+		return
+	}
 	deps.Combat.AddExp(player, int32(val))
 	gmMsgf(sess, "已獲得 %d 經驗值 (Lv.%d Exp:%d)", val, player.Level, player.Exp)
 }
@@ -952,108 +941,20 @@ func gmClass(sess *net.Session, player *world.PlayerInfo, args []string, deps *D
 		return
 	}
 
-	// Update ClassType and ClassID (GFX) — matches Java initial class GFX IDs
-	player.ClassType = int16(classType)
-	switch classType {
-	case 0: // Prince/Princess
-		if player.ClassID >= 100 { // female range
-			player.ClassID = 100
-		} else {
-			player.ClassID = 0
-		}
-	case 1: // Knight
-		if player.ClassID >= 100 {
-			player.ClassID = 161
-		} else {
-			player.ClassID = 61
-		}
-	case 2: // Elf
-		if player.ClassID >= 100 {
-			player.ClassID = 238
-		} else {
-			player.ClassID = 138
-		}
-	case 3: // Wizard
-		if player.ClassID >= 100 {
-			player.ClassID = 234
-		} else {
-			player.ClassID = 134
-		}
-	case 4: // Dark Elf
-		if player.ClassID >= 100 {
-			player.ClassID = 237
-		} else {
-			player.ClassID = 137
-		}
-	case 5: // Dragon Knight
-		if player.ClassID >= 100 {
-			player.ClassID = 6368
-		} else {
-			player.ClassID = 6275
-		}
-	case 6: // Illusionist
-		if player.ClassID >= 100 {
-			player.ClassID = 6371
-		} else {
-			player.ClassID = 6278
-		}
+	if deps.CharRepo == nil {
+		gmMsg(sess, "角色資料庫未初始化，未變更職業。")
+		return
 	}
-
-	// Send visual refresh
+	if err := changeGMClass(player, int16(classType), deps, deps.CharRepo); err != nil {
+		gmMsgf(sess, "職業變更失敗：%v", err)
+		return
+	}
 	sendPlayerStatus(sess, player)
 	broadcastVisualUpdate(sess, player, deps)
-
-	// Re-send own charpack to update appearance
-	SendPutObject(sess, player)
+	sendOwnCharPackPlayer(sess, player)
 
 	names := []string{"王族", "騎士", "精靈", "法師", "黑暗精靈", "龍騎士", "幻術師"}
 	gmMsgf(sess, "職業已變更為: %s", names[classType])
-}
-
-func gmSave(sess *net.Session, player *world.PlayerInfo, deps *Deps) {
-	gmMsg(sess, "正在存檔...")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	row := &persist.CharacterRow{
-		Name:       player.Name,
-		Level:      player.Level,
-		Exp:        int64(player.Exp),
-		HP:         player.HP,
-		MP:         player.MP,
-		MaxHP:      player.MaxHP,
-		MaxMP:      player.MaxMP,
-		X:          player.X,
-		Y:          player.Y,
-		MapID:      player.MapID,
-		Heading:    player.Heading,
-		Lawful:     player.Lawful,
-		Str:        player.Str,
-		Dex:        player.Dex,
-		Con:        player.Con,
-		Wis:        player.Wis,
-		Cha:        player.Cha,
-		Intel:      player.Intel,
-		BonusStats: player.BonusStats,
-		ClanID:     player.ClanID,
-		ClanName:   player.ClanName,
-		ClanRank:   player.ClanRank,
-		Title:      player.Title,
-	}
-	if err := deps.CharRepo.SaveCharacter(ctx, row); err != nil {
-		gmMsgf(sess, "\\f3存檔失敗: %v", err)
-		return
-	}
-	if err := deps.ItemRepo.SaveInventory(ctx, player.CharID, player.Inv, &player.Equip); err != nil {
-		gmMsgf(sess, "\\f3物品存檔失敗: %v", err)
-		return
-	}
-	if err := deps.CharRepo.SaveKnownSpells(ctx, player.Name, player.KnownSpells); err != nil {
-		deps.Log.Error("儲存魔法書失敗", zap.Error(err))
-	}
-
-	gmMsg(sess, "存檔完成")
 }
 
 func gmRez(sess *net.Session, player *world.PlayerInfo, args []string, deps *Deps) {
@@ -1076,17 +977,24 @@ func gmRez(sess *net.Session, player *world.PlayerInfo, args []string, deps *Dep
 	target.Dead = false
 	target.HP = target.MaxHP
 	target.MP = target.MaxMP
+	target.Dirty = true
+	target.LastMoveTime = 0
+	if deps.Death != nil {
+		deps.Death.ClearPlayerTomb(target)
+	}
+	deps.World.OccupyEntity(target.MapID, target.X, target.Y, target.CharID)
 
 	sendHpUpdate(target.Session, target)
 	sendMpUpdate(target.Session, target)
 	sendPlayerStatus(target.Session, target)
 
-	// Refresh position
-	SendPutObject(target.Session, target)
-
-	nearby := deps.World.GetNearbyPlayersAt(target.X, target.Y, target.MapID)
+	resData := BuildResurrection(target, player.CharID, 0)
+	target.Session.Send(resData)
+	sendOwnCharPackPlayer(target.Session, target)
+	nearby := deps.World.GetNearbyPlayersInShow(target.X, target.Y, target.MapID, target.SessionID, target.ShowID)
 	for _, viewer := range nearby {
-		if viewer.SessionID != target.SessionID {
+		if viewer.CanSeePlayer(target) {
+			viewer.Session.Send(resData)
 			SendPutObject(viewer.Session, target)
 		}
 	}
@@ -1129,6 +1037,12 @@ func calcBaseHPMP(classType, level, con, wis int16, deps *Deps) (int32, int32) {
 }
 
 func gmPoly(sess *net.Session, player *world.PlayerInfo, args []string, deps *Deps) {
+	// Java orders the target before the ID; retain the existing Go ID-first form.
+	if len(args) == 2 {
+		if _, err := strconv.Atoi(args[0]); err != nil {
+			args = []string{args[1], args[0]}
+		}
+	}
 	if len(args) < 1 {
 		gmMsg(sess, "\\f3用法: .poly <polyID> [玩家名]")
 		return
@@ -1140,7 +1054,7 @@ func gmPoly(sess *net.Session, player *world.PlayerInfo, args []string, deps *De
 	}
 
 	target := player
-	if len(args) >= 2 {
+	if len(args) >= 2 && !strings.EqualFold(args[1], "me") {
 		target = deps.World.GetByName(args[1])
 		if target == nil {
 			gmMsgf(sess, "\\f3找不到玩家: %s", args[1])
@@ -1197,8 +1111,11 @@ func gmPolyGfx(sess *net.Session, player *world.PlayerInfo, args []string, deps 
 	target.PolyID = 0 // no equip restrictions for raw GFX change
 
 	// Broadcast S_ChangeShape to self + nearby
-	nearby := deps.World.GetNearbyPlayersAt(target.X, target.Y, target.MapID)
+	nearby := deps.World.GetNearbyPlayersInShow(target.X, target.Y, target.MapID, 0, target.ShowID)
 	for _, viewer := range nearby {
+		if !viewer.CanSeePlayer(target) {
+			continue
+		}
 		sendChangeShape(viewer.Session, target.CharID, int32(gfxID), target.CurrentWeapon)
 	}
 
@@ -1591,60 +1508,6 @@ func gmClearTest(sess *net.Session, player *world.PlayerInfo, deps *Deps) {
 	gmMsgf(sess, "已清除 %d 隻測試怪物", removed)
 }
 
-// gmBuff 強制套用指定 buff（繞過已學/MP/材料驗證）。
-// 用法: .buff <skillID>
-func gmBuff(sess *net.Session, player *world.PlayerInfo, args []string, deps *Deps) {
-	if len(args) < 1 {
-		gmMsg(sess, "\\f3用法: .buff <skillID>")
-		return
-	}
-	skillID, err := strconv.Atoi(args[0])
-	if err != nil {
-		gmMsg(sess, "\\f3技能ID必須是數字")
-		return
-	}
-	if deps.Skill == nil {
-		gmMsg(sess, "\\f3技能系統未初始化")
-		return
-	}
-	ok := deps.Skill.ApplyGMBuff(player, int32(skillID))
-	if !ok {
-		gmMsgf(sess, "\\f3未知的技能ID: %d", skillID)
-		return
-	}
-	skill := deps.Skills.Get(int32(skillID))
-	name := fmt.Sprintf("%d", skillID)
-	if skill != nil {
-		name = skill.Name
-	}
-	gmMsgf(sess, "\\f=已套用 buff: %s (ID:%d)", name, skillID)
-}
-
-// gmAllBuff 套用所有常用 buff。
-// 用法: .allbuff
-func gmAllBuff(sess *net.Session, player *world.PlayerInfo, deps *Deps) {
-	if deps.Skill == nil {
-		gmMsg(sess, "\\f3技能系統未初始化")
-		return
-	}
-	// 常用 buff 列表
-	buffList := []int32{
-		3,  // 保護罩 Shield (AC-2)
-		8,  // 神聖武器 Holy Weapon (dmg+1, hit+1)
-		42, // 體魄強健術 Physical Enchant STR (STR+5)
-		43, // 加速術 Haste (移動加速)
-		32, // 冥想術 Meditation (MPR+5)
-		14, // 負重強化 Decrease Weight (負重+180)
-	}
-	count := 0
-	for _, sid := range buffList {
-		if deps.Skill.ApplyGMBuff(player, sid) {
-			count++
-		}
-	}
-	gmMsgf(sess, "\\f=已套用 %d 個常用 buff", count)
-}
-
 // gmClearBuff 清除身上所有 buff（含不可取消的覺醒類）。
 // 用法: .clearbuff
 func gmClearBuff(sess *net.Session, player *world.PlayerInfo, deps *Deps) {
@@ -1934,24 +1797,37 @@ func gmSlotExpand2(sess *net.Session, args []string) {
 	gmMsgf(sess, "已發送 S_EquipmentWindow(0x43, %d, %d) — writeD 格式", t, v)
 }
 
-// gmInvisible 切換 GM 隱身狀態（不受 Cancellation 影響的純旗標隱身）。
+// gmInvisible follows Java L1Invisible: repeated commands remain invisible.
 func gmInvisible(sess *net.Session, player *world.PlayerInfo, deps *Deps) {
-	player.Invisible = !player.Invisible
-	SendInvisible(sess, player.CharID, player.Invisible)
+	gmSetInvisible(sess, player, true, deps)
+}
+
+func gmSetInvisible(sess *net.Session, player *world.PlayerInfo, invisible bool, deps *Deps) {
+	player.GMInvisible = invisible
+	SendInvisible(sess, player.CharID, player.IsInvisible())
 
 	ws := deps.World
-	nearby := ws.GetNearbyPlayers(player.X, player.Y, player.MapID, sess.ID)
+	nearby := ws.GetNearbyPlayersInShow(player.X, player.Y, player.MapID, sess.ID, player.ShowID)
 
-	if player.Invisible {
+	if invisible {
 		// 隱身：周圍玩家移除我的角色顯示
 		for _, other := range nearby {
 			SendRemoveObject(other.Session, player.CharID)
+			if other.Known != nil {
+				delete(other.Known.Players, player.CharID)
+			}
 		}
 		gmMsg(sess, "\\f2GM 隱身已開啟。")
 	} else {
 		// 解除隱身：周圍玩家重新顯示我
 		for _, other := range nearby {
-			SendPutObject(other.Session, player)
+			if other.CanSeePlayer(player) {
+				SendPutObject(other.Session, player)
+				if other.Known == nil {
+					other.Known = world.NewKnownEntities()
+				}
+				other.Known.Players[player.CharID] = world.KnownPos{X: player.X, Y: player.Y}
+			}
 		}
 		gmMsg(sess, "\\f2GM 隱身已關閉。")
 	}

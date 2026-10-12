@@ -155,7 +155,7 @@ func skillCanRevealSinkHiddenLikeJava(skillID int32) bool {
 }
 
 func npcShouldAppearForPlayerLikeJava(npc *world.NpcInfo, p *world.PlayerInfo) bool {
-	if npc == nil || p == nil || p.Invisible || p.MapID != npc.MapID {
+	if npc == nil || p == nil || p.IsInvisible() || p.MapID != npc.MapID {
 		return false
 	}
 	switch npc.HiddenStatus {
@@ -183,7 +183,7 @@ func npcAppearOnGroundLikeJava(npc *world.NpcInfo, ws *world.State, p *world.Pla
 			action = 11
 		}
 	}
-	if p.AccessLevel < 200 {
+	if !p.IsGM() {
 		npc.AggroTarget = p.SessionID
 	}
 

@@ -54,7 +54,7 @@ func (s *SkillSystem) executeSelfSkill(sess *net.Session, player *world.PlayerIn
 				s.removeBuffAndRevert(tgt, 60)
 				s.removeBuffAndRevert(tgt, 97)
 				// 通知被揭示者：你不再隱身
-				handler.SendInvisible(tgt.Session, tgt.CharID, false)
+				handler.SendInvisible(tgt.Session, tgt.CharID, tgt.IsInvisible())
 				// 向附近玩家廣播角色出現（讓被揭示者重新顯示在其他人畫面上）
 				nearbyOfTarget := s.deps.World.GetNearbyPlayersInShow(tgt.X, tgt.Y, tgt.MapID, 0, tgt.ShowID)
 				for _, viewer := range nearbyOfTarget {
@@ -68,7 +68,7 @@ func (s *SkillSystem) executeSelfSkill(sess *net.Session, player *world.PlayerIn
 		if !isGMInvisible(player) && (player.HasBuff(60) || player.HasBuff(97)) {
 			s.removeBuffAndRevert(player, 60)
 			s.removeBuffAndRevert(player, 97)
-			handler.SendInvisible(sess, player.CharID, false)
+			handler.SendInvisible(sess, player.CharID, player.IsInvisible())
 		}
 		if s.deps.Trap != nil {
 			s.deps.Trap.DetectTraps(sess, player)

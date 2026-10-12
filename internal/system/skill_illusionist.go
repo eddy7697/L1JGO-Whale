@@ -25,7 +25,7 @@ func applyMindBreakMPDrain(target *world.PlayerInfo) {
 	if target == nil {
 		return
 	}
-	target.MP -= 5
+	target.SpendMP(5)
 	if target.MP < 0 {
 		target.MP = 0
 	}
@@ -72,7 +72,7 @@ func (s *SkillSystem) revealInvisibleTarget(target *world.PlayerInfo) {
 	s.removeBuffAndRevert(target, 60)
 	s.removeBuffAndRevert(target, 97)
 	target.Invisible = false
-	handler.SendInvisible(target.Session, target.CharID, false)
+	handler.SendInvisible(target.Session, target.CharID, target.IsInvisible())
 
 	s.sendPlayerReappearToVisible(target)
 }
@@ -194,7 +194,7 @@ func (s *SkillSystem) applyJoyOfPainBacklash(attacker, target *world.PlayerInfo,
 	if attacker.HP-damage <= 0 {
 		attacker.HP = 1
 	} else {
-		attacker.HP -= damage
+		attacker.ApplyDamage(damage)
 	}
 	attacker.Dirty = true
 	s.removeBuffAndRevert(attacker, skillJoyOfPain)

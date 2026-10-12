@@ -79,7 +79,15 @@ type PlayerInfo struct {
 	Food                      int16 // satiety 0-225 (225=full); sent in S_STATUS
 	FoodFullTime              int64 // 飽食度達 225 的時刻（Unix 秒）；-1=未滿（Java: _h_time，生存吶喊用）
 	CookingID                 int32 // 當前料理 buff 的 skill ID（0=無）；同時只能有一個
-	AccessLevel               int16 // GM 等級（0=一般玩家, ≥200=GM）
+	AccessLevel               int16 // Java 身分：0=一般玩家、100=監察員、200=GM
+	GMModeOff                 bool  // .gm 暫時關閉 GM 遊戲特權；不變更指令權限
+	GMInvisible               bool  // GM 隱身獨立於隱身術，不受消除魔法或攻擊解除
+	GMHPBar                   bool
+	GMShowTraps               bool
+	GMFindInvis               bool
+	GMFavorite                string
+	GMSpawnID                 int32
+	LastGMCommand             string
 	PKCount                   int32 // PK kill count
 	KillCount                 int32 // PvP 擊殺累計（排名用）
 	DeathCount                int32 // PvP 死亡累計（排名用）
@@ -488,6 +496,8 @@ type KnownEntities struct {
 	GroundItems   map[int32]KnownPos // 地面物品 ID → 位置
 	GroundEffects map[int32]KnownPos // 地面技能效果 ID → 位置
 	Doors         map[int32]KnownPos // 門 ID → 位置
+	GMTraps       map[int32]KnownPos
+	GMHPBars      map[int32]int16
 }
 
 // NewKnownEntities 建立空白的已知實體集合。
@@ -503,6 +513,8 @@ func NewKnownEntities() *KnownEntities {
 		GroundItems:   make(map[int32]KnownPos),
 		GroundEffects: make(map[int32]KnownPos),
 		Doors:         make(map[int32]KnownPos),
+		GMTraps:       make(map[int32]KnownPos),
+		GMHPBars:      make(map[int32]int16),
 	}
 }
 
@@ -517,6 +529,9 @@ func (k *KnownEntities) Reset() {
 	clear(k.Pets)
 	clear(k.GroundItems)
 	clear(k.Doors)
+	clear(k.GroundEffects)
+	clear(k.GMTraps)
+	clear(k.GMHPBars)
 }
 
 // Bookmark is a saved teleport location for a player.

@@ -9,6 +9,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o l1jgo ./cmd/l1jgo
+RUN CGO_ENABLED=0 GOOS=linux go build -o gm ./cmd/gm
 
 # Stage 2: 最小化執行環境
 FROM alpine:latest
@@ -16,15 +17,17 @@ WORKDIR /app
 
 # 複製編譯產物
 COPY --from=builder /build/l1jgo .
+COPY --from=builder /build/gm .
 
 # 複製運行時靜態資料
 COPY config/ ./config/
 COPY data/yaml/ ./data/yaml/
+COPY data/xml/ ./data/xml/
 COPY map/ ./map/
 COPY scripts/ ./scripts/
 
 # 建立血盟紋章目錄
-RUN mkdir -p emblem
+RUN mkdir -p emblem data/runtime
 
 EXPOSE 7001
 CMD ["./l1jgo"]

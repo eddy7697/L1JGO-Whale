@@ -384,7 +384,7 @@ func (s *SkillSystem) cancelInvisibility(player *world.PlayerInfo) {
 	// removeBuffAndRevert → revertBuffStats 會清除 Invisible flag
 
 	// 通知玩家自己已解除隱身
-	handler.SendInvisible(player.Session, player.CharID, false)
+	handler.SendInvisible(player.Session, player.CharID, player.IsInvisible())
 
 	s.sendPlayerReappearToVisible(player)
 }
@@ -549,6 +549,10 @@ func (s *SkillSystem) cancelSpeedBuffs(target *world.PlayerInfo, speedType byte)
 
 // revertBuffStats 還原 buff 的所有屬性修改。
 func (s *SkillSystem) revertBuffStats(target *world.PlayerInfo, buff *world.ActiveBuff) {
+	// 共用還原路徑涵蓋自然到期、取消、死亡與 GM 清除，避免客戶端殘留三段加速。
+	if buff.SkillID == handler.SkillStatusThirdSpeed {
+		sendThirdSpeedToAll(target, 0, s.deps)
+	}
 	target.AC -= buff.DeltaAC
 	target.Str -= buff.DeltaStr
 	target.Dex -= buff.DeltaDex
@@ -778,7 +782,7 @@ func (s *SkillSystem) cancelAllBuffs(target *world.PlayerInfo) {
 	}
 	// 隱身解除通知 + 周圍玩家重新顯示
 	if needInvisRemove {
-		handler.SendInvisible(target.Session, target.CharID, false)
+		handler.SendInvisible(target.Session, target.CharID, target.IsInvisible())
 		s.sendPlayerReappearToVisible(target)
 	}
 
@@ -1002,7 +1006,7 @@ func (s *SkillSystem) executeBuffSkill(sess *net.Session, player *world.PlayerIn
 			target = other
 		}
 	}
-	if skill.SkillID == 87 && target.CharID != player.CharID && isGMInvisible(target) {
+	if target.CharID != player.CharID && isGMInvisible(target) {
 		return
 	}
 	if skill.SkillID == 87 && target.CharID != player.CharID && target.AbsoluteBarrier {
@@ -1146,7 +1150,7 @@ func (s *SkillSystem) executeBuffSkill(sess *net.Session, player *world.PlayerIn
 	case 39: // 魔力奪取
 		drain := int32(5 + world.RandInt(10))
 		if target.MP >= drain {
-			target.MP -= drain
+			target.SpendMP(drain)
 			player.MP += drain
 			if player.MP > player.MaxMP {
 				player.MP = player.MaxMP

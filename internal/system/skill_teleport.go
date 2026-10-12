@@ -104,7 +104,7 @@ func (s *SkillSystem) executeTeleportSpell(sess *net.Session, player *world.Play
 
 	// --- 驗證通過，消耗 MP ---
 	if skill.MpConsume > 0 {
-		player.MP -= int32(skill.MpConsume)
+		player.SpendMP(int32(skill.MpConsume))
 		sendMpUpdate(sess, player)
 	}
 
@@ -154,7 +154,7 @@ func (s *SkillSystem) executeTeleportSpell(sess *net.Session, player *world.Play
 }
 
 func checkBookmarkTeleportMapRule(skillID int32, mi *data.MapInfo, player *world.PlayerInfo) (bool, uint16) {
-	if mi == nil {
+	if mi == nil || player.IsGM() {
 		return true, 0
 	}
 	if skillID == 69 {
@@ -170,7 +170,7 @@ func checkBookmarkTeleportMapRule(skillID int32, mi *data.MapInfo, player *world
 }
 
 func checkRandomTeleportMapRule(skillID int32, mi *data.MapInfo, player *world.PlayerInfo) (bool, uint16) {
-	if mi == nil || mi.Teleportable || (skillID == 5 && hasTowerTeleportPermit(player, mi.MapID)) {
+	if mi == nil || player.IsGM() || mi.Teleportable || (skillID == 5 && hasTowerTeleportPermit(player, mi.MapID)) {
 		return true, 0
 	}
 	if skillID == 69 {

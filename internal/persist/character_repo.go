@@ -59,6 +59,37 @@ func NewCharacterRepo(db *DB) *CharacterRepo {
 	return &CharacterRepo{db: db}
 }
 
+// SetAccessLevel 明確修改角色權限。一般存檔不覆寫此欄，避免線上舊狀態
+// 蓋掉管理工具的授權或撤權；Java 新角色也不繼承帳號的 AccessLevel。
+func (r *CharacterRepo) SetAccessLevel(ctx context.Context, name string, level int16) error {
+	if level != 0 && level != 100 && level != 200 {
+		return fmt.Errorf("權限只允許 0（玩家）、100（監察員）、200（GM）")
+	}
+	result, err := r.db.Pool.Exec(ctx, `UPDATE characters SET access_level=$1 WHERE name=$2 AND deleted_at IS NULL`, level, name)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() != 1 {
+		return pgx.ErrNoRows
+	}
+	return nil
+}
+
+// SetClass 僅由明確的改職操作寫入職業與原始外觀；一般存檔不覆寫此身分。
+func (r *CharacterRepo) SetClass(ctx context.Context, name string, classType int16, classID int32) error {
+	if classType < 0 || classType > 6 || classID < 0 || classID > 65535 {
+		return fmt.Errorf("無效的職業或角色外觀")
+	}
+	result, err := r.db.Pool.Exec(ctx, `UPDATE characters SET class_type=$1, class_id=$2 WHERE name=$3 AND deleted_at IS NULL`, classType, classID, name)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() != 1 {
+		return pgx.ErrNoRows
+	}
+	return nil
+}
+
 func (r *CharacterRepo) LoadByAccount(ctx context.Context, accountName string) ([]CharacterRow, error) {
 	rows, err := r.db.Pool.Query(ctx,
 		`SELECT id, account_name, name, class_type, sex, class_id,

@@ -727,6 +727,12 @@ type TrapTriggerer interface {
 
 // Deps holds shared dependencies injected into all packet handlers.
 type Deps struct {
+	CustomPoints     CustomPointStore
+	GMAdmin          *GMAdminState
+	GMConfig         *data.GMCommandConfig
+	GMSpawns         *data.GMSpawnStore
+	CPShops          *data.CustomPointShopCache
+	AdvancedPoly     AdvancedPolymorphStore
 	AccountRepo      *persist.AccountRepo
 	CharRepo         *persist.CharacterRepo
 	ItemRepo         *persist.ItemRepo

@@ -138,16 +138,14 @@ func HandleChangeChar(sess *net.Session, _ *packet.Reader, deps *Deps) {
 		}
 
 		// Save active buffs (including polymorph state)
-		if deps.BuffRepo != nil && len(player.ActiveBuffs) > 0 {
+		if deps.BuffRepo != nil {
 			buffRows := BuffRowsFromPlayer(player)
-			if len(buffRows) > 0 {
-				ctx5, cancel5 := context.WithTimeout(context.Background(), 3*time.Second)
-				if err := deps.BuffRepo.SaveBuffs(ctx5, player.CharID, buffRows); err != nil {
-					deps.Log.Error("切換角色時存檔buff失敗",
-						zap.String("name", player.Name), zap.Error(err))
-				}
-				cancel5()
+			ctx5, cancel5 := context.WithTimeout(context.Background(), 3*time.Second)
+			if err := deps.BuffRepo.SaveBuffs(ctx5, player.CharID, buffRows); err != nil {
+				deps.Log.Error("切換角色時存檔buff失敗",
+					zap.String("name", player.Name), zap.Error(err))
 			}
+			cancel5()
 		}
 	}
 

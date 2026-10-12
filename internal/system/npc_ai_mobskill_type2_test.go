@@ -297,6 +297,7 @@ func TestNpcMobSkillTypeTwoRejectsInvalidPlayerTargetLikeJava(t *testing.T) {
 			name: "gm invisible",
 			mutate: func(target *world.PlayerInfo) {
 				target.AccessLevel = 200
+				target.GMInvisible = true
 				target.Invisible = true
 			},
 		},
@@ -418,6 +419,7 @@ func TestNpcMobSkillTypeTwoAreaFiltersExtraTargetsLikeJava(t *testing.T) {
 		HP:          5000,
 		MaxHP:       5000,
 		AccessLevel: 200,
+		GMInvisible: true,
 		Invisible:   true,
 	})
 	npc := &world.NpcInfo{

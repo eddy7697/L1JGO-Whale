@@ -58,7 +58,7 @@ func (s *ItemUseSystem) UseBlankMagicScroll(sess *net.Session, player *world.Pla
 		sendHpUpdate(sess, player)
 	}
 	if skill.MpConsume > 0 {
-		player.MP -= int32(skill.MpConsume)
+		player.SpendMP(int32(skill.MpConsume))
 		sendMpUpdate(sess, player)
 	}
 	if skill.ItemConsumeID > 0 && skill.ItemConsumeCount > 0 {

@@ -225,7 +225,7 @@ func mortalBodyReflectPvP(target, attacker *world.PlayerInfo, damage int32, near
 	reflectDmg := int32(mortalBodyDamage)
 	reflectDmg = applyImmuneToHarmDamage(attacker, reflectDmg)
 	if reflectDmg > 0 {
-		attacker.HP -= reflectDmg
+		attacker.ApplyDamage(reflectDmg)
 		if attacker.HP < 0 {
 			attacker.HP = 0
 		}
@@ -395,7 +395,7 @@ func (s *SkillSystem) applyFoeSlayerPlayerDamage(sess *net.Session, caster, targ
 	if target.Sleeped {
 		breakPlayerSleepBySkill(target)
 	}
-	target.HP -= damage
+	target.ApplyDamage(damage)
 	target.Dirty = true
 	if target.HP <= 0 {
 		target.HP = 0

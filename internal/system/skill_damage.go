@@ -61,7 +61,7 @@ func (s *SkillSystem) applyNpcKirtasMirrorMagicDamageLikeJava(attacker *world.Pl
 		return damage
 	}
 	if attacker.HP > 0 {
-		attacker.HP -= damage
+		attacker.ApplyDamage(damage)
 		attacker.Dirty = true
 		if attacker.HP < 0 {
 			attacker.HP = 0
@@ -95,7 +95,7 @@ func (s *SkillSystem) canSkillReachTarget(caster *world.PlayerInfo, skill *data.
 }
 
 func (s *SkillSystem) executeAttackSkillOnPlayer(sess *net.Session, player *world.PlayerInfo, skill *data.SkillInfo, target *world.PlayerInfo) {
-	if target == nil || target.Dead || target.MapID != player.MapID || target.ShowID != player.ShowID {
+	if target == nil || target.Dead || target.IsGMInvisible() || target.MapID != player.MapID || target.ShowID != player.ShowID {
 		return
 	}
 
@@ -144,7 +144,7 @@ func (s *SkillSystem) executeAttackSkillOnPlayer(sess *net.Session, player *worl
 	targets := []*world.PlayerInfo{target}
 	if skill.Area > 0 {
 		for _, other := range nearby {
-			if other.CharID == player.CharID || other.CharID == target.CharID || other.Dead {
+			if other.CharID == player.CharID || other.CharID == target.CharID || other.Dead || other.IsGMInvisible() {
 				continue
 			}
 			if chebyshevDist(target.X, target.Y, other.X, other.Y) <= int32(skill.Area) &&
@@ -282,7 +282,7 @@ func (s *SkillSystem) applySkillDamageToPlayer(sess *net.Session, player, target
 
 	s.applyJoyOfPainBacklash(player, target, nearby)
 
-	target.HP -= dmg
+	target.ApplyDamage(dmg)
 	target.Dirty = true
 	if target.HP <= 0 {
 		target.HP = 0

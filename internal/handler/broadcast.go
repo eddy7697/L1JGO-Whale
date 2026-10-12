@@ -55,6 +55,9 @@ func sendOwnCharPackPlayer(sess *net.Session, p *world.PlayerInfo) {
 	w.WriteS(p.Name)
 	w.WriteS(p.Title)
 	status := byte(0x04) // PC flag
+	if p.IsInvisible() {
+		status |= 0x02
+	}
 	status |= playerPoisonStatusBit(p)
 	status |= p.BraveSpeed * 16
 	w.WriteC(status)
@@ -85,6 +88,9 @@ func sendOwnCharPackPlayer(sess *net.Session, p *world.PlayerInfo) {
 // SendPutObject sends S_PUT_OBJECT (opcode 87) to show another player to the viewer.
 // Matches Java S_OtherCharPacks format exactly.
 func SendPutObject(viewer *net.Session, p *world.PlayerInfo) {
+	if p.IsGMInvisible() && viewer.ID != p.SessionID {
+		return
+	}
 	w := packet.NewWriterWithOpcode(packet.S_OPCODE_PUT_OBJECT)
 	w.WriteH(uint16(p.X))
 	w.WriteH(uint16(p.Y))
@@ -217,7 +223,7 @@ func UpdatePlayerLight(p *world.PlayerInfo, ws *world.State) {
 	// 發送給自己
 	sendLight(p.Session, p.CharID, newLight)
 
-	if p.Invisible {
+	if p.IsInvisible() {
 		return
 	}
 
@@ -1179,7 +1185,7 @@ func SendGmMessage(sess *net.Session, info string) {
 	sess.Send(w.Bytes())
 }
 
-// BroadcastToGMs 廣播訊息給所有線上 GM（AccessLevel >= 200）。
+// BroadcastToGMs 廣播訊息給所有線上 GM。
 // 封包格式同 SendGmMessage，序列化一次、發送多次。
 func BroadcastToGMs(ws *world.State, info string) {
 	w := packet.NewWriterWithOpcode(packet.S_OPCODE_NPCSHOUT)
@@ -1188,7 +1194,7 @@ func BroadcastToGMs(ws *world.State, info string) {
 	w.WriteS("\\fY" + info)
 	data := w.Bytes()
 	ws.AllPlayers(func(p *world.PlayerInfo) {
-		if p.AccessLevel >= 200 {
+		if p.IsGM() {
 			p.Session.Send(data)
 		}
 	})

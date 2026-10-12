@@ -128,7 +128,7 @@ func (s *SkillSystem) applyShockStunToPlayer(sess *net.Session, caster, target *
 		return true
 	}
 	dur := shockStunDurationSeconds()
-	if caster.AccessLevel >= 200 {
+	if caster.IsGM() {
 		handler.SendNormalChat(sess, 0, fmt.Sprintf("此次衝暈秒數為%d秒..只有GM看的到", dur))
 	}
 	stunSkill := *skill
@@ -299,7 +299,7 @@ func (s *SkillSystem) shockStunInvalidTargetBeforeConsume(player *world.PlayerIn
 }
 
 func isGMInvisible(player *world.PlayerInfo) bool {
-	return player.AccessLevel >= 200 && player.Invisible
+	return player.IsGMInvisible()
 }
 
 func shockStunHiddenNpcTargetBlocked(npc *world.NpcInfo) bool {
@@ -579,7 +579,7 @@ func (s *SkillSystem) executeNpcDebuffSkill(sess *net.Session, player *world.Pla
 			return
 		}
 		dur := shockStunDurationSeconds()
-		if player.AccessLevel >= 200 {
+		if player.IsGM() {
 			handler.SendNormalChat(sess, 0, fmt.Sprintf("此次衝暈秒數為%d秒..只有GM看的到", dur))
 		}
 		if npc.Impl == "L1Monster" || npc.Impl == "L1Summon" || npc.Impl == "L1Pet" {

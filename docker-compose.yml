@@ -37,8 +37,10 @@ services:
       - "7002:7001"
     volumes:
       - ./emblem:/app/emblem                              # 血盟紋章持久化
+      - gmdata:/app/data/runtime                          # GM 永久生成點
       - ./config/server.docker.toml:/app/config/server.toml:ro  # Docker 版設定
     restart: unless-stopped
 
 volumes:
   pgdata:
+  gmdata:

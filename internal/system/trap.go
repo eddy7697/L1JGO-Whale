@@ -127,7 +127,7 @@ func (s *TrapSystem) trapDamage(sess *net.Session, player *world.PlayerInfo, tra
 			dmg += rand.Int31n(tpl.Dice) + 1
 		}
 	}
-	player.HP -= dmg
+	player.ApplyDamage(dmg)
 	if player.HP < 0 {
 		player.HP = 0
 	}

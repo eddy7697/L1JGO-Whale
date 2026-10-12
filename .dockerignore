@@ -13,3 +13,4 @@ emblem/
 .env
 .env.*
 config/*.local.toml
+data/runtime/

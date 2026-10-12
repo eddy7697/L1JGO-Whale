@@ -411,18 +411,16 @@ func (s *InputSystem) handleDisconnect(sess *net.Session) {
 		}
 
 		// Save active buffs to DB (including polymorph state)
-		if s.buffRepo != nil && len(player.ActiveBuffs) > 0 {
+		if s.buffRepo != nil {
 			buffRows := buffRowsFromPlayer(player)
-			if len(buffRows) > 0 {
-				ctx4, cancel4 := context.WithTimeout(context.Background(), 3*time.Second)
-				if err := s.buffRepo.SaveBuffs(ctx4, player.CharID, buffRows); err != nil {
-					s.log.Error("斷線存檔buff失敗",
-						zap.String("name", player.Name),
-						zap.Error(err),
-					)
-				}
-				cancel4()
+			ctx4, cancel4 := context.WithTimeout(context.Background(), 3*time.Second)
+			if err := s.buffRepo.SaveBuffs(ctx4, player.CharID, buffRows); err != nil {
+				s.log.Error("斷線存檔buff失敗",
+					zap.String("name", player.Name),
+					zap.Error(err),
+				)
 			}
+			cancel4()
 		}
 	}
 

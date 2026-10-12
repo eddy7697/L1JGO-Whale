@@ -469,7 +469,7 @@ func (s *CombatSystem) reflectNpcCounterBarrierDamageToPlayerLikeJava(player *wo
 	}
 
 	handler.BroadcastToPlayers(nearby, handler.BuildActionGfx(player.CharID, 2))
-	player.HP -= cbDmg
+	player.ApplyDamage(cbDmg)
 	if player.HP < 0 {
 		player.HP = 0
 	}

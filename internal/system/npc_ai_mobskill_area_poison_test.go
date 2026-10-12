@@ -34,6 +34,7 @@ func TestNpcMobSkillAreaPoisonSpawnsEffectAndPoisonsVisiblePlayersLikeJava(t *te
 		HP:          5000,
 		MaxHP:       5000,
 		AccessLevel: 200,
+		GMInvisible: true,
 		Invisible:   true,
 	})
 	npc := &world.NpcInfo{

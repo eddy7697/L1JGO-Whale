@@ -2126,3 +2126,355 @@ polymorphs:
     armor_equip: 4095
     can_use_skill: true
     cause: 7
+
+  # Java advanced_polymorph seed：50 種外觀，保留原始裝備與施法參數
+  - poly_id: 14491
+    name: advpoly_2018_super
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 12283
+    name: advpoly_tw_tn_90_depo
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 12286
+    name: advpoly_tw_tn_90_ecil
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 12280
+    name: advpoly_tw_tn_90_cri
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 12314
+    name: advpoly_tw_tn_90_gil
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 12295
+    name: advpoly_tw_tn_90_joo
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 12681
+    name: advpoly_tw_real_deathknight
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13346
+    name: advpoly_tw_real_darkelf
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 12240
+    name: advpoly_spearm_82
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 15548
+    name: advpoly_82_pakistan_wind
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 15537
+    name: advpoly_82_violent_general
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 15550
+    name: advpoly_84_pakistan_wind
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 15539
+    name: advpoly_84_violent_general
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13152
+    name: advpoly_fire_dk_85
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 12237
+    name: advpoly_spearm_85
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13635
+    name: advpoly_owei_85
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 15831
+    name: advpoly_88_red_guard_bow
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 15830
+    name: advpoly_88_blue_guard_bow
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 15528
+    name: advpoly_88_green_guard_bow
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 15833
+    name: advpoly_88_red_guard_guns
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 15832
+    name: advpoly_88_blue_guard_guns
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 15531
+    name: advpoly_88_green_guard_guns
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13715
+    name: advpoly_2018_real_prince
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13717
+    name: advpoly_2018_real_princess
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13719
+    name: advpoly_2018_real_knight
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13721
+    name: advpoly_2018_real_f_knight
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13723
+    name: advpoly_2018_real_elf
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13725
+    name: advpoly_2018_real_f_elf
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13727
+    name: advpoly_2018_real_mage
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13729
+    name: advpoly_2018_real_f_mage
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13731
+    name: advpoly_2018_real_darkelf
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13733
+    name: advpoly_2018_real_f_darkelf
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13735
+    name: advpoly_2018_real_dragonknight
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13737
+    name: advpoly_2018_real_f_dragonknight
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13739
+    name: advpoly_2018_real_illusionist
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13741
+    name: advpoly_2018_real_f_illusionist
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13743
+    name: advpoly_2018_real_warrior
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13745
+    name: advpoly_2018_real_f_warrior
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 13631
+    name: advpoly_owei_82
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 15814
+    name: advpoly_88_hawkeye
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 15986
+    name: advpoly_eightysix_slave
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 16002
+    name: advpoly_eightysix_helvine
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 16008
+    name: advpoly_eightysix_iris
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 16014
+    name: advpoly_eightysix_curtz
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 16027
+    name: advpoly_eightysix_hardin
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 16040
+    name: advpoly_eightyeight_joewoo
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 16053
+    name: advpoly_eightyeight_bluedica
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 16056
+    name: advpoly_eightyeight_prokel
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 16074
+    name: advpoly_eightyeight_zillan
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1
+  - poly_id: 16284
+    name: advpoly_eightyeight_gunter
+    min_level: 1
+    weapon_equip: 1
+    armor_equip: 1
+    can_use_skill: true
+    cause: 1

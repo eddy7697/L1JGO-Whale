@@ -58,7 +58,7 @@ func buildPvPRangedCombatContext(attacker, target *world.PlayerInfo, bowDmg, arr
 // HandlePvPAttack 處理近戰 PvP 攻擊。
 // Java: L1PcInstance.onAction() — Ctrl+左鍵攻擊玩家，3.80C 無 PK 模式開關。
 func (s *PvPSystem) HandlePvPAttack(attacker, target *world.PlayerInfo) {
-	if target.Dead {
+	if target.Dead || target.IsGMInvisible() {
 		return
 	}
 	if attacker.ShowID != target.ShowID {
@@ -160,7 +160,7 @@ func (s *PvPSystem) HandlePvPAttack(attacker, target *world.PlayerInfo) {
 			// 反彈傷害減半。Go 套用同一濾鏡（applyImmuneToHarmDamage 以接受傷害者為對象）。
 			cbDmg = applyImmuneToHarmDamage(attacker, cbDmg)
 			if cbDmg > 0 {
-				attacker.HP -= int32(cbDmg)
+				attacker.ApplyDamage(int32(cbDmg))
 				if attacker.HP < 0 {
 					attacker.HP = 0
 				}
@@ -200,7 +200,7 @@ func (s *PvPSystem) HandlePvPAttack(attacker, target *world.PlayerInfo) {
 	}
 
 	if damage > 0 {
-		target.HP -= int32(damage)
+		target.ApplyDamage(int32(damage))
 		if target.HP < 0 {
 			target.HP = 0
 		}
@@ -230,7 +230,7 @@ func (s *PvPSystem) HandlePvPAttack(attacker, target *world.PlayerInfo) {
 // HandlePvPFarAttack 處理遠程 PvP 攻擊。
 // Java: L1PcInstance.onAction() — Ctrl+左鍵遠程攻擊玩家。
 func (s *PvPSystem) HandlePvPFarAttack(attacker, target *world.PlayerInfo) {
-	if target.Dead {
+	if target.Dead || target.IsGMInvisible() {
 		return
 	}
 	if attacker.ShowID != target.ShowID {
@@ -358,7 +358,7 @@ func (s *PvPSystem) HandlePvPFarAttack(attacker, target *world.PlayerInfo) {
 	}
 
 	if damage > 0 {
-		target.HP -= int32(damage)
+		target.ApplyDamage(int32(damage))
 		if target.HP < 0 {
 			target.HP = 0
 		}

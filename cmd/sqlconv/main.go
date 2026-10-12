@@ -67,6 +67,8 @@ type spawnListYAML struct {
 	Spawns []spawnEntryYAML `yaml:"spawns"`
 }
 type spawnEntryYAML struct {
+	ID            int32  `yaml:"id,omitempty"`
+	Source        string `yaml:"source,omitempty"`
 	NpcID         int32  `yaml:"npc_id"`
 	MapID         int16  `yaml:"map_id"`
 	X             int32  `yaml:"x"`
@@ -713,6 +715,8 @@ func convertSpawn(sqlDir, outDir string) error {
 			delay = minDelay
 		}
 		spawns = append(spawns, spawnEntryYAML{
+			ID:            parseInt32(r[0]),
+			Source:        "mob",
 			NpcID:         parseInt32(r[3]),
 			MapID:         parseInt16(r[16]),
 			X:             parseInt32(r[5]),
@@ -757,7 +761,7 @@ func convertSpawn(sqlDir, outDir string) error {
 		} else {
 			npcCount := 0
 			for _, r := range npcRows {
-				if len(r) < 11 {
+				if len(r) < 12 {
 					continue
 				}
 				count := parseInt(r[2])
@@ -765,6 +769,8 @@ func convertSpawn(sqlDir, outDir string) error {
 					continue
 				}
 				spawns = append(spawns, spawnEntryYAML{
+					ID:           parseInt32(r[0]),
+					Source:       "npc",
 					NpcID:        parseInt32(r[3]),  // npc_templateid
 					MapID:        parseInt16(r[10]), // mapid
 					X:            parseInt32(r[4]),  // locx

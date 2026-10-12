@@ -152,6 +152,10 @@ func run() error {
 	petRepo := persist.NewPetRepo(db)
 	auctionRepo := persist.NewAuctionRepo(db)
 	castleRepo := persist.NewCastleRepo(db)
+	cpShops := data.NewCustomPointShopCache(persist.NewCustomPointShopRepo(db).Load)
+	if _, _, err := cpShops.Reload(ctx); err != nil {
+		return fmt.Errorf("load custom point shop catalogue: %w", err)
+	}
 
 	// 4a. WAL crash recovery — replay unprocessed economic transactions
 	{
@@ -182,6 +186,18 @@ func run() error {
 	spawnList, err := data.LoadSpawnList("data/yaml/spawn_list.yaml")
 	if err != nil {
 		return fmt.Errorf("load spawn list: %w", err)
+	}
+	if err := os.MkdirAll("data/runtime", 0755); err != nil {
+		return fmt.Errorf("create runtime data directory: %w", err)
+	}
+	gmSpawns, err := data.LoadGMSpawnStore(spawnList, "data/runtime/gm_spawn_list.yaml")
+	if err != nil {
+		return fmt.Errorf("load GM spawn list: %w", err)
+	}
+	spawnList = gmSpawns.Entries()
+	gmConfig, err := data.LoadGMCommandConfig("data/xml/GmCommands/GMCommands.xml")
+	if err != nil {
+		return fmt.Errorf("load GM command config: %w", err)
 	}
 
 	lightSpawnList, err := data.LoadLightSpawnList("data/yaml/light_spawn_list.yaml")
@@ -500,6 +516,12 @@ func run() error {
 	// 6. Create packet handler registry and register handlers
 	pktReg := packet.NewRegistry(log)
 	deps := &handler.Deps{
+		GMAdmin:          handler.NewGMAdminState(),
+		GMConfig:         gmConfig,
+		GMSpawns:         gmSpawns,
+		CPShops:          cpShops,
+		CustomPoints:     persist.NewCustomPointRepo(db),
+		AdvancedPoly:     persist.NewAdvancedPolymorphRepo(db),
 		AccountRepo:      accountRepo,
 		CharRepo:         charRepo,
 		ItemRepo:         itemRepo,
@@ -753,7 +775,16 @@ func run() error {
 
 	// 9. Start game loop
 	shutdownCh := make(chan os.Signal, 1)
+	gmShutdownCh := make(chan struct{}, 1)
 	signal.Notify(shutdownCh, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(shutdownCh)
+	deps.GMAdmin.SaveAll = persistSys.SaveAllPlayersWithError
+	deps.GMAdmin.Shutdown = func() {
+		select {
+		case gmShutdownCh <- struct{}{}:
+		default:
+		}
+	}
 
 	// 雙頻率遊戲迴圈（架構合規）：
 	// - systemTicker (200ms)：runner.Tick() 執行全 Phase 0-6
@@ -776,9 +807,21 @@ func run() error {
 		case <-systemTicker.C:
 			// 完整 tick：Phase 0-6 按順序執行（Phase 0 可能是空操作，因 inputPoll 已排空）
 			runner.Tick(cfg.Network.TickRate)
+			handler.GMAdminTick(time.Now(), deps)
 		case <-inputPoll.C:
 			// 高頻輸入輪詢：只跑 Phase 0（透過 Runner.TickPhase 維持架構合規）
 			runner.TickPhase(coresys.PhaseInput, 0)
+		case <-gmShutdownCh:
+			if err := persistSys.SaveAllPlayersWithError(); err != nil {
+				log.Error("GM 關機取消：存檔失敗", zap.Error(err))
+				worldState.AllPlayers(func(p *world.PlayerInfo) {
+					handler.SendSystemMessage(p.Session, "關機已取消：角色存檔失敗，請管理員檢查伺服器日誌。")
+				})
+				continue
+			}
+			netServer.Shutdown()
+			log.Info("GM 指令關閉伺服器完成")
+			return nil
 		case sig := <-shutdownCh:
 			log.Info("收到關閉信號", zap.String("signal", sig.String()))
 			// Save all players before stopping

@@ -63,7 +63,7 @@ func TickPlayerPoison(p *world.PlayerInfo, deps *handler.Deps) {
 			if p.PoisonDmgAmount > 0 {
 				dmg = int32(p.PoisonDmgAmount)
 			}
-			p.HP -= dmg
+			p.ApplyDamage(dmg)
 			p.Dirty = true
 			if p.HP <= 0 {
 				p.HP = 0

@@ -22,6 +22,7 @@ func TestTrapSystemGmInvisibleDoesNotTriggerTrapLikeJava(t *testing.T) {
 		HP:          100,
 		MaxHP:       100,
 		AccessLevel: 200,
+		GMInvisible: true,
 		Invisible:   true,
 	})
 	trapMgr, trap := newTrapSystemTestDamageTrap(player.X, player.Y, player.MapID)
@@ -72,6 +73,24 @@ func TestTrapSystemNormalInvisibleStillTriggersTrapLikeJava(t *testing.T) {
 	}
 	if trap.Alive {
 		t.Fatal("一般隱身玩家踩到陷阱後應停用陷阱")
+	}
+}
+
+func TestGMSpellInvisibilityStillTriggersTrapAndRecoversLethalDamage(t *testing.T) {
+	ws := world.NewState()
+	player := addSkillTestPlayer(ws, &world.PlayerInfo{
+		SessionID: 3, Session: newSkillTestSession(t, 3), CharID: 1003,
+		X: 32768, Y: 32768, MapID: 4, HP: 5, MaxHP: 100,
+		AccessLevel: 200, Invisible: true,
+	})
+	trapMgr, trap := newTrapSystemTestDamageTrap(player.X, player.Y, player.MapID)
+	sys := NewTrapSystem(&handler.Deps{World: ws, Log: zap.NewNop(), TrapMgr: trapMgr})
+	sys.TriggerTraps(player.Session, player, []*world.TrapInstance{trap})
+	if trap.Alive {
+		t.Fatal("GM 普通隱身術仍應觸發陷阱")
+	}
+	if player.HP != player.MaxHP || player.Dead {
+		t.Fatal("GM 接受陷阱致命傷害應回滿血而非死亡")
 	}
 }
 

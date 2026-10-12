@@ -84,3 +84,6 @@ buff_icons:
     type: wisdom
   - skill_id: 1002   # Blue Potion (STATUS_BluePotion)
     type: blue_potion
+  - skill_id: 1005   # GM 禁言（STATUS_CHAT_PROHIBITED）
+    type: gfx
+    param: 36

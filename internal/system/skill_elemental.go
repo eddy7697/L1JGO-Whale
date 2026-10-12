@@ -187,7 +187,7 @@ func (s *SkillSystem) applyCounterMirrorMagicDamage(attacker, target *world.Play
 	}
 	s.removeBuffAndRevert(target, skillCounterMirror)
 	if attacker.HP > 0 {
-		attacker.HP -= damage
+		attacker.ApplyDamage(damage)
 		attacker.Dirty = true
 		if attacker.HP < 0 {
 			attacker.HP = 0

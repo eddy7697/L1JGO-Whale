@@ -72,12 +72,12 @@ func (r *ItemRepo) LoadByCharID(ctx context.Context, charID int32) ([]ItemRow, e
 	return result, rows.Err()
 }
 
-// MaxObjID returns the maximum obj_id across all character items.
+// MaxObjID returns the maximum persisted object ID in inventories and warehouses.
 // Used on startup to initialize the ObjectID counter above all persisted values.
 func (r *ItemRepo) MaxObjID(ctx context.Context) (int32, error) {
 	var maxID int32
 	err := r.db.Pool.QueryRow(ctx,
-		`SELECT COALESCE(MAX(obj_id), 0) FROM character_items`,
+		`SELECT GREATEST(COALESCE((SELECT MAX(obj_id) FROM character_items),0), COALESCE((SELECT MAX(item_obj_id) FROM warehouse_items),0))`,
 	).Scan(&maxID)
 	return maxID, err
 }

@@ -47,6 +47,7 @@ type SummonInfo struct {
 	Status     SummonStatus // current AI behavior mode
 	Tamed      bool         // true if tamed monster (vs pure summon skill)
 	PetCost    int          // CHA cost for this summon (Java: petcost); default 6
+	GMSummoned bool         // GM .summon 的 petcost=0，不套用舊資料的預設6
 	TimerTicks int          // remaining ticks alive (3600s * 5 = 18000 ticks)
 
 	// AI state

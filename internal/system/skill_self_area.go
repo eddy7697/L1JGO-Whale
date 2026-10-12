@@ -15,7 +15,7 @@ func isSelfAreaAttackSkill(skill *data.SkillInfo) bool {
 func (s *SkillSystem) executeSelfAreaAttackSkill(sess *net.Session, player *world.PlayerInfo, skill *data.SkillInfo, nearby []*world.PlayerInfo) {
 	targets := make([]handler.RangeSkillTarget, 0, 8)
 	for _, target := range nearby {
-		if target.CharID == player.CharID || target.Dead {
+		if target.CharID == player.CharID || target.Dead || target.IsGMInvisible() {
 			continue
 		}
 		if chebyshevDist(player.X, player.Y, target.X, target.Y) > int32(skill.Area) {
@@ -88,7 +88,7 @@ func (s *SkillSystem) applySelfAreaSkillDamageToPlayerNoVisual(sess *net.Session
 
 	s.applyJoyOfPainBacklash(player, target, nearby)
 
-	target.HP -= dmg
+	target.ApplyDamage(dmg)
 	target.Dirty = true
 	if target.HP <= 0 {
 		target.HP = 0

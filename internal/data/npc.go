@@ -66,6 +66,8 @@ func (n *NpcTemplate) EffectiveTurnUndeadable() bool {
 
 // SpawnEntry defines where and how many NPCs to spawn.
 type SpawnEntry struct {
+	ID            int32  `yaml:"id,omitempty"`     // Java spawnlist / spawnlist_npc 原始 ID
+	Source        string `yaml:"source,omitempty"` // mob 或 npc；同 ID 時 npc 優先
 	NpcID         int32  `yaml:"npc_id"`
 	MapID         int16  `yaml:"map_id"`
 	X             int32  `yaml:"x"`

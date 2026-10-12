@@ -1024,7 +1024,7 @@ func (s *CastleSystem) applyCatapultDamage(target *world.PlayerInfo, npc *world.
 	if target.Dead {
 		return
 	}
-	target.HP -= 300
+	target.ApplyDamage(300)
 	target.Dirty = true
 	if target.HP <= 0 {
 		target.HP = 0

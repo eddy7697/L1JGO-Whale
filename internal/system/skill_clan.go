@@ -279,7 +279,7 @@ func (s *SkillSystem) runClanRejectMessage(player, target *world.PlayerInfo) uin
 }
 
 func (s *SkillSystem) isEscapableForRunClan(player *world.PlayerInfo) bool {
-	if player.AccessLevel >= 200 {
+	if player.IsGM() {
 		return true
 	}
 	if s.deps == nil || s.deps.MapData == nil {

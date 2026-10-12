@@ -226,10 +226,12 @@ L1JGO-Whale/
 
 在遊戲內聊天輸入（需 GM 權限）：
 
+角色權限 `200` 為 GM、`100` 為監察員、`0` 為玩家。首位 GM 可用 `go run ./cmd/gm -config config/server.local.toml -name "角色名稱" -level 200` 設定，重新登入後生效。遊戲內 `.help` 依權限列出指令；完整中英文指令、Java 對照差異與部署方式見 [GM 操作說明](docs/GM_COMMANDS.md)。
+
 | 指令 | 說明 |
 |------|------|
 | `.level <n>` | 設定等級 |
-| `.str/dex/con/wis/cha/int <n>` | 設定屬性 |
+| `.setting me <str/dex/con/wis/cha/int> <n>` | 設定基礎屬性 |
 | `.hp/mp <n>` | 設定 HP/MP |
 | `.move <x> <y> <map>` | 傳送到座標 |
 | `.item <id> [count] [enchant]` | 生成道具 |
@@ -238,7 +240,7 @@ L1JGO-Whale/
 | `.heal` | 回滿 HP/MP |
 | `.speed <n>` | 設定移動速度 |
 | `.spawn <npc_id>` | 生成 NPC |
-| `.weather <type> <intensity>` | 設定天氣 |
+| `.weather <type>` | 設定天氣 |
 | `.who` | 列出線上玩家 |
 
 ## 開發備註

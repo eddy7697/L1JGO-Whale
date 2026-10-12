@@ -880,7 +880,7 @@ func sendCharVisualUpdate(viewer *net.Session, player *world.PlayerInfo) {
 // Java: CloakOfInvisibility — 穿上設 invisible、廣播移除；脫下解除、廣播重現。
 func (s *EquipSystem) applyInvisCloak(sess *net.Session, player *world.PlayerInfo, on bool) {
 	player.Invisible = on
-	handler.SendInvisible(sess, player.CharID, on)
+	handler.SendInvisible(sess, player.CharID, player.IsInvisible())
 
 	nearby := s.deps.World.GetNearbyPlayersInShow(player.X, player.Y, player.MapID, 0, player.ShowID)
 	if on {

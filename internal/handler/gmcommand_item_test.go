@@ -100,11 +100,12 @@ func newGMItemCommandTestContext(t *testing.T, gm GMCommandManager) (*l1net.Sess
 	t.Helper()
 	sess := newHandlerTestSession(t, 1)
 	player := &world.PlayerInfo{
-		SessionID: sess.ID,
-		Session:   sess,
-		CharID:    1001,
-		Name:      "gm",
-		Inv:       world.NewInventory(),
+		SessionID:   sess.ID,
+		Session:     sess,
+		CharID:      1001,
+		Name:        "gm",
+		AccessLevel: 200,
+		Inv:         world.NewInventory(),
 	}
 	deps := &Deps{
 		Items:  mustLoadGMItemCommandItems(t),

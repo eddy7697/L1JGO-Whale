@@ -416,6 +416,9 @@ func (s *PetSystem) CalcUsedPetCost(charID int32) int {
 	}
 	// 召喚獸：使用實際 PetCost（指環召喚獸有不同消耗 8-50）
 	for _, sum := range ws.GetSummonsByOwner(charID) {
+		if sum.GMSummoned {
+			continue
+		}
 		c := sum.PetCost
 		if c <= 0 {
 			c = 6

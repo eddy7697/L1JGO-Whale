@@ -1210,7 +1210,9 @@ func (s *ItemUseSystem) BroadcastEffect(sess *net.Session, player *world.PlayerI
 	sendEffectOnPlayer(sess, player.CharID, gfxID)
 	nearby := s.itemUseViewers(player, sess.ID)
 	for _, other := range nearby {
-		sendEffectOnPlayer(other.Session, player.CharID, gfxID)
+		if other.CanSeePlayer(player) {
+			sendEffectOnPlayer(other.Session, player.CharID, gfxID)
+		}
 	}
 }
 
@@ -1334,8 +1336,8 @@ func (s *ItemUseSystem) applyThirdSpeed(sess *net.Session, player *world.PlayerI
 	}
 	player.AddBuff(buff)
 
-	sendLiquorPacket(sess, 8)             // 1.15x 角色大小視覺
-	handler.SendServerMessage(sess, 1065) // "將發生神秘的奇蹟力量"
+	sendThirdSpeedToAll(player, 8, s.deps) // 1.15x 角色大小視覺
+	handler.SendServerMessage(sess, 1065)  // "將發生神秘的奇蹟力量"
 	s.BroadcastEffect(sess, player, gfxID)
 }
 
@@ -1481,13 +1483,6 @@ func sendEvaBreathIcon(sess *net.Session, charID int32, timeSec uint16) {
 	w.WriteC(44)
 	w.WriteD(charID)
 	w.WriteH(timeSec)
-	sess.Send(w.Bytes())
-}
-
-// sendLiquorPacket sends S_DRUNKEN (opcode 103) — 角色大小變化。
-func sendLiquorPacket(sess *net.Session, liquorType byte) {
-	w := packet.NewWriterWithOpcode(packet.S_OPCODE_DRUNKEN)
-	w.WriteC(liquorType)
 	sess.Send(w.Bytes())
 }
 

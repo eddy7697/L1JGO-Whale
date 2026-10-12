@@ -44,3 +44,6 @@ sqlconv.exe
 .env.*
 !.env.example
 /config/*.local.toml
+
+# GM 執行期永久生成點（須另外備份）
+/data/runtime/
