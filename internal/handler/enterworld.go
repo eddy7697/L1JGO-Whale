@@ -174,7 +174,7 @@ func HandleEnterWorld(sess *net.Session, r *packet.Reader, deps *Deps) {
 	sendOwnCharPack(sess, ch, player.CurrentWeapon, PlayerGfx(player))
 
 	// 6. S_MAGIC_STATUS (opcode 37) — SP/MR（含裝備 + buff）
-	sendMagicStatus(sess, byte(player.SP), uint16(player.MR))
+	sendMagicStatus(sess, byte(player.SP), int32(player.MR))
 
 	// 7. S_WEATHER (opcode 115)
 	sendWeather(sess, deps.World.Weather)

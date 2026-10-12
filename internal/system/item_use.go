@@ -1716,7 +1716,7 @@ func (s *ItemUseSystem) sendVIPStatusUpdates(sess *net.Session, p *world.PlayerI
 
 	// SP + MR → S_SPMR
 	if vip.AddSP != 0 || vip.AddMR != 0 {
-		handler.SendMagicStatus(sess, byte(p.SP), uint16(p.MR))
+		handler.SendMagicStatus(sess, byte(p.SP), int32(p.MR))
 	}
 
 	// HP/MP 上限變化
@@ -2198,7 +2198,7 @@ func (s *ItemUseSystem) applyCookingBuff(sess *net.Session, player *world.Player
 		handler.SendAbilityScores(sess, player)
 	}
 	if cb.DeltaSP != 0 || cb.DeltaMR != 0 {
-		handler.SendMagicStatus(sess, byte(player.SP), uint16(player.MR))
+		handler.SendMagicStatus(sess, byte(player.SP), int32(player.MR))
 	}
 
 	// 發送料理圖示

@@ -33,3 +33,4 @@
 - 補齊 yiwei `SKM0` 傷害歸零語義於地面效果 NPC 直接傷害路徑：火牢與和諧立方對持有 `ABSOLUTE_BARRIER(78)` / `ICE_LANCE(50)` / `EARTH_BIND(157)` / `FREEZING_BLIZZARD(80)` 的 NPC 不再繞過 receiveDamage 防線扣血，仍保留和諧立方回 MP 行為。
 - 對齊 yiwei 狂風之劍 `weaponId=260` 範圍中心：AoE 次要目標改以施法者自身為中心，保留一般武器與冰矛 `263/287` 以主目標為中心，避免玩家身旁怪物漏吃狂風之劍範圍傷害。
 - 對齊 yiwei 魔法娃娃機率能力：`chance > 0` 的 `dmg` / `dmg_reduction` 現在對應 `Doll_DmgR` / `Doll_DmgDownR`，不再誤套成常駐 `DmgMod` 或固定傷害減免；PC 物理攻擊與玩家受傷減免流程已接入娃娃機率增傷 / 機率減傷，並補上回歸測試。
+- 修正 Login38 預設開啟 AC／MR 擴充時的野外明暗錯置：`S_STATUS` 的 AC 改為 signed 32-bit，避免客戶端將後續飽食度、負重與正義值錯讀成遊戲時間，再被心跳同步反覆校正。同時對齊洗點封包的 AC 與 `S_MAGIC_STATUS` 的 MR 欄位，保留負值符號；日夜速度與時間取整規則不變。新增 Login38 封包解碼回歸測試；實機畫面仍待驗收。

@@ -306,7 +306,7 @@ func (s *SkillSystem) applyBuffEffect(target *world.PlayerInfo, skill *data.Skil
 	// MR/SP 變化時送 S_SPMR (Java: SHADOW_ARMOR/RESIST_MAGIC/ILLUSION_LICH 等
 	// `pc.sendPackets(new S_SPMR(pc))` 對齊；原本只送 S_STATUS 不含 MR/SP)。
 	if buff.DeltaMR != 0 || buff.DeltaSP != 0 {
-		handler.SendMagicStatus(target.Session, byte(target.SP), uint16(target.MR))
+		handler.SendMagicStatus(target.Session, byte(target.SP), int32(target.MR))
 	}
 	// 元素抗性變化時送 S_OwnCharAttrDef（Java `L1SkillUse.java:2545` RESIST_ELEMENTAL cast
 	// `pc.sendPackets(new S_OwnCharAttrDef(pc))` 對齊；同時為 ELEMENTAL_PROTECTION/147 cast 補上
@@ -619,7 +619,7 @@ func (s *SkillSystem) revertBuffStats(target *world.PlayerInfo, buff *world.Acti
 	// MR/SP 還原時送 S_SPMR (對齊 Java SHADOW_ARMOR/RESIST_MAGIC 等 stop()
 	// `pc.sendPackets(new S_SPMR(pc))`；否則玩家 UI 仍顯示 buff 期間的 MR/SP)。
 	if target.Session != nil && (buff.DeltaMR != 0 || buff.DeltaSP != 0) {
-		handler.SendMagicStatus(target.Session, byte(target.SP), uint16(target.MR))
+		handler.SendMagicStatus(target.Session, byte(target.SP), int32(target.MR))
 	}
 	// 元素抗性還原時送 S_OwnCharAttrDef（Java `L1SkillStop` 133/138/147 與
 	// `ELEMENTAL_FALL_DOWN.stop()` 對 PC 都在 `addEarth/Fire/Water/Wind` 後送 `S_OwnCharAttrDef(pc)`；

@@ -81,7 +81,7 @@ func (s *CharResetSystem) Start(sess *net.Session, player *world.PlayerInfo) {
 	// 發送狀態更新
 	handler.SendPlayerStatus(sess, player)
 	handler.SendAbilityScores(sess, player)
-	handler.SendMagicStatus(sess, byte(player.SP), uint16(player.MR))
+	handler.SendMagicStatus(sess, byte(player.SP), int32(player.MR))
 
 	// 發送 S_CharReset 格式 1（初始化 UI）
 	handler.SendCharResetInit(sess, initHP, initMP, maxLevel)
@@ -320,7 +320,7 @@ func (s *CharResetSystem) finishCharReset(sess *net.Session, player *world.Playe
 	// 發送更新封包
 	handler.SendPlayerStatus(sess, player)
 	handler.SendAbilityScores(sess, player)
-	handler.SendMagicStatus(sess, byte(player.SP), uint16(player.MR))
+	handler.SendMagicStatus(sess, byte(player.SP), int32(player.MR))
 
 	// 傳送至重置完成點
 	if s.deps.World != nil {

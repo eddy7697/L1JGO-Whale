@@ -93,6 +93,8 @@ docker compose up -d --build
 - **天堂 3.80C 客戶端**（台版）
 - **地圖資料**（從客戶端 `.s32` 解析後的 `.txt` 檔，放置於 `map/` 目錄）
 
+本專案目前的封包格式對應 `E:\lin-golang\Login38` 登入器，須啟用 `hp_mp_limit_enabled` 與 `ac_mr_limit_enabled`（Login38 預設皆為 `true`）。角色狀態封包的 HP／MP、AC，以及魔防更新的 MR 與洗點封包的 AC 使用 32 位元欄位。若關閉 AC／MR 擴充，客戶端與伺服器會從不同位置讀取遊戲時間，可能造成野外明暗交替及狀態顯示錯誤；角色列表與屬性抗性封包則維持各自原有格式。
+
 ### 1. 建立資料庫
 
 ```sql

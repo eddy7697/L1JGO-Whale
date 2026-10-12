@@ -355,7 +355,7 @@ func (s *EquipSystem) RecalcEquipStats(sess *net.Session, player *world.PlayerIn
 	// 發送更新封包
 	handler.SendPlayerStatus(sess, player)
 	handler.SendAbilityScores(sess, player)
-	handler.SendMagicStatus(sess, byte(player.SP), uint16(player.MR))
+	handler.SendMagicStatus(sess, byte(player.SP), int32(player.MR))
 
 	// 力量/體質變化時更新負重上限
 	neo := player.EquipBonuses

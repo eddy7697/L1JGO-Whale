@@ -234,11 +234,12 @@ func sendGameTime(sess *net.Session, gameTimeSec int) {
 	sess.Send(w.Bytes())
 }
 
-// sendMagicStatus sends S_MAGIC_STATUS (opcode 37) — SP and MR.
-func sendMagicStatus(sess *net.Session, sp byte, mr uint16) {
+// sendMagicStatus sends S_MAGIC_STATUS (opcode 37) — SP and signed 32-bit MR,
+// matching Login38's AC/MR expansion.
+func sendMagicStatus(sess *net.Session, sp byte, mr int32) {
 	w := packet.NewWriterWithOpcode(packet.S_OPCODE_MAGIC_STATUS)
 	w.WriteC(sp)
-	w.WriteH(mr)
+	w.WriteD(mr)
 	sess.Send(w.Bytes())
 }
 
@@ -495,7 +496,8 @@ func sendExpUpdate(sess *net.Session, level int16, totalExp int32) {
 }
 
 // sendPlayerStatus sends S_STATUS (opcode 8) — full character status update.
-// Same format as enterworld sendOwnCharStatus but built from PlayerInfo.
+// Login38 expands HP/MP and AC to 32 bits. AC must occupy four bytes so the
+// following game-time field stays aligned with the client's day/night clock.
 // SendPlayerStatus sends S_STATUS to a player. Exported for system package usage.
 func SendPlayerStatus(sess *net.Session, p *world.PlayerInfo) {
 	sendPlayerStatus(sess, p)
@@ -522,7 +524,7 @@ func sendPlayerStatus(sess *net.Session, p *world.PlayerInfo) {
 	w.WriteD(p.MaxHP)
 	w.WriteD(p.MP)
 	w.WriteD(p.MaxMP)
-	w.WriteC(byte(p.AC))
+	w.WriteD(int32(p.AC))
 
 	gameTime := int32(world.GameTimeNow().Seconds())
 	gameTime = gameTime - (gameTime % 300)
@@ -840,7 +842,7 @@ func SendHpMeter(viewer *net.Session, objectID int32, hpRatio int16) {
 }
 
 // SendMagicStatus 匯出 sendMagicStatus — 供 system 套件發送 SP/MR。
-func SendMagicStatus(sess *net.Session, sp byte, mr uint16) {
+func SendMagicStatus(sess *net.Session, sp byte, mr int32) {
 	sendMagicStatus(sess, sp, mr)
 }
 

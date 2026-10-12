@@ -356,7 +356,7 @@ func (s *SkillSystem) sendYiweiPostCastStatusRefresh(targets ...*world.PlayerInf
 		if target == nil || target.Session == nil {
 			continue
 		}
-		handler.SendMagicStatus(target.Session, byte(calcPlayerSPLikeJava(target)), uint16(target.MR))
+		handler.SendMagicStatus(target.Session, byte(calcPlayerSPLikeJava(target)), int32(target.MR))
 		handler.SendPlayerStatus(target.Session, target)
 		handler.SendUpdateER(target.Session, calcPlayerErLikeYiwei(target))
 	}
