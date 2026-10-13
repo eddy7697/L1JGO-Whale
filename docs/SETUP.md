@@ -267,6 +267,15 @@ UPDATE accounts SET access_level = 200 WHERE login = '你的帳號名';
 | `delete_7_days_min_level` | `5` | 等待刪除的最低等級 |
 | `client_language_code` | `"MS950"` | 客戶端文字編碼 |
 
+### [gameplay] 遊戲常數（節錄）
+
+| 設定 | 預設值 | 說明 |
+|------|--------|------|
+| `war_time` | `"2h"` | 單場攻城戰持續時間（Java `WarTime`） |
+| `war_interval` | `"96h"` | 攻城戰間隔；Java 預設 `4d`，此處以小時表示（Java `WarInterval`） |
+
+其餘 `[gameplay]` 鍵請見 `config/server.toml` 內的註解。
+
 ### [logging] 日誌設定
 
 | 設定 | 預設值 | 說明 |

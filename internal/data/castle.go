@@ -47,6 +47,7 @@ type CastleConfig struct {
 	Tower        CastlePoint     `yaml:"tower"`
 	InnerMap     int16           `yaml:"inner_map"`
 	GetbackTown  int32           `yaml:"getback_town"`
+	Getback      []CastlePoint   `yaml:"getback"` // 攻城趕人回城點（Java L1CastleLocation.getGetBackLoc，隨機取一）
 	Catapults    []CatapultSpawn `yaml:"catapults"`
 	SubTowers    []SubTower      `yaml:"sub_towers"`
 	GateNpcs     []int32         `yaml:"gate_npcs"`
@@ -89,9 +90,46 @@ func LoadCastleTable(path string) (*CastleTable, error) {
 	return t, nil
 }
 
+// NewCastleTable 以程式建立城堡表（測試與工具用）。
+func NewCastleTable(castles []*CastleConfig, townCastleMap map[int32]int32) *CastleTable {
+	t := &CastleTable{
+		byID:          make(map[int32]*CastleConfig, len(castles)),
+		townCastleMap: townCastleMap,
+	}
+	for _, c := range castles {
+		if c != nil {
+			t.byID[c.ID] = c
+		}
+	}
+	if t.townCastleMap == nil {
+		t.townCastleMap = make(map[int32]int32)
+	}
+	return t
+}
+
 // Get 依城堡 ID 取得靜態配置。
 func (t *CastleTable) Get(castleID int32) *CastleConfig {
 	return t.byID[castleID]
+}
+
+// DefaultGetbackLoc 找不到城堡回城點時的備援（Java：不存在的 castle_id 回銀騎士村）。
+var DefaultGetbackLoc = CastlePoint{X: 33071, Y: 33402, Map: 4}
+
+// GetbackLoc 依 Java L1CastleLocation.getGetBackLoc 從城堡回城點清單隨機取一。
+// 城堡沒有設定回城點時回傳銀騎士村備援。pick(n) 回傳 [0,n) 的索引。
+func (t *CastleTable) GetbackLoc(castleID int32, pick func(n int) int) CastlePoint {
+	c := t.Get(castleID)
+	if c == nil || len(c.Getback) == 0 {
+		return DefaultGetbackLoc
+	}
+	idx := 0
+	if pick != nil && len(c.Getback) > 1 {
+		idx = pick(len(c.Getback))
+		if idx < 0 || idx >= len(c.Getback) {
+			idx = 0
+		}
+	}
+	return c.Getback[idx]
 }
 
 // GetCastleIDByTown 依城鎮 ID 取得對應城堡 ID（0=無對應城堡）。

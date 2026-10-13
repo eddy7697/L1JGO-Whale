@@ -3,6 +3,7 @@
 # tower: 守護塔位置
 # inner_map: 內城地圖 ID（0=無）
 # getback_town: 攻城戰開始時非城盟玩家傳送到的城鎮 town_id
+# getback: 攻城開始／奪城時非城盟玩家被趕回的座標清單，隨機取一（Java L1CastleLocation.getGetBackLoc → L1TownLocation GETBACK_LOC_*）
 # catapults: 投石車位置列表（side: attack=攻擊方, defence=防守方）
 # sub_towers: 副塔位置（僅亞丁城有）
 castles:
@@ -12,6 +13,15 @@ castles:
     tower: { x: 33168, y: 32779, map: 4 }
     inner_map: 15
     getback_town: 1
+    getback:
+      - { x: 33048, y: 32750, map: 4 }
+      - { x: 33059, y: 32768, map: 4 }
+      - { x: 33047, y: 32761, map: 4 }
+      - { x: 33059, y: 32759, map: 4 }
+      - { x: 33051, y: 32775, map: 4 }
+      - { x: 33048, y: 32778, map: 4 }
+      - { x: 33064, y: 32773, map: 4 }
+      - { x: 33057, y: 32748, map: 4 }
     catapults:
       - { x: 33093, y: 32780, map: 4, side: attack }
       - { x: 33093, y: 32755, map: 4, side: attack }
@@ -25,6 +35,12 @@ castles:
     tower: { x: 32798, y: 32285, map: 4 }
     inner_map: 260
     getback_town: 9
+    getback:
+      - { x: 32750, y: 32435, map: 4 }
+      - { x: 32745, y: 32447, map: 4 }
+      - { x: 32738, y: 32452, map: 4 }
+      - { x: 32741, y: 32436, map: 4 }
+      - { x: 32749, y: 32446, map: 4 }
     catapults:
       - { x: 32778, y: 32331, map: 4, side: attack }
       - { x: 32804, y: 32331, map: 4, side: attack }
@@ -37,6 +53,13 @@ castles:
     tower: { x: 32623, y: 33379, map: 4 }
     inner_map: 29
     getback_town: 4
+    getback:
+      - { x: 32608, y: 33178, map: 4 }
+      - { x: 32626, y: 33185, map: 4 }
+      - { x: 32630, y: 33179, map: 4 }
+      - { x: 32625, y: 33207, map: 4 }
+      - { x: 32638, y: 33203, map: 4 }
+      - { x: 32621, y: 33179, map: 4 }
     catapults: []
     gate_npcs: []
 
@@ -46,6 +69,14 @@ castles:
     tower: { x: 33631, y: 32678, map: 4 }
     inner_map: 52
     getback_town: 3
+    getback:
+      - { x: 33435, y: 32803, map: 4 }
+      - { x: 33439, y: 32817, map: 4 }
+      - { x: 33440, y: 32809, map: 4 }
+      - { x: 33419, y: 32810, map: 4 }
+      - { x: 33426, y: 32823, map: 4 }
+      - { x: 33418, y: 32818, map: 4 }
+      - { x: 33432, y: 32824, map: 4 }
     catapults:
       - { x: 33642, y: 32748, map: 4, side: attack }
       - { x: 33619, y: 32748, map: 4, side: attack }
@@ -59,6 +90,15 @@ castles:
     tower: { x: 33524, y: 33396, map: 4 }
     inner_map: 64
     getback_town: 5
+    getback:
+      - { x: 33593, y: 33242, map: 4 }
+      - { x: 33593, y: 33248, map: 4 }
+      - { x: 33604, y: 33236, map: 4 }
+      - { x: 33599, y: 33236, map: 4 }
+      - { x: 33610, y: 33247, map: 4 }
+      - { x: 33610, y: 33241, map: 4 }
+      - { x: 33599, y: 33252, map: 4 }
+      - { x: 33605, y: 33252, map: 4 }
     catapults: []
     gate_npcs: []
 
@@ -68,6 +108,14 @@ castles:
     tower: { x: 32826, y: 32822, map: 66 }
     inner_map: 0
     getback_town: 7
+    getback:
+      - { x: 33702, y: 32492, map: 4 }
+      - { x: 33747, y: 32508, map: 4 }
+      - { x: 33696, y: 32498, map: 4 }
+      - { x: 33723, y: 32512, map: 4 }
+      - { x: 33710, y: 32521, map: 4 }
+      - { x: 33724, y: 32488, map: 4 }
+      - { x: 33693, y: 32513, map: 4 }
     catapults: []
     gate_npcs: []
 
@@ -77,6 +125,15 @@ castles:
     tower: { x: 34090, y: 33260, map: 4 }
     inner_map: 300
     getback_town: 6
+    getback:
+      - { x: 33915, y: 33114, map: 4 }
+      - { x: 34061, y: 33115, map: 4 }
+      - { x: 34090, y: 33168, map: 4 }
+      - { x: 34011, y: 33136, map: 4 }
+      - { x: 34093, y: 33117, map: 4 }
+      - { x: 33959, y: 33156, map: 4 }
+      - { x: 33992, y: 33120, map: 4 }
+      - { x: 34047, y: 33156, map: 4 }
     catapults: []
     sub_towers:
       - { x: 34057, y: 33291, map: 4, name: 青 }
@@ -91,6 +148,10 @@ castles:
     tower: { x: 33032, y: 32896, map: 320 }
     inner_map: 330
     getback_town: 10
+    getback:
+      - { x: 32792, y: 32807, map: 310 }
+      - { x: 32816, y: 32820, map: 310 }
+      - { x: 32823, y: 32797, map: 310 }
     catapults: []
     gate_npcs: []
 

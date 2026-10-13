@@ -43,10 +43,10 @@
 
 | # | 項目 | Java 行為 | Go 現況 | 狀態 | 備註 |
 |---|---|---|---|---|---|
-| 1-1 | 攻城守護塔不重生 | `L1WarSpawn.SpawnTower` 於攻城開始與奪城後重生塔 | `system/combat.go:738-750` 註解「不重生」；`castle_sys.go` 無 SpawnTower。一場攻城後塔永久消失 | 待辦 | |
-| 1-2 | 攻城排程在啟動時停住 | `WarTimeController` 啟動時若 war_time 已過期則往後推 | `castle_sys.go:69-72`、`301-307` 不推進，兩個分支都進不去 | 待辦 | |
-| 1-3 | 攻城間隔 | `WarInterval` 預設 4 天 | 寫死 7 天（`castle_sys.go:352`） | 待辦 | 應改設定鍵 |
-| 1-4 | 攻城結束清理 | 刪王冠、守護塔並重生塔；趕人用 getback 且排除 GM | 不刪王冠與塔；趕人用 `WarArea.X1-5`，不排除 GM | 待辦 | |
+| 1-1 | 攻城守護塔不重生 | `L1WarSpawn.SpawnTower` 於攻城結束與奪城後刪除舊塔並重生（亞丁含 4 座子塔） | 已補 `CastleSystem.SpawnTower`：攻城結束與王冠奪城時刪除戰爭區內所有守護塔（含屍體）後重生；亞丁生成 81189 與 81190-81193。順帶把亞丁主塔的可攻擊條件由「4 座子塔全毀」改為 Java 的「至少 3 座」 | 待驗證 | 2026-10-14 合併，單元測試涵蓋肯特／亞丁；客戶端顯示見第八節 V-1 |
+| 1-2 | 攻城排程在啟動時停住 | `WarTimeController.checkWarTime`：結束時間已過且不在戰爭中 → 下次攻城 = 現在 + WarInterval | `TickWar` 新增過期分支，推到 `now + WarInterval` 並寫回 DB；結束時間以 WarTime 推算 | 完成 | Java 此分支把結束時間設成與開始相同（實際永遠開不了戰），Go 不照抄。Java 的 `WarUpdate` 在推進時同時重設稅率 10%／寶庫歸零，Go 只推進時間，是否照抄需使用者拍板 |
+| 1-3 | 攻城間隔 | `WarInterval` 預設 4 天、`WarTime` 預設 2 小時 | 新增 `[gameplay] war_interval`（預設 `"96h"`）與 `war_time`（預設 `"2h"`），零值回退 Java 預設 | 完成 | Go 設定以 Duration 字串表示，`4d` 須寫成 `96h` |
+| 1-4 | 攻城結束清理 | 刪王冠、守護塔並重生塔；開戰與奪城趕人用 `getGetBackLoc` 隨機回城點且排除 GM | 攻城結束刪除戰爭區王冠與塔後重生；`castles.yaml` 新增各城 `getback` 清單（抄自 `L1TownLocation` GETBACK_LOC_*，狄亞得用 Java 固定 3 點），趕人隨機取一、heading 5、`IsGM()` 者不趕 | 待驗證 | 2026-10-14 合併；回城點見第八節 V-2 |
 | 1-5 | 模擬戰自動休戰 | 240 分鐘後自動結束 | `war_sys.go:130-148` 無計時器 | 待辦 | |
 | 1-6 | 血盟戰同意流程 | 宣戰／投降／休戰需對方盟主 `S_Message_YN` 217/221/222 同意；檢查 Lv ≤ 15（232）、戰區內（477）、已在戰爭中（234/236） | `handler/castle.go:198` → `war_sys.go:28` 直接生效，`attr.go` 無 217/221/222 | 待辦 | |
 | 1-7 | 寵物指定攻擊目標 | `C_SelectTarget`（opcode 223）回傳目標 | `C_OPCODE_SLAVE_CONTROL=223` 未在 `handler/context.go` 註冊；`pet_mgr.go:184` 已送 `S_SelectTarget` 但回應被丟掉 | 待辦 | `S_SelectTarget` opcode Java 54 / Go 236（`companion_pack.go:432`）需實機驗證 |
@@ -195,7 +195,9 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 
 | 編號 | 驗證步驟 | 預期結果 | 失敗時備案 | 風險 | 結果 |
 |---|---|---|---|---|---|
-| （尚無） | | | | | |
+| V-1（1-1、1-4） | 1. 將 `war_time`、`war_interval` 暫設為短值（如 `"5m"`、`"30m"`），把肯特 `castles.war_time` 設為一分鐘後。2. 以已宣戰的非城盟角色在開戰後打掉守護塔（81111）。3. 不去點王冠，等攻城結束。 | 塔死亡後原地出現王冠；攻城結束廣播後王冠消失、塔屍體消失，同一座標立刻出現滿血守護塔；伺服器 log 有「守護塔已重生」。亞丁城則主塔與 4 座子塔同時重生。 | 若塔屍體殘留或新塔看不到：檢查 `removeWarNpc` 的 `NpcCorpseCleanup`／`SetImpassable` 與 `spawnWarNpc` 的 `SendNpcPack` 範圍，必要時改用 `GetNearbyPlayersInShow`。 | 中 | |
+| V-2（1-4） | 1. 開戰前讓三個角色站在肯特旗內：城盟成員、一般非城盟、GM（`AccessLevel 200`、未 `.gm off`）。2. 等攻城開始。3. 另以奪城流程（點王冠）再測一次。 | 一般非城盟角色被傳到肯特村回城點之一（如 33048,32750 地圖 4），面向 5；城盟成員與 GM 留在原地；多次測試落點在 `castles.yaml` 的 `getback` 清單內隨機變化。 | 若落點不可站立：核對 `castles.yaml` 該城 `getback` 座標與 Java `GETBACK_LOC_*` 是否抄錯；若 GM 仍被趕：確認角色 `AccessLevel` 與 `GMModeOff`。 | 中 | |
+| V-3（1-1） | 1. 攻城中以已宣戰的盟主（君主）打掉塔後點王冠奪城。 | 王冠消失、城主轉移，塔立刻重生為新城主的守護塔，非新城盟玩家被趕回回城點，城門修復。 | 若塔未重生：檢查 `HandleCrownClick` 是否在 `removeWarNpc` 後呼叫 `SpawnTower`。 | 中 | |
 
 風險值：`高`（opcode／封包格式錯誤可能造成客戶端斷線或畫面異常，須單獨測試）、`中`（行為錯誤但不影響連線）、`低`（僅訊息文字或圖示差異）。
 
@@ -212,3 +214,4 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 | 2026-10-13 | 初版盤點（唯讀稽核，基準 Java `E:/L1JTW-Eddy`、Go `master` d35ff80） |
 | 2026-10-14 | 與 Claude Code 重讀登入實際呼叫鏈，修正 1-23 的正常重複登入描述，補登入／在線狀態實作與回歸。 |
 | 2026-10-14 | 新增 `待驗證` 狀態、對齊階段實作原則與第八節「實機待驗證清單」；需實機確認的項目改為先實作合併、再集中驗證。 |
+| 2026-10-14 | 攻城叢集 1-1～1-4：守護塔刪除後重生（含亞丁子塔、主塔 3 座子塔門檻）、攻城結束刪王冠、趕人改隨機回城點並排除 GM、過期攻城時間往後推、`war_time`／`war_interval` 設定鍵。1-2、1-3 完成；1-1、1-4 待驗證（第八節 V-1～V-3）。 |
