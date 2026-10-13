@@ -95,8 +95,8 @@ func checkLevelRestriction(sess *net.Session, playerLevel int16, info *data.Item
 		return false
 	}
 	if info.MaxLevel > 0 && int(playerLevel) > info.MaxLevel {
-		// "等級 %0以下才可使用此道具。" — use same message pattern
-		sendServerMessageArgs(sess, msgLevelTooLow, strconv.Itoa(info.MaxLevel))
+		// Java: S_PacketBox(MSG_LEVEL_OVER, max) — 「等級 %d 以下才能使用此道具」
+		sendPacketBoxLevelOver(sess, info.MaxLevel)
 		return false
 	}
 	return true

@@ -81,6 +81,7 @@ const (
 	S_OPCODE_CLANATTENTION          byte = 200 // S_ClanAttention (clan status change notify)
 	S_OPCODE_POLY                   byte = 76  // S_ChangeShape (polymorph visual change)
 	S_OPCODE_CURSEBLIND             byte = 47  // S_CurseBlind (致盲螢幕遮罩)
+	S_OPCODE_BLESSOFEVA             byte = 126 // S_SkillIconBlessOfEva (水底呼吸圖示)
 	S_OPCODE_POISON                 byte = 165 // S_Poison (中毒/凍結色調)
 	S_OPCODE_PARALYSIS              byte = 202 // S_Paralysis (麻痺/暈眩/凍結/睡眠/傳送鎖定)
 	S_OPCODE_SELECTLIST             byte = 83  // S_FixWeaponList (repair weapon list)

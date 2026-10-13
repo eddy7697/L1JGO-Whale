@@ -862,13 +862,50 @@ func SendMagicStatus(sess *net.Session, sp byte, mr int32) {
 	sendMagicStatus(sess, sp, mr)
 }
 
-// sendCurseBlind 發送 S_CurseBlind (opcode 47) — 致盲螢幕遮罩。
+// BuildCurseBlind 建構 S_CurseBlind (opcode 47) — 致盲螢幕遮罩。
 // Java 格式：[C opcode=47][H type]
 // type: 0=解除, 1=施加, 2=減弱施加
-func sendCurseBlind(sess *net.Session, blindType uint16) {
+func BuildCurseBlind(blindType uint16) []byte {
 	w := packet.NewWriterWithOpcode(packet.S_OPCODE_CURSEBLIND)
 	w.WriteH(blindType)
-	sess.Send(w.Bytes())
+	return w.Bytes()
+}
+
+// sendCurseBlind 發送 S_CurseBlind (opcode 47)。
+func sendCurseBlind(sess *net.Session, blindType uint16) {
+	sess.Send(BuildCurseBlind(blindType))
+}
+
+// BuildSkillIconBlessOfEva 建構 S_SkillIconBlessOfEva (opcode 126) — 伊娃的祝福（水底呼吸）圖示。
+// Java 格式：[C opcode=126][D objectId][H time]
+func BuildSkillIconBlessOfEva(objectID int32, timeSec uint16) []byte {
+	w := packet.NewWriterWithOpcode(packet.S_OPCODE_BLESSOFEVA)
+	w.WriteD(objectID)
+	w.WriteH(timeSec)
+	return w.Bytes()
+}
+
+// SendSkillIconBlessOfEva 發送 S_SkillIconBlessOfEva。
+func SendSkillIconBlessOfEva(sess *net.Session, objectID int32, timeSec uint16) {
+	if sess == nil {
+		return
+	}
+	sess.Send(BuildSkillIconBlessOfEva(objectID, timeSec))
+}
+
+// BuildPacketBoxLevelOver 建構 S_PacketBox MSG_LEVEL_OVER (sub 12)：
+// 「此道具只能在 %d 等級以下使用」。Java 格式：[C 250][C 12][C 0][C level]；level 0-49 以外不顯示。
+func BuildPacketBoxLevelOver(maxLevel int) []byte {
+	w := packet.NewWriterWithOpcode(packet.S_OPCODE_EVENT)
+	w.WriteC(12)
+	w.WriteC(0)
+	w.WriteC(byte(maxLevel))
+	return w.Bytes()
+}
+
+// sendPacketBoxLevelOver 發送等級上限提示。
+func sendPacketBoxLevelOver(sess *net.Session, maxLevel int) {
+	sess.Send(BuildPacketBoxLevelOver(maxLevel))
 }
 
 // --- Exported wrappers for system package usage ---
