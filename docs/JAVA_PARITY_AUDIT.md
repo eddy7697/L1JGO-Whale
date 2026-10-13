@@ -55,7 +55,7 @@
 | 1-20 | 料理製作 | 24 道、Lv1-4；營火 gfx 5943 檢查（1160）；90/5/5 成功／特級／失敗 | `handler/cooking.go:32-93` 只 8 道 Lv1；cookNo ≥ 2 材料錯（Java 41263+41265，Go 41276）；無營火、無機率、製作時誤送 buff 圖示 | 待辦 | 食用效果已完成 |
 | 1-21 | PK 扣業 | 無此行為 | `system/pvp.go:470-472` PK 時扣 100 業 | 待辦 | |
 | 1-22 | PK 懲罰（地獄） | `L1PcHellMonitor`：PK 達 10 次關進地圖 666 倒數；`C_Restart` 依 hellTime 重生 | `engine.go:1310` 有 `Punish` 門檻，`pvp.go:466` 只送警告 | 待辦 | |
-| 1-23 | 登入與在線狀態 | `C_AuthLogin` 在 DB online=1 時回 7、不踢舊；357 只用於 DB 離線但記憶體仍在線的例外路徑；啟動重設與在線上限 | 已補啟動重設、帳號持有者、原子登記、斷線重試、上限及選角保護，詳見 `docs/LOGIN_ONLINE_STATE.md` | 進行中 | `codex/login-online-state`；待驗證合併 |
+| 1-23 | 登入與在線狀態 | `C_AuthLogin` 在 DB online=1 時回 7、不踢舊；357 只用於 DB 離線但記憶體仍在線的例外路徑；啟動重設與在線上限 | 已補啟動重設、帳號持有者、原子登記、斷線重試、上限及選角保護，詳見 `docs/LOGIN_ONLINE_STATE.md` | 完成 | `89f2e10`；已通過 build／vet／完整測試與 Claude 審查，合併回本機 `master` |
 | 1-24 | 盟屋拍賣結算 | 訊息 524/527/528；無人得標延後 5 天；更新血盟 has_house；重設 onSale/tax_deadline | `auction_sys.go:207-331` 不發訊息、只延到隔天午夜、`clan.HasHouse` 只改記憶體 | 待辦 | |
 | 1-25 | 龍騎士覺醒 | 安塔瑞斯 +127 MaxHP/AC-12；法利昂 MR+30 四屬性+30；巴拉卡斯六屬性+5；變身 6894；每週期扣 8 MP 扣完解除；再施放解除 | `skill_buff.go:1291-1312`、`buffs.lua` 參照 yiwei 版，以上皆無 | 待辦 | |
 | 1-26 | 地面物品擁有者保護 | `L1ItemOwnerTimer` | `world/ground.go:32` 有 `OwnerID` 但撿取不檢查 | 待辦 | |
