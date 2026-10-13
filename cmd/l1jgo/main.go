@@ -737,7 +737,7 @@ func run() error {
 	runner.Register(system.NewCompanionAISystem(worldState, deps))
 	// Phase 3: Post-update
 	runner.Register(system.NewRegenSystem(worldState, luaEngine, houseTable, cfg))
-	runner.Register(system.NewWeatherSystem(worldState))
+	runner.Register(system.NewWeatherSystem(worldState, cfg.World))
 	runner.Register(system.NewLightSpawnSystem(worldState, lightSpawnList, npcTable))
 	mapTimerSys := system.NewMapTimerSystem(worldState, deps)
 	deps.MapTimer = mapTimerSys

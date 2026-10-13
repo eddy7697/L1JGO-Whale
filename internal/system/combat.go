@@ -952,8 +952,11 @@ func addExp(player *world.PlayerInfo, expGain int32, deps *handler.Deps) {
 		player.MP = player.MaxMP
 	}
 
-	// 發送經驗值更新
-	handler.SendExpUpdate(player.Session, player.Level, player.Exp)
+	// 升級時由 S_OwnCharStatus 首次通知新等級，對齊 Java levelUp。
+	// 先送 S_Exp 會提早更新客戶端等級，讓後續狀態封包失去升級差值。
+	if !leveledUp {
+		handler.SendExpUpdate(player.Session, player.Level, player.Exp)
+	}
 	if expGain > 0 {
 		handler.SendShowDrop(player.Session, handler.ShowDropExp, expGain)
 	}

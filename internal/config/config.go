@@ -31,7 +31,7 @@ type PersistenceConfig struct {
 }
 
 type WorldConfig struct {
-	WeatherEnabled   bool `toml:"weather_enabled"`
+	WeatherEnabled   bool `toml:"weather_enabled"`        // 自動天氣；預設關閉，GM 指令不受影響
 	WeatherInterval  int  `toml:"weather_interval_ticks"` // ticks between weather changes
 	GroundItemExpiry int  `toml:"ground_item_expiry"`     // ticks before ground items expire
 }
@@ -203,9 +203,9 @@ func defaults() *Config {
 			ArmorChance:  0.52, // Java default ENCHANT_CHANCE_ARMOR = 52
 		},
 		World: WorldConfig{
-			WeatherEnabled:   true,
-			WeatherInterval:  100, // ~20 seconds at 200ms/tick
-			GroundItemExpiry: 300, // ~60 seconds
+			WeatherEnabled:   false, // Java 預設不啟用隨機天氣
+			WeatherInterval:  100,   // ~20 seconds at 200ms/tick
+			GroundItemExpiry: 300,   // ~60 seconds
 		},
 		Character: CharacterConfig{
 			DefaultSlots:         6,

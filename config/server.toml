@@ -43,8 +43,8 @@ pet_exp_rate = 1.0             # 寵物經驗倍率
 
 # ── 世界設定 ────────────────────────────────────────────────
 [world]
-weather_enabled = true         # 啟用天氣系統
-weather_interval_ticks = 100   # 天氣變化間隔（ticks）
+weather_enabled = false        # 自動天氣（Java 預設關閉；GM .weather 仍可手動切換）
+weather_interval_ticks = 100   # 啟用自動天氣時的變化間隔（ticks；200ms/tick 時為 20 秒）
 ground_item_expiry = 300       # 地面物品過期時間（ticks, 300=60秒）
 
 # ── 衝裝設定 ────────────────────────────────────────────────

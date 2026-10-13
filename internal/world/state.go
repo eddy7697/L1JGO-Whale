@@ -653,9 +653,8 @@ type State struct {
 	ChatParties *ChatPartyManager
 	Clans       *ClanManager
 
-	// Weather & game time (accessed from game loop only)
-	Weather  byte // current weather type (0=clear, 1-3=snow, 17-19=rain)
-	LastHour int  // last game hour for hour-change detection (-1 = uninitialized)
+	// 天氣由遊戲迴圈存取；Java L1World 初始值為 4（無雨雪）。
+	Weather byte // 0/4=無雨雪，1-3=雪，16=停雨，17-19=雨
 
 	// 可重用 AOI 查詢 buffer（遊戲迴圈單線程，無需鎖）
 	aoiBuf       []uint64
@@ -663,15 +662,12 @@ type State struct {
 	effectAoiBuf []int32
 }
 
-// RandomizeWeather picks a random weather with weighted distribution.
-// Java defaults weather to 4 (clear) and never auto-changes. In Go, we add
-// some variety but keep clear weather dominant (~60%) to avoid constant rain/snow.
-// Valid values: 0=clear, 1-3=snow, 17-19=rain (Java confirms 17-19, not 16).
+// RandomizeWeather 僅供明確啟用的 Go 自動天氣使用；Java 預設不自動變天。
 func (s *State) RandomizeWeather() {
 	roll := rand.Intn(10) // 0-9
 	switch {
 	case roll < 6: // 60% clear
-		s.Weather = 0
+		s.Weather = 4
 	case roll < 8: // 20% snow (light)
 		s.Weather = byte(1 + rand.Intn(3)) // 1, 2, or 3
 	default: // 20% rain (light)
@@ -700,7 +696,7 @@ func NewState() *State {
 		groundItems:   make(map[int32]*GroundItem),
 		groundEffects: make(map[int32]*GroundEffect),
 		furnitureNpcs: make(map[int32]int32),
-		LastHour:      -1,
+		Weather:       4,
 	}
 }
 

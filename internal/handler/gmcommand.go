@@ -1326,24 +1326,24 @@ func gmTime(sess *net.Session, _ *world.PlayerInfo, args []string, deps *Deps) {
 
 func gmWeather(sess *net.Session, _ *world.PlayerInfo, args []string, deps *Deps) {
 	if len(args) < 1 {
-		gmMsg(sess, ".weather <0-3, 17-19>  (0=clear, 1-3=snow, 17-19=rain)")
+		gmMsg(sess, ".weather <0-4, 16-19>  (0/4=clear, 1-3=snow, 16=stop rain, 17-19=rain)")
 		return
 	}
 	val, err := strconv.Atoi(args[0])
 	if err != nil {
-		gmMsg(sess, ".weather <0-3, 17-19>")
+		gmMsg(sess, ".weather <0-4, 16-19>")
 		return
 	}
-	// Validate weather type (Java: 0=clear, 1-3=snow, 17-19=rain)
+	// Java Weather.java 的雨雪代碼，加上 L1World 的初始值 4。
 	valid := false
-	for _, t := range []int{0, 1, 2, 3, 17, 18, 19} {
+	for _, t := range []int{0, 1, 2, 3, 4, 16, 17, 18, 19} {
 		if val == t {
 			valid = true
 			break
 		}
 	}
 	if !valid {
-		gmMsg(sess, "有效值: 0,1,2,3,17,18,19")
+		gmMsg(sess, "有效值: 0,1,2,3,4,16,17,18,19")
 		return
 	}
 	deps.World.Weather = byte(val)
