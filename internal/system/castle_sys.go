@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/l1jgo/server/internal/config"
 	coresys "github.com/l1jgo/server/internal/core/system"
 	"github.com/l1jgo/server/internal/data"
 	"github.com/l1jgo/server/internal/handler"
@@ -20,6 +21,10 @@ type CastleSystem struct {
 	deps    *handler.Deps
 	castles map[int32]*handler.CastleInfo // castle_id → 運行時狀態
 	warEnd  map[int32]time.Time           // castle_id → 攻城戰結束時間
+
+	// now 與 teleport 可由測試替換；nil 時使用 time.Now 與 handler.TeleportPlayer。
+	now      func() time.Time
+	teleport func(sess *net.Session, player *world.PlayerInfo, x, y int32, mapID, heading int16)
 }
 
 // NewCastleSystem 建立城堡管理系統，從 DB 載入城堡狀態。
@@ -31,6 +36,39 @@ func NewCastleSystem(deps *handler.Deps) *CastleSystem {
 	}
 	s.loadFromDB()
 	return s
+}
+
+// clock 取得目前時間（測試可替換）。
+func (s *CastleSystem) clock() time.Time {
+	if s.now != nil {
+		return s.now()
+	}
+	return time.Now()
+}
+
+// warDuration 單場攻城戰持續時間（Java Config.ALT_WAR_TIME，預設 2h）。
+func (s *CastleSystem) warDuration() time.Duration {
+	if s.deps != nil && s.deps.Config != nil && s.deps.Config.Gameplay.WarTime > 0 {
+		return s.deps.Config.Gameplay.WarTime
+	}
+	return config.DefaultWarTime
+}
+
+// warInterval 攻城戰間隔（Java Config.ALT_WAR_INTERVAL，預設 4d）。
+func (s *CastleSystem) warInterval() time.Duration {
+	if s.deps != nil && s.deps.Config != nil && s.deps.Config.Gameplay.WarInterval > 0 {
+		return s.deps.Config.Gameplay.WarInterval
+	}
+	return config.DefaultWarInterval
+}
+
+// teleportPlayer 傳送玩家（測試可替換）。
+func (s *CastleSystem) teleportPlayer(player *world.PlayerInfo, x, y int32, mapID, heading int16) {
+	if s.teleport != nil {
+		s.teleport(player.Session, player, x, y, mapID, heading)
+		return
+	}
+	handler.TeleportPlayer(player.Session, player, x, y, mapID, heading, s.deps)
 }
 
 // loadFromDB 從 DB 載入城堡動態狀態。
@@ -65,9 +103,9 @@ func (s *CastleSystem) loadFromDB() {
 	// 從公會資料反查城主
 	s.refreshOwnerClans()
 
-	// 計算攻城戰結束時間（開始時間 + 2 小時）
+	// 計算攻城戰結束時間（開始時間 + WarTime；Java WarTimeController 建構子）
 	for id, ci := range s.castles {
-		s.warEnd[id] = ci.WarTime.Add(2 * time.Hour)
+		s.warEnd[id] = ci.WarTime.Add(s.warDuration())
 	}
 }
 
@@ -287,9 +325,9 @@ func (s *CastleSystem) TransferCastle(castleID int32, newClanID int32) {
 	}
 }
 
-// TickWar 攻城戰排程 tick。
+// TickWar 攻城戰排程 tick（Java: WarTimeController.checkWarTime）。
 func (s *CastleSystem) TickWar() {
-	now := time.Now()
+	now := s.clock()
 
 	for i := int32(1); i <= 8; i++ {
 		ci := s.castles[i]
@@ -302,9 +340,38 @@ func (s *CastleSystem) TickWar() {
 			if !ci.IsWar {
 				s.startWar(i, ci)
 			}
-		} else if warEnd.Before(now) && ci.IsWar {
-			s.endWar(i, ci)
+		} else if warEnd.Before(now) {
+			if ci.IsWar {
+				s.endWar(i, ci)
+			} else {
+				// 攻城時間已過期且不在戰爭中（例如伺服器停機跨過攻城時段）：
+				// Java 以「現在 + WarInterval」作為下次攻城時間，排程才不會卡住。
+				s.pushExpiredWarTime(i, ci, now)
+			}
 		}
+	}
+}
+
+// pushExpiredWarTime 將已過期的攻城時間往後推到 now + WarInterval。
+// Java WarTimeController.checkWarTime 的「更新過期的攻城時間」分支；
+// Java 同時把結束時間設為與開始相同（排程實際無法開戰），Go 改以 WarTime 推算結束時間。
+// Java 的 WarUpdate 在此分支也會重設稅率與寶庫，Go 只推進時間（見稽核表 1-2 備註）。
+func (s *CastleSystem) pushExpiredWarTime(castleID int32, ci *handler.CastleInfo, now time.Time) {
+	ci.WarTime = now.Add(s.warInterval())
+	s.warEnd[castleID] = ci.WarTime.Add(s.warDuration())
+
+	if s.deps.Log != nil {
+		s.deps.Log.Info("攻城時間已過期，往後推進",
+			zap.Int32("castle_id", castleID),
+			zap.String("name", ci.Name),
+			zap.Time("next_war_time", ci.WarTime),
+		)
+	}
+
+	if s.deps.CastleRepo != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		_ = s.deps.CastleRepo.UpdateWarTime(ctx, castleID, ci.WarTime)
 	}
 }
 
@@ -348,9 +415,9 @@ func (s *CastleSystem) endWar(castleID int32, ci *handler.CastleInfo) {
 	// 廣播攻城戰結束訊息（Java: MSG_WAR_END = 1）
 	handler.BroadcastPacketBoxWar(s.deps.World, 1, castleID)
 
-	// 更新下次攻城戰時間（+7 天）
-	ci.WarTime = ci.WarTime.Add(7 * 24 * time.Hour)
-	s.warEnd[castleID] = ci.WarTime.Add(2 * time.Hour)
+	// 更新下次攻城戰時間（+WarInterval，Java 預設 4 天；WarTimeController.WarUpdate）
+	ci.WarTime = ci.WarTime.Add(s.warInterval())
+	s.warEnd[castleID] = ci.WarTime.Add(s.warDuration())
 
 	if s.deps.CastleRepo != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -368,6 +435,12 @@ func (s *CastleSystem) endWar(castleID int32, ci *handler.CastleInfo) {
 
 	// 清除戰爭旗
 	s.ClearWarFlags(castleID)
+
+	// 移除未被拾取的王冠（Java: WarTimeController — L1CrownInstance.deleteMe）
+	s.ClearCrowns(castleID)
+
+	// 守護塔刪除後重生（Java: WarTimeController — L1TowerInstance.deleteMe + L1WarSpawn.SpawnTower）
+	s.SpawnTower(castleID)
 
 	// 重生投石車（Java: ServerWarExecutor — 攻城結束後重新生成滿血投石車）
 	s.ClearCatapults(castleID)
@@ -416,31 +489,37 @@ func (s *CastleSystem) distributeWarGifts(castleID int32, ci *handler.CastleInfo
 	}
 }
 
-// teleportNonClanPlayers 將城區內非城盟玩家傳送出城。
+// teleportNonClanPlayers 將城區內非城盟玩家趕回城鎮回城點。
+// Java: WarTimeController.checkWarTime／L1CrownInstance.onAction —
+// 旗內且非 GM 且非城盟成員者，傳送到 L1CastleLocation.getGetBackLoc(castleId)（隨機取一點，heading 5）。
 func (s *CastleSystem) teleportNonClanPlayers(castleID int32, ci *handler.CastleInfo) {
 	if s.deps.Castles == nil || s.deps.World == nil {
 		return
 	}
-	castleCfg := s.deps.Castles.Get(castleID)
-	if castleCfg == nil {
+	if s.deps.Castles.Get(castleID) == nil {
 		return
 	}
 
-	// 傳送目標座標（城區外）
-	tx := castleCfg.WarArea.X1 - 5
-	ty := castleCfg.WarArea.Y1 - 5
-	tmap := castleCfg.WarArea.Map
-
+	var targets []*world.PlayerInfo
 	s.deps.World.AllPlayers(func(player *world.PlayerInfo) {
 		if !s.deps.Castles.CheckInWarArea(castleID, player.X, player.Y, player.MapID) {
+			return
+		}
+		// GM 不被趕出（Java: !pc.isGm()）
+		if player.IsGM() {
 			return
 		}
 		// 城盟成員不傳送
 		if ci.OwnerClanID != 0 && player.ClanID == ci.OwnerClanID {
 			return
 		}
-		handler.TeleportPlayer(player.Session, player, tx, ty, tmap, 5, s.deps)
+		targets = append(targets, player)
 	})
+
+	for _, player := range targets {
+		loc := s.deps.Castles.GetbackLoc(castleID, rand.Intn)
+		s.teleportPlayer(player, loc.X, loc.Y, loc.Map, 5)
+	}
 }
 
 // repairCastleGates 修復城堡所有城門。
@@ -610,12 +689,10 @@ func (s *CastleSystem) HandleCrownClick(sess *net.Session, player *world.PlayerI
 	s.TransferCastle(castleID, player.ClanID)
 
 	// 刪除王冠
-	s.deps.World.RemoveNpc(npc.ID)
-	nearby := s.deps.World.GetNearbyPlayers(npc.X, npc.Y, npc.MapID, 0)
-	crownRemoveData := handler.BuildRemoveObject(npc.ID)
-	for _, p := range nearby {
-		p.Session.Send(crownRemoveData)
-	}
+	s.removeWarNpc(npc)
+
+	// 守護塔刪除後重生（Java: L1CrownInstance.onAction — tower.deleteMe + L1WarSpawn.SpawnTower）
+	s.SpawnTower(castleID)
 
 	// 通知新城盟成員
 	handler.BroadcastPacketBoxWar(s.deps.World, 3, castleID) // MSG_WAR_INITIATIVE
@@ -663,16 +740,144 @@ func (s *CastleSystem) CanDamageTower(player *world.PlayerInfo, npc *world.NpcIn
 		}
 	}
 
-	// 亞丁城主塔（81189）：必須先破壞 4 座子塔
-	if npc.NpcID == 81189 {
-		for _, n := range s.deps.World.NpcList() {
-			if n.NpcID >= 81190 && n.NpcID <= 81193 && !n.Dead {
-				return false // 還有子塔存活
-			}
+	// 亞丁城主塔（81189）：子塔至少破壞 3 座才可攻擊（Java: L1TowerInstance.receiveDamage subTowerDeadCount < 3 → 不可攻擊）
+	if npc.NpcID == npcIDAdenMainTower {
+		if s.adenSubTowerDeadCount() < 3 {
+			return false
 		}
 	}
 
 	return true
+}
+
+// adenSubTowerDeadCount 計算亞丁子塔（81190-81193）已被破壞的數量。
+func (s *CastleSystem) adenSubTowerDeadCount() int {
+	count := 0
+	for _, n := range s.deps.World.NpcList() {
+		if n.NpcID >= npcIDAdenSubTower1 && n.NpcID <= npcIDAdenSubTower1+3 && n.Dead {
+			count++
+		}
+	}
+	return count
+}
+
+// --- 守護塔／王冠生命週期（Java L1WarSpawn + WarTimeController + L1CrownInstance）---
+
+// 守護塔與王冠 NPC ID。
+const (
+	npcIDGuardianTower = 81111 // 一般城堡守護塔
+	npcIDAdenMainTower = 81189 // 亞丁城主塔
+	npcIDAdenSubTower1 = 81190 // 亞丁子塔 1-4 → 81190-81193
+	npcIDCrown         = 81125 // 王冠
+	adenCastleID       = 7
+)
+
+// SpawnTower 刪除城堡戰爭區內所有守護塔（含屍體）後，在塔座標重生守護塔。
+// Java: WarTimeController.checkWarTime／L1CrownInstance.onAction 先 tower.deleteMe()，
+// 再 L1WarSpawn.SpawnTower：一般城堡生成 81111，亞丁生成 81189 與四座子塔 81190-81193。
+func (s *CastleSystem) SpawnTower(castleID int32) {
+	if s.deps.Castles == nil || s.deps.Npcs == nil || s.deps.World == nil {
+		return
+	}
+	castleCfg := s.deps.Castles.Get(castleID)
+	if castleCfg == nil {
+		return
+	}
+
+	s.removeTowers(castleID)
+
+	towerNpcID := int32(npcIDGuardianTower)
+	if castleID == adenCastleID {
+		towerNpcID = npcIDAdenMainTower
+	}
+	s.spawnWarNpc(towerNpcID, castleCfg.Tower.X, castleCfg.Tower.Y, castleCfg.Tower.Map)
+
+	if castleID == adenCastleID {
+		for i, sub := range castleCfg.SubTowers {
+			if i >= 4 {
+				break
+			}
+			s.spawnWarNpc(npcIDAdenSubTower1+int32(i), sub.X, sub.Y, sub.Map)
+		}
+	}
+
+	if s.deps.Log != nil {
+		s.deps.Log.Info("守護塔已重生", zap.Int32("castle_id", castleID), zap.Int32("npc_id", towerNpcID))
+	}
+}
+
+// removeTowers 刪除城堡戰爭區內所有守護塔 NPC（存活或屍體）。
+func (s *CastleSystem) removeTowers(castleID int32) {
+	var toRemove []*world.NpcInfo
+	for _, npc := range s.deps.World.NpcList() {
+		if npc.Impl != "L1Tower" {
+			continue
+		}
+		if s.deps.Castles.CheckInWarArea(castleID, npc.X, npc.Y, npc.MapID) {
+			toRemove = append(toRemove, npc)
+		}
+	}
+	for _, npc := range toRemove {
+		s.removeWarNpc(npc)
+	}
+}
+
+// ClearCrowns 刪除城堡戰爭區內尚未被拾取的王冠（NPC 81125）。
+// Java: WarTimeController.checkWarTime — L1CrownInstance.deleteMe。
+func (s *CastleSystem) ClearCrowns(castleID int32) {
+	if s.deps.Castles == nil || s.deps.World == nil {
+		return
+	}
+	var toRemove []*world.NpcInfo
+	for _, npc := range s.deps.World.NpcList() {
+		if npc.NpcID != npcIDCrown {
+			continue
+		}
+		if s.deps.Castles.CheckInWarArea(castleID, npc.X, npc.Y, npc.MapID) {
+			toRemove = append(toRemove, npc)
+		}
+	}
+	for _, npc := range toRemove {
+		s.removeWarNpc(npc)
+	}
+}
+
+// removeWarNpc 立即從世界移除戰爭物件 NPC 並通知附近玩家（Java: deleteMe + S_RemoveObject）。
+// 屍體（Dead 且尚未清理 AOI）先做 AOI 清理，避免殘留在網格中。
+func (s *CastleSystem) removeWarNpc(npc *world.NpcInfo) {
+	if npc.Dead {
+		if npc.DeleteTimer > 0 {
+			s.deps.World.NpcCorpseCleanup(npc)
+		}
+	} else if s.deps.MapData != nil {
+		s.deps.MapData.SetImpassable(npc.MapID, npc.X, npc.Y, false)
+	}
+	s.deps.World.RemoveNpc(npc.ID)
+
+	nearby := s.deps.World.GetNearbyPlayersInShow(npc.X, npc.Y, npc.MapID, 0, npc.ShowID)
+	handler.BroadcastToPlayers(nearby, handler.BuildRemoveObject(npc.ID))
+}
+
+// spawnWarNpc 依模板在指定座標生成戰爭物件（Java: L1WarSpawn.SpawnWarObject），
+// 並向附近玩家送出 NPC 顯示封包。
+func (s *CastleSystem) spawnWarNpc(npcID int32, x, y int32, mapID int16) *world.NpcInfo {
+	tmpl := s.deps.Npcs.Get(npcID)
+	if tmpl == nil {
+		if s.deps.Log != nil {
+			s.deps.Log.Warn("戰爭物件 NPC 模板不存在", zap.Int32("npc_id", npcID))
+		}
+		return nil
+	}
+	npc := newRuntimeNpcFromTemplate(tmpl, x, y, mapID, 0, 0, 0, s.deps.SprTable)
+	s.deps.World.AddNpc(npc)
+	if s.deps.MapData != nil {
+		s.deps.MapData.SetImpassable(mapID, x, y, true)
+	}
+	nearby := s.deps.World.GetNearbyPlayers(x, y, mapID, 0)
+	for _, p := range nearby {
+		handler.SendNpcPack(p.Session, npc)
+	}
+	return npc
 }
 
 // SpawnWarFlags 攻城戰開始時沿城堡戰爭區邊界生成戰爭旗（NPC 81122）。

@@ -120,6 +120,17 @@ func LoadNpcTable(path string) (*NpcTable, error) {
 	return t, nil
 }
 
+// NewNpcTable 以程式建立 NPC 模板表（測試用）。
+func NewNpcTable(templates ...*NpcTemplate) *NpcTable {
+	t := &NpcTable{templates: make(map[int32]*NpcTemplate, len(templates))}
+	for _, tmpl := range templates {
+		if tmpl != nil {
+			t.templates[tmpl.NpcID] = tmpl
+		}
+	}
+	return t
+}
+
 // Get returns an NPC template by ID, or nil if not found.
 func (t *NpcTable) Get(npcID int32) *NpcTemplate {
 	return t.templates[npcID]

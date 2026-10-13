@@ -738,7 +738,8 @@ func handleNpcDeath(npc *world.NpcInfo, killer *world.PlayerInfo, nearby []*worl
 	// 守護塔死亡 → 生成王冠（Java: L1TowerInstance.Death）
 	if npc.Impl == "L1Tower" && deps.Castle != nil {
 		deps.Castle.OnTowerDeath(npc)
-		// 塔不給經驗、不掉落、不重生
+		// 塔不給經驗、不掉落；不走一般重生計時，
+		// 由 CastleSystem.SpawnTower 在攻城結束／奪城時刪除並重生（Java: L1WarSpawn.SpawnTower）
 		deps.World.NpcDied(npc)
 		if deps.MapData != nil {
 			deps.MapData.SetImpassable(npc.MapID, npc.X, npc.Y, false)

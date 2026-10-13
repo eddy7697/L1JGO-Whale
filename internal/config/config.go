@@ -136,7 +136,18 @@ type GameplayConfig struct {
 	// EnableTombEffect 啟用 yiwei 客製墓碑效果。
 	// 3.80C 原生客戶端沒有墓碑圖檔，只有安裝額外圖檔時才能開啟。
 	EnableTombEffect bool `toml:"enable_tomb_effect"`
+
+	// WarTime 對應 Java Config.ALT_WAR_TIME：單場攻城戰持續時間（預設 2h）。
+	WarTime time.Duration `toml:"war_time"`
+	// WarInterval 對應 Java Config.ALT_WAR_INTERVAL：攻城戰間隔（預設 4d = 96h）。
+	WarInterval time.Duration `toml:"war_interval"`
 }
+
+// 攻城排程預設值（Java altsettings.properties：WarTime = 2h、WarInterval = 4d）。
+const (
+	DefaultWarTime     = 2 * time.Hour
+	DefaultWarInterval = 4 * 24 * time.Hour
+)
 
 type DebugConfig struct {
 	ShowNpcID bool `toml:"show_npc_id"` // NPC 名稱旁顯示 NPC ID 和 GFX ID
@@ -237,6 +248,8 @@ func defaults() *Config {
 			HouseHPRBonus:           10,
 			HouseMPRBonus:           10,
 			RateWeightLimit:         1.0,
+			WarTime:                 DefaultWarTime,
+			WarInterval:             DefaultWarInterval,
 		},
 		Lua: LuaConfig{
 			TickBudgetPct: 0.50,                   // warn if Lua uses > 50% of tick
