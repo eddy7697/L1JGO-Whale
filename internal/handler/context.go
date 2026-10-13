@@ -734,6 +734,7 @@ type Deps struct {
 	CPShops          *data.CustomPointShopCache
 	AdvancedPoly     AdvancedPolymorphStore
 	AccountRepo      *persist.AccountRepo
+	Login            LoginManager
 	CharRepo         *persist.CharacterRepo
 	ItemRepo         *persist.ItemRepo
 	BeginnerRepo     *persist.BeginnerRepo // Java beginner 資料表：建角初始物品
@@ -857,7 +858,7 @@ func RegisterAll(reg *packet.Registry, deps *Deps) {
 
 	// Login phase — BeanFun login (opcode 210) has action byte prefix
 	reg.Register(packet.C_OPCODE_SHIFT_SERVER,
-		[]packet.SessionState{packet.StateVersionOK},
+		[]packet.SessionState{packet.StateVersionOK, packet.StateAuthenticated, packet.StateReturningToSelect, packet.StateInWorld},
 		func(sess any, r *packet.Reader) {
 			HandleAuthBeanFun(sess.(*net.Session), r, deps)
 		},

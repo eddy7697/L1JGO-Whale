@@ -71,7 +71,18 @@ func (s *Session) State() packet.SessionState {
 }
 
 func (s *Session) SetState(st packet.SessionState) {
-	s.state.Store(int32(st))
+	// Close can race with a database-backed login on the game loop. Once the
+	// transport is disconnecting, a late authentication must not reopen its
+	// protocol state and make queued authenticated packets dispatchable.
+	for {
+		previous := s.state.Load()
+		if packet.SessionState(previous) == packet.StateDisconnecting {
+			return
+		}
+		if s.state.CompareAndSwap(previous, int32(st)) {
+			return
+		}
+	}
 }
 
 // Start sends the plaintext init packet, initializes the cipher, and

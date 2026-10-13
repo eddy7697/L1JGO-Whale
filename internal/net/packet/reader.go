@@ -52,16 +52,23 @@ func (r *Reader) ReadD() int32 {
 
 // ReadS reads a null-terminated MS950 (Big5) string and returns UTF-8.
 func (r *Reader) ReadS() string {
+	value, _ := r.ReadSChecked()
+	return value
+}
+
+// ReadSChecked also reports whether the required NUL terminator was present.
+// Authentication must distinguish a truncated field from a valid empty string.
+func (r *Reader) ReadSChecked() (string, bool) {
 	start := r.off
 	for r.off < len(r.data) {
 		if r.data[r.off] == 0 {
 			raw := r.data[start:r.off]
 			r.off++ // skip null terminator
-			return decodeClientString(raw)
+			return decodeClientString(raw), true
 		}
 		r.off++
 	}
-	return decodeClientString(r.data[start:r.off])
+	return decodeClientString(r.data[start:r.off]), false
 }
 
 // decodeClientString 將客戶端編碼的位元組轉為 UTF-8 字串。

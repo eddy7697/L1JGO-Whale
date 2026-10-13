@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -35,7 +36,7 @@ func HandleAuthBeanFun(sess *net.Session, r *packet.Reader, deps *Deps) {
 	case loginActionLogin:
 		handleLogin(sess, r, deps, true)
 	case loginActionChange:
-		if sess.AccountName != "" {
+		if sess.AccountName != "" && (sess.State() == packet.StateAuthenticated || sess.State() == packet.StateReturningToSelect) {
 			sendCharacterList(sess, deps)
 		}
 	case loginActionLogout:
@@ -50,8 +51,16 @@ func HandleAuthDirect(sess *net.Session, r *packet.Reader, deps *Deps) {
 }
 
 func handleLogin(sess *net.Session, r *packet.Reader, deps *Deps, auto bool) {
-	accountName := strings.ToLower(r.ReadS())
-	password := r.ReadS()
+	if sess.IsClosed() || sess.State() != packet.StateVersionOK || sess.AccountName != "" {
+		return
+	}
+	rawAccount, accountComplete := r.ReadSChecked()
+	password, passwordComplete := r.ReadSChecked()
+	accountName := strings.ToLower(rawAccount)
+	if !accountComplete || !passwordComplete || !validLoginAccount(accountName) || len([]rune(password)) > 32 {
+		sendLoginResult(sess, loginWrongPass)
+		return
+	}
 	ip := sess.IP
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -109,21 +118,30 @@ func handleLogin(sess *net.Session, r *packet.Reader, deps *Deps, auto bool) {
 		return
 	}
 
-	// Check already online
-	if account.Online {
-		sendLoginResult(sess, loginAlreadyExists)
+	if deps.Login == nil {
+		deps.Log.Error("登入管理器未初始化")
+		sendLoginResult(sess, loginWrongPass)
 		return
 	}
-
-	// Success — mark online
-	if err := deps.AccountRepo.SetOnline(ctx, accountName, true); err != nil {
-		deps.Log.Error("設定上線狀態資料庫錯誤", zap.Error(err))
+	if err := deps.Login.Login(ctx, sess, account); err != nil {
+		switch {
+		case errors.Is(err, ErrAccountOnline):
+			sendLoginResult(sess, loginAlreadyExists)
+		case errors.Is(err, ErrServerFull), errors.Is(err, ErrLoginCollision):
+			sess.Close() // Java C_AuthLogin exception paths reject the new connection.
+		default:
+			deps.Log.Error("登入在線狀態登記失敗", zap.Error(err))
+			sendLoginResult(sess, loginWrongPass)
+		}
+		return
+	}
+	if sess.IsClosed() {
+		return // the input loop will release the account claim
 	}
 	if err := deps.AccountRepo.UpdateLastActive(ctx, accountName, ip); err != nil {
 		deps.Log.Error("更新最後活動時間資料庫錯誤", zap.Error(err))
 	}
 
-	sess.AccountName = accountName
 	sendLoginResult(sess, loginOK)
 
 	// Transition to Authenticated
@@ -133,6 +151,20 @@ func handleLogin(sess *net.Session, r *packet.Reader, deps *Deps, auto bool) {
 	sendCharacterList(sess, deps)
 
 	deps.Log.Info(fmt.Sprintf("登入成功  帳號=%s  ip=%s", accountName, ip))
+}
+
+// C_AuthLogin allows at most 32 ASCII account characters. Empty/truncated names
+// must never create an account that cannot be associated with a session owner.
+func validLoginAccount(name string) bool {
+	if len(name) == 0 || len(name) > 32 {
+		return false
+	}
+	for _, c := range name {
+		if !(c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_' || c == '.' || c == '@' || c == '-') {
+			return false
+		}
+	}
+	return true
 }
 
 // sendLoginResult 發送 S_LoginResult。

@@ -610,6 +610,20 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("net server: %w", err)
 	}
+	// Bind first so a second process on the same port cannot reset live flags.
+	// The DB lease additionally excludes another core using the same schema.
+	onlineCtx, stopOnline := context.WithTimeout(context.Background(), 10*time.Second)
+	onlineLease, err := accountRepo.BeginOnlineState(onlineCtx)
+	stopOnline()
+	if err != nil {
+		netServer.Shutdown()
+		return fmt.Errorf("initialize account online state: %w", err)
+	}
+	leaseFailures, stopLeaseMonitor := watchOnlineLease(onlineLease, 5*time.Second, 2*time.Second)
+	defer func() {
+		stopLeaseMonitor()
+		_ = onlineLease.Close(context.Background())
+	}()
 	go netServer.AcceptLoop()
 
 	// 8. Create event bus, session store, and systems
@@ -619,6 +633,9 @@ func run() error {
 	// Phase 0: Input — 註冊到 Runner，並由 inputPoll 以 2ms 頻率高頻驅動
 	// （透過 Runner.TickPhase 在系統 tick 之間只跑 Phase 0，消除 0~200ms 的輸入延遲）
 	inputSys := system.NewInputSystem(netServer, pktReg, sessStore, cfg.Network.MaxPacketsPerTick, accountRepo, charRepo, itemRepo, buffRepo, worldState, mapDataTable, petRepo, log)
+	loginSys := system.NewLoginSystem(accountRepo, cfg.Server.MaxOnlineUsers, log)
+	deps.Login = loginSys
+	inputSys.SetLoginSystem(loginSys)
 	runner.Register(inputSys)
 	// Phase 1: Event dispatch (double-buffer swap + deliver previous tick's events)
 	runner.Register(system.NewEventDispatchSystem(eventBus))
@@ -814,6 +831,12 @@ func run() error {
 		case <-inputPoll.C:
 			// 高頻輸入輪詢：只跑 Phase 0（透過 Runner.TickPhase 維持架構合規）
 			runner.TickPhase(coresys.PhaseInput, 0)
+		case err := <-leaseFailures:
+			// Fail closed: a different core could now own the database. Do not
+			// clear its online flags or overwrite it with old character saves.
+			netServer.Shutdown()
+			sessStore.ForEach(func(sess *gonet.Session) { sess.Close() })
+			return fmt.Errorf("account online state lease lost: %w", err)
 		case <-gmShutdownCh:
 			if err := persistSys.SaveAllPlayersWithError(); err != nil {
 				log.Error("GM 關機取消：存檔失敗", zap.Error(err))
@@ -823,6 +846,9 @@ func run() error {
 				continue
 			}
 			netServer.Shutdown()
+			if err := inputSys.DisconnectAll(); err != nil {
+				return fmt.Errorf("shutdown account cleanup: %w", err)
+			}
 			log.Info("GM 指令關閉伺服器完成")
 			return nil
 		case sig := <-shutdownCh:
@@ -830,6 +856,9 @@ func run() error {
 			// Save all players before stopping
 			persistSys.SaveAllPlayers()
 			netServer.Shutdown()
+			if err := inputSys.DisconnectAll(); err != nil {
+				return fmt.Errorf("shutdown account cleanup: %w", err)
+			}
 			log.Info("伺服器已停止")
 			return nil
 		}

@@ -54,10 +54,11 @@ type EnchantConfig struct {
 }
 
 type ServerConfig struct {
-	Name      string `toml:"name"`
-	ID        int    `toml:"id"`
-	Language  int    `toml:"language"` // 0=US, 3=Taiwan, 4=Japan, 5=China
-	StartTime int64  // set at boot, not from config
+	MaxOnlineUsers int    `toml:"max_online_users"` // Java MaximumOnlineUsers; authenticated accounts, privileged accounts exempt
+	Name           string `toml:"name"`
+	ID             int    `toml:"id"`
+	Language       int    `toml:"language"` // 0=US, 3=Taiwan, 4=Japan, 5=China
+	StartTime      int64  // set at boot, not from config
 }
 
 type DatabaseConfig struct {
@@ -161,6 +162,9 @@ func Load(path string) (*Config, error) {
 	if err := toml.Unmarshal(data, cfg); err != nil {
 		return nil, fmt.Errorf("parse config %s: %w", path, err)
 	}
+	if cfg.Server.MaxOnlineUsers < 0 {
+		return nil, fmt.Errorf("server.max_online_users must not be negative")
+	}
 	cfg.Server.StartTime = time.Now().Unix()
 	return cfg, nil
 }
@@ -168,9 +172,10 @@ func Load(path string) (*Config, error) {
 func defaults() *Config {
 	return &Config{
 		Server: ServerConfig{
-			Name:     "L1JGO-Whale",
-			ID:       1,
-			Language: 3, // Taiwan
+			MaxOnlineUsers: 30, // Java server.properties default
+			Name:           "L1JGO-Whale",
+			ID:             1,
+			Language:       3, // Taiwan
 		},
 		Database: DatabaseConfig{
 			DSN:             "sslmode=disable", // connection details come from PG* environment variables

@@ -5,6 +5,7 @@
 
 # ── 伺服器基本設定 ──────────────────────────────────────────
 [server]
+max_online_users = 30          # Java MaximumOnlineUsers；含選角中的帳號，access_level > 0 不受限
 name = "L1JGO-Whale"         # 伺服器名稱（顯示於登入畫面）
 id = 1                        # 伺服器編號
 language = 3               # 語系代碼：0=美國, 3=台灣, 4=日本, 5=中國

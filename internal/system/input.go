@@ -31,6 +31,7 @@ type InputSystem struct {
 	petRepo      *persist.PetRepo
 	hauntedHouse handler.HauntedHouseManager // 鬼屋副本（斷線時移除成員）
 	questWorld   handler.QuestWorldManager   // 任務副本（斷線時移除成員 — MISS-P0-003）
+	login        *LoginSystem
 }
 
 func NewInputSystem(
@@ -73,9 +74,14 @@ func (s *InputSystem) SetQuestWorld(qw handler.QuestWorldManager) {
 	s.questWorld = qw
 }
 
+func (s *InputSystem) SetLoginSystem(login *LoginSystem) { s.login = login }
+
 func (s *InputSystem) Phase() coresys.Phase { return coresys.PhaseInput }
 
 func (s *InputSystem) Update(_ time.Duration) {
+	if s.login != nil {
+		s.login.Tick()
+	}
 	// Accept new sessions
 	for {
 		select {
@@ -91,18 +97,19 @@ doneNew:
 	for {
 		select {
 		case id := <-s.netServer.DeadSessions():
-			s.store.Remove(id)
+			if sess := s.store.Get(id); sess != nil {
+				sess.Close()
+			}
 		default:
 			goto doneDead
 		}
 	}
 doneDead:
 
-	// Drain packets from each session (up to maxPerTick per session)
+	// Clean closed owners before any new login, independent of map iteration order.
 	for id, sess := range s.store.Raw() {
 		if sess.IsClosed() {
-			// Drain any remaining packets BEFORE cleanup (e.g. C_SAVEIO sent just before disconnect).
-			// Use the last known state so handlers like HandleCharConfig can still find the player.
+			// Drain queued packets without reviving the terminal disconnect state.
 			for i := 0; i < s.maxPerTick; i++ {
 				select {
 				case data := <-sess.InQueue:
@@ -124,9 +131,15 @@ doneDead:
 			s.store.Remove(id)
 			continue
 		}
+	}
 
+	// Drain packets from live sessions (up to maxPerTick per session).
+	for _, sess := range s.store.Raw() {
 		processed := false
 		for i := 0; i < s.maxPerTick; i++ {
+			if sess.IsClosed() || sess.State() == packet.StateDisconnecting {
+				break
+			}
 			select {
 			case data := <-sess.InQueue:
 				processed = true
@@ -426,12 +439,30 @@ func (s *InputSystem) handleDisconnect(sess *net.Session) {
 		}
 	}
 
-	// Mark account offline
-	if sess.AccountName != "" {
+	// Release only after character/inventory cleanup, and only for its owner.
+	if s.login != nil {
+		s.login.Logout(sess)
+	} else if sess.AccountName != "" && s.accountRepo != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		s.accountRepo.SetOnline(ctx, sess.AccountName, false)
+		if err := s.accountRepo.SetOnline(ctx, sess.AccountName, false); err != nil {
+			s.log.Error("清除帳號在線狀態失敗", zap.Error(err))
+		}
 		cancel()
 	}
+}
+
+// DisconnectAll is called on the game loop after stopping the listener. It also
+// releases accounts at character select, which SaveAllPlayers cannot see.
+func (s *InputSystem) DisconnectAll() error {
+	for id, sess := range s.store.Raw() {
+		sess.Close()
+		s.handleDisconnect(sess)
+		s.store.Remove(id)
+	}
+	if s.login != nil {
+		return s.login.RetryOffline()
+	}
+	return nil
 }
 
 // bookmarksToRows converts world.Bookmark slice to persist.BookmarkRow slice for JSONB storage.

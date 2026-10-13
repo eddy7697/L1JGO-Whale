@@ -16,6 +16,10 @@ import (
 // HandleEnterWorld processes C_ENTER_WORLD (opcode 137).
 // Packet order matches Java: LoginGame → InvList → OwnCharStatus → MapID → OwnCharPack → SPMR → Weather
 func HandleEnterWorld(sess *net.Session, r *packet.Reader, deps *Deps) {
+	if sess.IsClosed() || sess.AccountName == "" || sess.State() != packet.StateAuthenticated || deps.World.GetBySession(sess.ID) != nil {
+		sess.Close()
+		return
+	}
 	charName := r.ReadS()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -33,6 +37,12 @@ func HandleEnterWorld(sess *net.Session, r *packet.Reader, deps *Deps) {
 			zap.String("char", charName),
 			zap.String("account", sess.AccountName),
 		)
+		sess.Close()
+		return
+	}
+	// Java C_LoginToServer rejects an already active character. Never replace
+	// another session's world indexes, even if authentication state is stale.
+	if deps.World.GetByCharID(ch.ID) != nil {
 		sess.Close()
 		return
 	}
