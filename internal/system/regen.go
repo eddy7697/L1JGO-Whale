@@ -94,6 +94,8 @@ func (s *RegenSystem) tickHPRegen(p *world.PlayerInfo) {
 		WeightPct:         int(p.Inv.Weight242(maxW)),
 		HasExoticVitalize: p.HasBuff(169),
 		HasAdditionalFire: p.HasBuff(176),
+		HasGoldenWing:     p.Inv.HasEquipped(20049), // Java HpRegeneration.isOverWeight 第 204 行
+		HasBerserkers:     p.HasBuff(55),            // Java HpRegeneration.regenHp 第 128 行
 	})
 	if amount == 0 {
 		return

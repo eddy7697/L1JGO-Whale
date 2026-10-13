@@ -77,6 +77,8 @@ func HandleEnterWorld(sess *net.Session, r *packet.Reader, deps *Deps) {
 		SessionID:    sess.ID,
 		Session:      sess,
 		CharID:       ch.ID,
+		OriginalStr:  ch.OriginalStr,
+		OriginalCon:  ch.OriginalCon,
 		Name:         ch.Name,
 		X:            ch.X,
 		Y:            ch.Y,

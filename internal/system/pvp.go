@@ -69,19 +69,13 @@ func (s *PvPSystem) HandlePvPAttack(attacker, target *world.PlayerInfo) {
 
 	// 目標絕對屏障：免疫所有傷害（Java: L1AttackPc.dmg0 — AbsoluteBarrier 返回 true）
 	if target.AbsoluteBarrier {
-		nearby := s.deps.World.GetNearbyPlayersInShow(target.X, target.Y, target.MapID, 0, target.ShowID)
-		for _, viewer := range nearby {
-			handler.SendAttackPacket(viewer.Session, attacker.CharID, target.CharID, 0, attacker.Heading)
-		}
+		broadcastPlayerMeleeAttack(s.deps.World, attacker, target.CharID, 0)
 		return
 	}
 
 	// 安全區內只播放動畫，不造成傷害（Java: isSafetyZone 檢查）
 	if s.inSafetyZone(attacker) || s.inSafetyZone(target) {
-		nearby := s.deps.World.GetNearbyPlayersInShow(target.X, target.Y, target.MapID, 0, target.ShowID)
-		for _, viewer := range nearby {
-			handler.SendAttackPacket(viewer.Session, attacker.CharID, target.CharID, 0, attacker.Heading)
-		}
+		broadcastPlayerMeleeAttack(s.deps.World, attacker, target.CharID, 0)
 		return
 	}
 
@@ -184,9 +178,7 @@ func (s *PvPSystem) HandlePvPAttack(attacker, target *world.PlayerInfo) {
 		}
 	}
 
-	for _, viewer := range nearby {
-		handler.SendAttackPacket(viewer.Session, attacker.CharID, target.CharID, damage, attacker.Heading)
-	}
+	broadcastPlayerMeleeAttack(s.deps.World, attacker, target.CharID, damage)
 
 	// 浮動傷害數字（PvP 近戰）
 	if attacker.AttackView {
@@ -258,25 +250,13 @@ func (s *PvPSystem) HandlePvPFarAttack(attacker, target *world.PlayerInfo) {
 
 	// 目標絕對屏障：免疫所有傷害
 	if target.AbsoluteBarrier {
-		handler.SendArrowAttackPacket(attacker.Session, attacker.CharID, target.CharID, 0, attacker.Heading,
-			attacker.X, attacker.Y, target.X, target.Y)
-		nearby := s.deps.World.GetNearbyPlayersInShow(target.X, target.Y, target.MapID, attacker.SessionID, target.ShowID)
-		for _, viewer := range nearby {
-			handler.SendArrowAttackPacket(viewer.Session, attacker.CharID, target.CharID, 0, attacker.Heading,
-				attacker.X, attacker.Y, target.X, target.Y)
-		}
+		broadcastPlayerRangedAttack(s.deps.World, attacker, target.CharID, 0, target.X, target.Y)
 		return
 	}
 
 	// 安全區內只播放動畫
 	if s.inSafetyZone(attacker) || s.inSafetyZone(target) {
-		handler.SendArrowAttackPacket(attacker.Session, attacker.CharID, target.CharID, 0, attacker.Heading,
-			attacker.X, attacker.Y, target.X, target.Y)
-		nearby := s.deps.World.GetNearbyPlayersInShow(target.X, target.Y, target.MapID, attacker.SessionID, target.ShowID)
-		for _, viewer := range nearby {
-			handler.SendArrowAttackPacket(viewer.Session, attacker.CharID, target.CharID, 0, attacker.Heading,
-				attacker.X, attacker.Y, target.X, target.Y)
-		}
+		broadcastPlayerRangedAttack(s.deps.World, attacker, target.CharID, 0, target.X, target.Y)
 		return
 	}
 
@@ -338,13 +318,8 @@ func (s *PvPSystem) HandlePvPFarAttack(attacker, target *world.PlayerInfo) {
 	damage = applyImmuneToHarmDamage(target, damage)
 	damage = applyReductionArmorDamage(target, damage, true)
 
-	handler.SendArrowAttackPacket(attacker.Session, attacker.CharID, target.CharID, damage, attacker.Heading,
-		attacker.X, attacker.Y, target.X, target.Y)
+	broadcastPlayerRangedAttack(s.deps.World, attacker, target.CharID, damage, target.X, target.Y)
 	nearby := s.deps.World.GetNearbyPlayersInShow(target.X, target.Y, target.MapID, attacker.SessionID, target.ShowID)
-	for _, viewer := range nearby {
-		handler.SendArrowAttackPacket(viewer.Session, attacker.CharID, target.CharID, damage, attacker.Heading,
-			attacker.X, attacker.Y, target.X, target.Y)
-	}
 
 	// 浮動傷害數字（PvP 遠程）
 	if attacker.AttackView {

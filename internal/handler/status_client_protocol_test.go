@@ -51,7 +51,8 @@ func TestPlayerStatusMatchesLogin38Layout(t *testing.T) {
 		HP: 70001, MaxHP: 100002, MP: 80003, MaxMP: 120004,
 		AC: -300, Food: 225, Lawful: -12345,
 		FireRes: 101, WaterRes: -102, WindRes: 103, EarthRes: -104,
-		Inv: world.NewInventory(),
+		ClassType: 6, // Illusionist: STR/CON 20 earn no original-stat weight bonus (Java resetOriginal*WeightReduction)
+		Inv:       world.NewInventory(),
 	}
 	// STR/CON 20 give 3150 capacity; 1575 weight is exactly half full.
 	p.Inv.AddItem(1, 1575, "weight", 0, 1000, true, 0)
@@ -93,7 +94,7 @@ func TestStatusUpdatesKeepLogin38ClockAligned(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			sess := newHandlerTestSession(t, 1)
 			p := &world.PlayerInfo{
-				Level: 80, Str: 20, Con: 20, AC: tc.ac,
+				Level: 80, Str: 20, Con: 20, AC: tc.ac, ClassType: 6,
 				Food: tc.food, Lawful: tc.lawful, Inv: world.NewInventory(),
 			}
 			if tc.weight != 0 {

@@ -210,6 +210,7 @@ func gmSetting(sess *net.Session, player *world.PlayerInfo, args []string, deps 
 // Preserve every persisted field when a GM changes a single attribute.
 func gmCharacterRow(p *world.PlayerInfo) *persist.CharacterRow {
 	row := &persist.CharacterRow{Name: p.Name, Level: p.Level, Exp: int64(p.Exp), HP: p.HP, MP: p.MP,
+		OriginalStr: p.OriginalStr, OriginalCon: p.OriginalCon,
 		MaxHP: p.MaxHP, MaxMP: p.MaxMP, X: p.X, Y: p.Y, MapID: p.MapID, Heading: p.Heading,
 		Lawful: p.Lawful, Str: p.Str, Dex: p.Dex, Con: p.Con, Wis: p.Wis, Cha: p.Cha, Intel: p.Intel,
 		BonusStats: p.BonusStats, ElixirStats: p.ElixirStats, ClanID: p.ClanID, ClanName: p.ClanName,

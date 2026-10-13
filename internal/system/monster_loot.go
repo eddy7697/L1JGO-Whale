@@ -44,8 +44,7 @@ func (s *ItemUseSystem) canReceiveMonsterDrop(p *world.PlayerInfo, drop data.Dro
 	if p.Inv.Size()+slots > world.MaxInventorySize {
 		return false
 	}
-	weight := int64(info.Weight) * int64(qty)
-	return weight <= 2147483647 && !p.Inv.IsOverWeight(int32(weight), world.PlayerMaxWeight(p))
+	return !p.Inv.IsOverWeightAdd(info.Weight, qty, world.PlayerMaxWeight(p))
 }
 
 // Eddy DropTable.dropShare: a full receiver's loot falls at their feet. Auto-share
@@ -126,6 +125,7 @@ func (s *ItemUseSystem) dropMonsterLootOnGround(p *world.PlayerInfo, npc *world.
 		Stackable:  info.Stackable || drop.ItemID == world.AdenaItemID,
 		EnchantLvl: int8(drop.EnchantLevel), Bless: byte(info.Bless),
 		Identified: info.Category == data.CategoryEtcItem,
+		LightFuel:  world.ItemLightFuel(drop.ItemID),
 	}
 	applyItemTemplate(item, info)
 	g := &world.GroundItem{

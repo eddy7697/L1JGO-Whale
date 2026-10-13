@@ -33,6 +33,8 @@ type PlayerInfo struct {
 	MP                        int32
 	MaxMP                     int32
 	Str                       int16
+	OriginalStr               int16 // 創角／洗點第一階段的 STR，永久配點不改變此值
+	OriginalCon               int16 // 創角／洗點第一階段的 CON，永久配點不改變此值
 	Dex                       int16
 	Con                       int16
 	Wis                       int16
@@ -167,8 +169,8 @@ type PlayerInfo struct {
 	Equip        Equipment  // equipped items (value type, zero-initialized = all slots empty)
 	EquipBonuses EquipStats // cached equipment stat contributions (for diff on equip/unequip)
 
-	// 額外負重加成（MISS-P1-006）— 來自魔法娃娃等系統，獨立於 buff 14/218。
-	// 對應 Java Doll_Weight 系列。PlayerMaxWeight 會疊加此值。
+	// 魔法娃娃負重加成百分比（Java L1MagicDoll.getWeightReductionByDoll，
+	// L1PcInstance.getMaxWeight 第 2944-2946 行除以 100 後乘進上限）。值 20 代表 +20%。
 	WeightBonus int32
 	// 額外負重百分比（Java add_weightUP）。值 4 代表最大負重 +4%。
 	WeightBonusPct int16

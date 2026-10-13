@@ -50,5 +50,7 @@ func (p *PlayerInfo) SpendMP(amount int32) {
 	p.MP -= amount
 	if p.IsGM() {
 		p.MP = p.MaxMP
+	} else if p.MP < 0 {
+		p.MP = 0
 	}
 }

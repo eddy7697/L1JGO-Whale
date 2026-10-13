@@ -115,7 +115,7 @@ func (s *SkillSystem) applyElfWaterHealingModifiers(target *world.PlayerInfo, he
 }
 
 func applyPlayerHealDeltaLikeJava(deps *handler.Deps, target *world.PlayerInfo, heal int32) bool {
-	if target == nil || heal == 0 {
+	if target == nil || target.Dead || target.HP <= 0 || heal == 0 {
 		return false
 	}
 	if heal > 0 {

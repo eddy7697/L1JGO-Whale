@@ -59,6 +59,9 @@ func applyPlayerPotionHealingModifiersLikeJava(player *world.PlayerInfo, heal in
 }
 
 func isPlayerItemUseBlocked(sess *net.Session, player *world.PlayerInfo) bool {
+	if player.Dead || player.HP <= 0 {
+		return true
+	}
 	if player.Paralyzed || player.Sleeped {
 		handler.SendParalysis(sess, handler.TeleportUnlock)
 		return true
@@ -87,6 +90,24 @@ func (s *ItemUseSystem) itemUseLineOfSightBlockedLikeJava(player *world.PlayerIn
 func (s *ItemUseSystem) UseConsumable(sess *net.Session, player *world.PlayerInfo, invItem *world.InvItem, itemInfo *data.ItemInfo) bool {
 	if isPlayerItemUseBlocked(sess, player) {
 		return false
+	}
+	if world.ItemLightRange(invItem.ItemID) > 0 {
+		if invItem.LightFuel <= 0 && invItem.ItemID != 40004 {
+			return false
+		}
+		invItem.NowLighting = !invItem.NowLighting
+		handler.UpdatePlayerLight(player, s.deps.World)
+		handler.SendItemNameUpdate(sess, invItem, itemInfo)
+		return false // 切換燈具不消耗物品。
+	}
+	if invItem.ItemID == 40003 {
+		if lantern := player.Inv.FindByItemID(40002); lantern != nil {
+			lantern.LightFuel = world.ItemLightFuel(invItem.ItemID)
+			handler.SendItemNameUpdate(sess, lantern, s.deps.Items.Get(lantern.ItemID))
+			handler.SendServerMessage(sess, 230)
+		}
+		s.consumeUsedItem(sess, player, invItem)
+		return true
 	}
 
 	if s.useDragonEye(sess, player, invItem, itemInfo) {

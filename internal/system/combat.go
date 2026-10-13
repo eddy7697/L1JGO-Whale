@@ -43,6 +43,13 @@ func (s *CombatSystem) AddExp(player *world.PlayerInfo, expGain int32) {
 
 func (s *CombatSystem) Update(_ time.Duration) {
 	for _, req := range s.requests {
+		// Inventory or STR/CON may have changed after this request was queued.
+		if p := s.deps.World.GetBySession(req.AttackerSessionID); p != nil && p.Inv != nil && p.Inv.Weight242(world.PlayerMaxWeight(p)) >= 197 {
+			if p.Session != nil {
+				handler.SendServerMessage(p.Session, 110)
+			}
+			continue
+		}
 		if req.FromClient && s.handleClientAttackMiss(req) {
 			continue
 		}
@@ -142,17 +149,11 @@ func (s *CombatSystem) sendClientAttackMiss(player *world.PlayerInfo, targetID, 
 			}
 		}
 	}
-	nearby := s.deps.World.GetNearbyPlayersInShow(player.X, player.Y, player.MapID, player.SessionID, player.ShowID)
 	if arrowAction {
-		handler.SendArrowAttackPacket(player.Session, player.CharID, targetID, 0, player.Heading, player.X, player.Y, x, y)
-		for _, viewer := range nearby {
-			handler.SendArrowAttackPacket(viewer.Session, player.CharID, targetID, 0, player.Heading, player.X, player.Y, x, y)
-		}
+		broadcastPlayerRangedAttack(s.deps.World, player, targetID, 0, x, y)
 		return
 	}
-	data := handler.BuildAttackPacket(player.CharID, targetID, 0, player.Heading)
-	player.Session.Send(data)
-	handler.BroadcastToPlayers(nearby, data)
+	broadcastPlayerMeleeAttack(s.deps.World, player, targetID, 0)
 }
 
 // ==================== 近戰攻擊 ====================
@@ -226,10 +227,7 @@ func (s *CombatSystem) processMeleeAttack(sessID uint64, targetID int32) *handle
 		}
 
 		player.Heading = CalcHeading(player.X, player.Y, npc.X, npc.Y)
-		nearby := ws.GetNearbyPlayersInShow(npc.X, npc.Y, npc.MapID, 0, npc.ShowID)
-		for _, viewer := range nearby {
-			handler.SendAttackPacket(viewer.Session, player.CharID, npc.ID, 0, player.Heading)
-		}
+		broadcastPlayerMeleeAttack(ws, player, npc.ID, 0)
 		return nil
 	}
 
@@ -368,9 +366,7 @@ func (s *CombatSystem) processMeleeAttack(sessID uint64, targetID int32) *handle
 	}
 
 	// 廣播攻擊動畫
-	for _, viewer := range nearby {
-		handler.SendAttackPacket(viewer.Session, player.CharID, npc.ID, damage, player.Heading)
-	}
+	broadcastPlayerMeleeAttack(ws, player, npc.ID, damage)
 
 	// 浮動傷害數字（GFX 12266-12315 數字 / 12316 MISS）
 	if player.AttackView {
@@ -548,13 +544,7 @@ func (s *CombatSystem) processRangedAttackForPlayer(player *world.PlayerInfo, ta
 	}
 	if !isAttackableNpc(npc.Impl) {
 		player.Heading = CalcHeading(player.X, player.Y, npc.X, npc.Y)
-		handler.SendArrowAttackPacket(player.Session, player.CharID, npc.ID, 0, player.Heading,
-			player.X, player.Y, npc.X, npc.Y)
-		nearby := ws.GetNearbyPlayersInShow(npc.X, npc.Y, npc.MapID, sessID, npc.ShowID)
-		for _, viewer := range nearby {
-			handler.SendArrowAttackPacket(viewer.Session, player.CharID, npc.ID, 0, player.Heading,
-				player.X, player.Y, npc.X, npc.Y)
-		}
+		broadcastPlayerRangedAttack(ws, player, npc.ID, 0, npc.X, npc.Y)
 		return nil
 	}
 
@@ -688,12 +678,7 @@ func (s *CombatSystem) processRangedAttackForPlayer(player *world.PlayerInfo, ta
 	}
 
 	// 廣播遠程攻擊動畫（含箭矢投射物）
-	handler.SendArrowAttackPacket(player.Session, player.CharID, npc.ID, damage, player.Heading,
-		player.X, player.Y, npc.X, npc.Y)
-	for _, viewer := range nearby {
-		handler.SendArrowAttackPacket(viewer.Session, player.CharID, npc.ID, damage, player.Heading,
-			player.X, player.Y, npc.X, npc.Y)
-	}
+	broadcastPlayerRangedAttack(ws, player, npc.ID, damage, npc.X, npc.Y)
 
 	// 浮動傷害數字（遠程攻擊）
 	if player.AttackView {
@@ -1072,9 +1057,7 @@ func (s *CombatSystem) processScarecrowHit(player *world.PlayerInfo, npc *world.
 	nearby := ws.GetNearbyPlayersInShow(npc.X, npc.Y, npc.MapID, 0, npc.ShowID)
 
 	// 廣播攻擊動畫
-	for _, viewer := range nearby {
-		handler.SendAttackPacket(viewer.Session, player.CharID, npc.ID, damage, player.Heading)
-	}
+	broadcastPlayerMeleeAttack(ws, player, npc.ID, damage)
 
 	// 命中時播放木人受傷動畫（Java: S_DoActionGFX action=2）
 	if damage > 0 {

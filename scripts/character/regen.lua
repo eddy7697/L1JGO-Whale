@@ -24,26 +24,24 @@ function get_hp_regen_interval(level, class_type)
 end
 
 -- calc_hp_regen_amount(ctx) -> {amount}
--- ctx = {level, con, hpr, food, weight_pct, has_exotic_vitalize, has_additional_fire}
+-- ctx = {level, con, hpr, food, weight_pct, has_exotic_vitalize, has_additional_fire,
+--        has_golden_wing, has_berserkers}
 -- weight_pct = Weight242 value (0-242 scale)
 --
--- Java HpRegeneration (L1PcInstance.isRegenHp + HprExecutor.regenHp):
---   負重判定優先：若 weight240 >= 120，EXOTIC_VITALIZE(169) 或 ADDITIONAL_FIRE(176)
---     可同時繞過食物檢查並維持 12 tick 一次的回復。
---   非負重才檢查 food < 3。
---   CON bonus: Lv12+, CON >= 14: random(CON-12)+1, cap 14（Go 端目前的簡化公式）
+-- Java HpRegeneration.regenHp (Eddy) 第 127-134 行：
+--   if (food < 3 || isOverWeight(pc) || hasSkillEffect(BERSERKERS)) { bonus = 0; equipHpr = min(equipHpr, 0) }
+-- isOverWeight 第 198-209 行：EXOTIC_VITALIZE / ADDITIONAL_FIRE / 裝備 20049 視為未超重，
+--   否則 121 <= getWeight242()。
+--   CON bonus: Lv12+, CON >= 14: random(CON-12)+1, cap 14
 function calc_hp_regen_amount(ctx)
-    local blocked = false
-
-    -- 負重檢查（Java 門檻 120，先於食物檢查）
-    if ctx.weight_pct >= 120 then
-        if not ctx.has_exotic_vitalize and not ctx.has_additional_fire then
-            blocked = true
-        end
-    elseif ctx.food < 3 then
-        -- 非負重時才檢查食物（Java：負重+EXOTIC_VITALIZE 會略過食物檢查）
-        blocked = true
+    -- 負重判定（HP 門檻 121）
+    local overweight = ctx.weight_pct >= 121
+    if ctx.has_exotic_vitalize or ctx.has_additional_fire or ctx.has_golden_wing then
+        overweight = false
     end
+
+    -- 食物、負重、狂暴任一成立即停止基礎回復（Java 三者為 OR，彼此獨立）
+    local blocked = ctx.food < 3 or overweight or (ctx.has_berserkers == true)
 
     local bonus = 0
     local equip_hpr = ctx.hpr or 0
@@ -72,24 +70,20 @@ end
 -- calc_mp_regen_amount(ctx) -> {amount}
 -- ctx = {wis, mpr, food, weight_pct, has_exotic_vitalize, has_additional_fire, has_blue_potion}
 --
--- Java MpRegeneration (L1PcInstance.isRegenMp + MprExecutor.regenMp):
---   負重判定優先：若 weight240 >= 120，EXOTIC_VITALIZE(169) 或 ADDITIONAL_FIRE(176)
---     可同時繞過食物檢查並維持 64 tick 一次的回復。
---   非負重才檢查 food < 3。
+-- Java MpRegeneration.regenMp (Eddy) 第 104-109 行：
+--   if (food < 3 || isOverWeight(pc)) { baseMpr = 0; itemMpr = min(itemMpr, 0) }
+-- isOverWeight 第 118-126 行：EXOTIC_VITALIZE / ADDITIONAL_FIRE 視為未超重，
+--   否則 120 <= getWeight242()（MP 門檻 120，與 HP 的 121 不同；MP 沒有 20049 例外）。
 --   WIS 15-16 → 2, WIS >= 17 → 3, else 1
 --   Blue Potion bonus: effective WIS min 11, +WIS-10
 function calc_mp_regen_amount(ctx)
-    local blocked = false
-
-    -- 負重檢查（Java 門檻 120，先於食物檢查）
-    if ctx.weight_pct >= 120 then
-        if not ctx.has_exotic_vitalize and not ctx.has_additional_fire then
-            blocked = true
-        end
-    elseif ctx.food < 3 then
-        -- 非負重時才檢查食物（Java：負重+EXOTIC_VITALIZE 會略過食物檢查）
-        blocked = true
+    local overweight = ctx.weight_pct >= 120
+    if ctx.has_exotic_vitalize or ctx.has_additional_fire then
+        overweight = false
     end
+
+    -- 食物與負重彼此獨立（Java 為 OR）
+    local blocked = ctx.food < 3 or overweight
 
     local base_mpr = 0
     local equip_mpr = ctx.mpr or 0

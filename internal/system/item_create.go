@@ -61,8 +61,7 @@ func (s *ItemCreateSystem) GiveItemWithOptions(sess *net.Session, player *world.
 		return nil, false
 	}
 
-	addWeight := info.Weight * count
-	if addWeight > 0 && player.Inv.IsOverWeight(addWeight, world.PlayerMaxWeight(player)) {
+	if info.Weight > 0 && player.Inv.IsOverWeightAdd(info.Weight, count, world.PlayerMaxWeight(player)) {
 		if sess != nil {
 			handler.SendServerMessage(sess, 82)
 		}

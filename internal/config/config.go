@@ -129,6 +129,9 @@ type GameplayConfig struct {
 	HouseHPRBonus  int `toml:"house_hpr_bonus"`  // 血盟小屋 HP 回復加成
 	HouseMPRBonus  int `toml:"house_mpr_bonus"`  // 血盟小屋 MP 回復加成
 
+	// RateWeightLimit 對應 Java Config.RATE_WEIGHT_LIMIT：最大負重倍率（0 = 負重條永遠為 0）。
+	RateWeightLimit float64 `toml:"rate_weight_limit"`
+
 	// EnableTombEffect 啟用 yiwei 客製墓碑效果。
 	// 3.80C 原生客戶端沒有墓碑圖檔，只有安裝額外圖檔時才能開啟。
 	EnableTombEffect bool `toml:"enable_tomb_effect"`
@@ -228,6 +231,7 @@ func defaults() *Config {
 			MaxFoodSatiety:          225,
 			HouseHPRBonus:           10,
 			HouseMPRBonus:           10,
+			RateWeightLimit:         1.0,
 		},
 		Lua: LuaConfig{
 			TickBudgetPct: 0.50,                   // warn if Lua uses > 50% of tick

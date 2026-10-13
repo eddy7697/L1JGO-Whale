@@ -161,7 +161,7 @@ func HandleUseItem(sess *net.Session, r *packet.Reader, deps *Deps) {
 	objectID := r.ReadD()
 
 	player := deps.World.GetBySession(sess.ID)
-	if player == nil {
+	if player == nil || player.Dead || player.HP <= 0 {
 		return
 	}
 
@@ -294,6 +294,14 @@ func buildViewName(item *world.InvItem, itemInfo *data.ItemInfo) string {
 	// Stack count suffix (Java: getNumberedName — applies to ALL stackable items)
 	if item.Count > 1 {
 		name += fmt.Sprintf(" (%d)", item.Count)
+	}
+	if world.ItemLightRange(item.ItemID) > 0 {
+		if item.NowLighting {
+			name += " ($10)"
+		}
+		if (item.ItemID == 40001 || item.ItemID == 40002) && item.LightFuel <= 0 {
+			name += " ($11)"
+		}
 	}
 	if item.Equipped && itemInfo != nil {
 		switch itemInfo.Category {
@@ -663,14 +671,7 @@ func classBitmask(info *data.ItemInfo) byte {
 // Java: L1ItemInstance.getWeight() = max(count * templateWeight / 1000, 1).
 // Template weight is in 1/1000 units; this converts to display units.
 func calcItemWeight(item *world.InvItem, info *data.ItemInfo) int32 {
-	if info.Weight == 0 {
-		return 0
-	}
-	w := item.Count * info.Weight / 1000
-	if w < 1 {
-		w = 1
-	}
-	return w
+	return world.StackWeight(info.Weight, item.Count)
 }
 
 // buildStatusBytes generates the TLV-encoded item attribute bytes matching
@@ -703,6 +704,9 @@ func buildStatusBytes(item *world.InvItem, info *data.ItemInfo) []byte {
 
 	case data.CategoryEtcItem:
 		switch {
+		case info.Type == "light":
+			buf = append(buf, 22)
+			buf = appendUint16LE(buf, uint16(world.ItemLightRange(item.ItemID)))
 		case info.Type == "arrow":
 			buf = append(buf, 1, byte(info.DmgSmall), byte(info.DmgLarge))
 		case info.FoodVolume > 0:

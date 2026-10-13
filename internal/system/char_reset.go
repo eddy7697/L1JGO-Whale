@@ -115,6 +115,8 @@ func (s *CharResetSystem) ResetStage1(sess *net.Session, player *world.PlayerInf
 
 	// 套用新屬性
 	player.Str = newStr
+	player.OriginalStr = newStr
+	player.OriginalCon = newCon
 	player.Intel = newInt
 	player.Wis = newWis
 	player.Dex = newDex

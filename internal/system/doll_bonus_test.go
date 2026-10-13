@@ -58,14 +58,16 @@ func TestApplyDollBonuses_WeightAndDmgReduction(t *testing.T) {
 	}
 }
 
-// MISS-P1-006: PlayerMaxWeight 必須將 WeightBonus 納入計算，否則 weight 道具沒有意義。
+// Java L1PcInstance.getMaxWeight 第 2944-2946、2956-2958 行：娃娃負重值是百分比，
+// 與其他百分比加總後乘上 150*floor(0.6*STR+0.4*CON+1)。
 func TestPlayerMaxWeight_IncludesWeightBonus(t *testing.T) {
 	p := &world.PlayerInfo{Str: 30, Con: 30}
 	base := world.PlayerMaxWeight(p)
-	p.WeightBonus = 200
+	p.WeightBonus = 20
 	withBonus := world.PlayerMaxWeight(p)
-	if withBonus-base != 200 {
-		t.Fatalf("加 200 WeightBonus 後 MaxWeight 應 +200，實際差距 %d", withBonus-base)
+	want := float64(world.MaxWeight(30, 30)) * 20 / 100
+	if withBonus-base != want {
+		t.Fatalf("娃娃 weight 20 應讓最大負重 +20%% 基礎值（%g），實際差距 %g", want, withBonus-base)
 	}
 }
 

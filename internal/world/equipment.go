@@ -4,34 +4,34 @@ package world
 type EquipSlot int
 
 const (
-	SlotNone    EquipSlot = 0
-	SlotHelm    EquipSlot = 1
-	SlotArmor   EquipSlot = 2
-	SlotGlove   EquipSlot = 3
-	SlotBoots   EquipSlot = 4
-	SlotShield  EquipSlot = 5
-	SlotCloak   EquipSlot = 6
-	SlotRing1   EquipSlot = 7
-	SlotRing2   EquipSlot = 8
-	SlotAmulet  EquipSlot = 9
-	SlotBelt    EquipSlot = 10
-	SlotWeapon  EquipSlot = 11
-	SlotEarring EquipSlot = 12
-	SlotGuarder EquipSlot = 13
-	SlotTShirt  EquipSlot = 14
-	SlotRing3       EquipSlot = 15 // 第3戒指欄（Lv76 任務開通）
-	SlotRing4       EquipSlot = 16 // 第4戒指欄（Lv81 任務開通）
-	SlotRuneLeft    EquipSlot = 17 // 符石
-	SlotRune2       EquipSlot = 18 // 第二符石
-	SlotEarring2    EquipSlot = 19 // 第二耳環
-	SlotPants       EquipSlot = 20 // 褲子
-	SlotExpand1     EquipSlot = 21 // 擴展欄1
-	SlotExpand2     EquipSlot = 22 // 擴展欄2
-	SlotExpand3     EquipSlot = 23 // 擴展欄3
-	SlotExpand4     EquipSlot = 24 // 擴展欄4
-	SlotBadge       EquipSlot = 25 // 徽章
-	SlotPauldron    EquipSlot = 26 // 盾甲
-	SlotMax         EquipSlot = 27
+	SlotNone     EquipSlot = 0
+	SlotHelm     EquipSlot = 1
+	SlotArmor    EquipSlot = 2
+	SlotGlove    EquipSlot = 3
+	SlotBoots    EquipSlot = 4
+	SlotShield   EquipSlot = 5
+	SlotCloak    EquipSlot = 6
+	SlotRing1    EquipSlot = 7
+	SlotRing2    EquipSlot = 8
+	SlotAmulet   EquipSlot = 9
+	SlotBelt     EquipSlot = 10
+	SlotWeapon   EquipSlot = 11
+	SlotEarring  EquipSlot = 12
+	SlotGuarder  EquipSlot = 13
+	SlotTShirt   EquipSlot = 14
+	SlotRing3    EquipSlot = 15 // 第3戒指欄（Lv76 任務開通）
+	SlotRing4    EquipSlot = 16 // 第4戒指欄（Lv81 任務開通）
+	SlotRuneLeft EquipSlot = 17 // 符石
+	SlotRune2    EquipSlot = 18 // 第二符石
+	SlotEarring2 EquipSlot = 19 // 第二耳環
+	SlotPants    EquipSlot = 20 // 褲子
+	SlotExpand1  EquipSlot = 21 // 擴展欄1
+	SlotExpand2  EquipSlot = 22 // 擴展欄2
+	SlotExpand3  EquipSlot = 23 // 擴展欄3
+	SlotExpand4  EquipSlot = 24 // 擴展欄4
+	SlotBadge    EquipSlot = 25 // 徽章
+	SlotPauldron EquipSlot = 26 // 盾甲
+	SlotMax      EquipSlot = 27
 )
 
 // Equipment tracks what a player currently has equipped.
@@ -167,6 +167,9 @@ type EquipStats struct {
 	AddMPR    int
 	AddSP     int
 	MDef      int
+
+	// 防具負重加成百分比（Java L1Armor.getWeightReduction → L1PcInstance.addWeightReduction）
+	WeightReduction int
 
 	// 元素抗性
 	DefFire  int

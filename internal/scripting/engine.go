@@ -1407,6 +1407,8 @@ type HPRegenContext struct {
 	WeightPct         int
 	HasExoticVitalize bool
 	HasAdditionalFire bool
+	HasGoldenWing     bool // Java HpRegeneration.isOverWeight: checkEquipped(20049) 視為未超重
+	HasBerserkers     bool // Java HpRegeneration.regenHp: BERSERKERS 使 bonus 歸零
 }
 
 // CalcHPRegenAmount calls Lua calc_hp_regen_amount(ctx).
@@ -1432,6 +1434,8 @@ func (e *Engine) CalcHPRegenAmount(ctx HPRegenContext) int {
 	} else {
 		t.RawSetString("has_additional_fire", lua.LFalse)
 	}
+	t.RawSetString("has_golden_wing", lua.LBool(ctx.HasGoldenWing))
+	t.RawSetString("has_berserkers", lua.LBool(ctx.HasBerserkers))
 
 	if err := e.vm.CallByParam(lua.P{
 		Fn:      fn,

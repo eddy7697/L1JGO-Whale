@@ -277,7 +277,7 @@ func (s *SkillSystem) executeFoeSlayerOnPlayer(sess *net.Session, caster *world.
 	// 隨後不論目標死活都廣播 7020/12119 並嘗試 COPY_SHOCK_STUN（dead target 的 setParalyzed 為 no-op，但 buff 仍會被 setSkillEffect）。
 	for range foeSlayerHitCount {
 		damage := s.calcFoeSlayerPlayerHitDamage(caster, target)
-		s.broadcastFoeSlayerAttack(caster, target.CharID, damage, nearby)
+		s.broadcastFoeSlayerAttack(caster, target.CharID, damage)
 		s.applyFoeSlayerPlayerDamage(sess, caster, target, damage)
 	}
 	bonus := foeSlayerRandomBonus(skill)
@@ -297,7 +297,7 @@ func (s *SkillSystem) executeFoeSlayerOnNpc(sess *net.Session, caster *world.Pla
 	// applyFoeSlayerNpcDamage 對 npc.Dead 已有 guard，迴圈後段呼叫安全 no-op。
 	for range foeSlayerHitCount {
 		damage := s.calcFoeSlayerNpcHitDamage(caster, npc)
-		s.broadcastFoeSlayerAttack(caster, npc.ID, damage, nearby)
+		s.broadcastFoeSlayerAttack(caster, npc.ID, damage)
 		s.applyFoeSlayerNpcDamage(sess, caster, npc, damage, nearby)
 	}
 	bonus := foeSlayerRandomBonus(skill)
@@ -484,10 +484,8 @@ func (s *SkillSystem) applyFoeSlayerNpcStun(npc *world.NpcInfo, skill *data.Skil
 	handler.BroadcastToPlayers(nearby, handler.BuildSkillEffect(npc.ID, 81162))
 }
 
-func (s *SkillSystem) broadcastFoeSlayerAttack(caster *world.PlayerInfo, targetID int32, damage int32, nearby []*world.PlayerInfo) {
-	for _, viewer := range nearby {
-		handler.SendAttackPacket(viewer.Session, caster.CharID, targetID, damage, caster.Heading)
-	}
+func (s *SkillSystem) broadcastFoeSlayerAttack(caster *world.PlayerInfo, targetID int32, damage int32) {
+	broadcastPlayerMeleeAttack(s.deps.World, caster, targetID, damage)
 }
 
 func (s *SkillSystem) broadcastFoeSlayerEffects(casterID, targetID int32, nearby []*world.PlayerInfo) {

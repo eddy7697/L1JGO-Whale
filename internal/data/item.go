@@ -144,6 +144,10 @@ type ItemInfo struct {
 	BowHitMod int
 	BowDmgMod int
 
+	// Weight capacity bonus in percent (armor — Java: L1Armor.weight_reduction,
+	// applied through L1PcInstance.addWeightReduction / getMaxWeight).
+	WeightReduction int
+
 	// Stat bonuses (weapon + armor)
 	AddStr int
 	AddCon int
@@ -460,6 +464,7 @@ type armorEntry struct {
 	DmgModifier     int    `yaml:"dmg_modifier"`
 	BowHitModifier  int    `yaml:"bow_hit_modifier"`
 	BowDmgModifier  int    `yaml:"bow_dmg_modifier"`
+	WeightReduction int    `yaml:"weight_reduction"`
 	DefFire         int    `yaml:"defense_fire"`
 	DefWater        int    `yaml:"defense_water"`
 	DefWind         int    `yaml:"defense_wind"`
@@ -511,6 +516,7 @@ func loadArmors(t *ItemTable, path string) error {
 			DmgMod:          a.DmgModifier,
 			BowHitMod:       a.BowHitModifier,
 			BowDmgMod:       a.BowDmgModifier,
+			WeightReduction: a.WeightReduction,
 			SafeEnchant:     a.SafeEnchant,
 			Bless:           a.Bless,
 			Tradeable:       a.Tradeable,

@@ -357,9 +357,9 @@ func (s *EquipSystem) RecalcEquipStats(sess *net.Session, player *world.PlayerIn
 	handler.SendAbilityScores(sess, player)
 	handler.SendMagicStatus(sess, byte(player.SP), int32(player.MR))
 
-	// 力量/體質變化時更新負重上限
+	// 力量/體質/防具負重加成變化時更新負重上限
 	neo := player.EquipBonuses
-	if neo.AddStr != old.AddStr || neo.AddCon != old.AddCon {
+	if neo.AddStr != old.AddStr || neo.AddCon != old.AddCon || neo.WeightReduction != old.WeightReduction {
 		handler.SendWeightUpdate(sess, player)
 	}
 }
@@ -604,6 +604,7 @@ func calcEquipStats(player *world.PlayerInfo, items *data.ItemTable, armorSets *
 		stats.AddMPR += info.AddMPR
 		stats.AddSP += info.AddSP
 		stats.MDef += info.MDef
+		stats.WeightReduction += info.WeightReduction // Java L1EquipmentSlot: pc.addWeightReduction(armor.getWeightReduction())
 
 		// 元素抗性
 		stats.DefFire += info.DefFire

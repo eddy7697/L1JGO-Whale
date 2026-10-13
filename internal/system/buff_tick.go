@@ -27,6 +27,8 @@ func (s *BuffTickSystem) Update(_ time.Duration) {
 		prevBuffCount := len(p.ActiveBuffs)
 		handler.TickPlayerBuffs(p, s.deps)
 		tickItemMagicEnchants(p, s.deps)
+		// 交易、丟棄、銷毀光源後，同一 tick 重新同步人物光圈。
+		handler.UpdatePlayerLight(p, s.world)
 		TickPlayerPoison(p, s.deps)
 		TickPlayerCurse(p, s.deps)
 		TickCatapultSilence(p)

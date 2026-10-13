@@ -64,6 +64,8 @@ func HandleChangeChar(sess *net.Session, _ *packet.Reader, deps *Deps) {
 		}
 		row := &persist.CharacterRow{
 			Name:        player.Name,
+			OriginalStr: player.OriginalStr,
+			OriginalCon: player.OriginalCon,
 			Level:       player.Level,
 			Exp:         int64(player.Exp),
 			HP:          player.HP,

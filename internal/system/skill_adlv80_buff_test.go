@@ -1,6 +1,7 @@
 package system
 
 import (
+	"math"
 	"testing"
 
 	"github.com/l1jgo/server/internal/data"
@@ -102,9 +103,10 @@ func TestSkillBuffADLV80BlessingsApplyYiweiStatsThroughGoBuffSystem(t *testing.T
 			}
 			assertADLV80PlayerDeltas(t, player, tt.wantAC, tt.wantDex, tt.wantMaxHP, tt.wantMaxMP, tt.wantHit, tt.wantDmg, tt.wantBowHit, tt.wantBowDmg, tt.wantMR, tt.wantHPR, tt.wantMPR, tt.wantEarth, tt.wantWater, tt.wantWind)
 			if tt.wantWeightPct != 0 {
-				wantWeight := baseWeight * (100 + tt.wantWeightPct) / 100
-				if got := world.PlayerMaxWeight(player); got != wantWeight {
-					t.Fatalf("ADLV80_1 add_weightUP(4) 應讓最大負重 +4%%，got=%d want=%d", got, wantWeight)
+				// Java getMaxWeight 將各百分比加總後乘以基礎值，因此 +4% 等於基礎值的 4%。
+				wantWeight := baseWeight + float64(world.MaxWeight(player.Str, player.Con)*tt.wantWeightPct)/100
+				if got := world.PlayerMaxWeight(player); math.Abs(got-wantWeight) > 1e-9 {
+					t.Fatalf("ADLV80_1 add_weightUP(4) 應讓最大負重 +4%%，got=%g want=%g", got, wantWeight)
 				}
 			}
 
@@ -126,7 +128,7 @@ func TestSkillBuffADLV80BlessingsApplyYiweiStatsThroughGoBuffSystem(t *testing.T
 			assertADLV80PlayerDeltas(t, player, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 			if tt.wantWeightPct != 0 {
 				if got := world.PlayerMaxWeight(player); got != baseWeight {
-					t.Fatalf("ADLV80_1 stop 後最大負重應還原，got=%d want=%d", got, baseWeight)
+					t.Fatalf("ADLV80_1 stop 後最大負重應還原，got=%g want=%g", got, baseWeight)
 				}
 			}
 

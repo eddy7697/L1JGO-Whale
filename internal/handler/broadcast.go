@@ -202,14 +202,22 @@ func BuildLight(objID int32, lightSize byte) []byte {
 }
 
 // CalcPlayerLight 計算玩家光源大小（Java turnOnOffLight 邏輯）。
-// 優先級：日光術(14) > 道具光源(未實作) > 0
+// 日光術與已點亮道具取最大值（Java L1Character.turnOnOffLight）。
 func CalcPlayerLight(p *world.PlayerInfo) byte {
-	// 技能 2（日光術）= lightSize 14
+	var light byte
 	if p.HasBuff(2) {
-		return 14
+		light = 14
 	}
-	// TODO: 道具光源（type2=0, type=2, isLighting 的物品 lightRange）
-	return 0
+	if p.Inv != nil {
+		for _, item := range p.Inv.Items {
+			if item != nil && item.Count > 0 && item.NowLighting {
+				if radius := world.ItemLightRange(item.ItemID); radius > light {
+					light = radius
+				}
+			}
+		}
+	}
+	return light
 }
 
 // UpdatePlayerLight 重新計算並廣播玩家光源。
@@ -221,9 +229,11 @@ func UpdatePlayerLight(p *world.PlayerInfo, ws *world.State) {
 	p.LightSize = newLight
 
 	// 發送給自己
-	sendLight(p.Session, p.CharID, newLight)
+	if p.Session != nil {
+		sendLight(p.Session, p.CharID, newLight)
+	}
 
-	if p.IsInvisible() {
+	if p.IsInvisible() || ws == nil {
 		return
 	}
 

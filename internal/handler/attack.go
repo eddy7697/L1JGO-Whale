@@ -55,6 +55,11 @@ func queueClientAttack(sess *net.Session, r *packet.Reader, deps *Deps, melee bo
 	if player == nil || player.Dead || player.Paralyzed || player.Sleeped {
 		return
 	}
+	// 負重過重無法攻擊（Java C_Attack：getWeight242() >= 197 → S_ServerMessage(110) 後 return）。
+	if player.Inv != nil && player.Inv.Weight242(world.PlayerMaxWeight(player)) >= 197 {
+		sendServerMessage(sess, 110)
+		return
+	}
 
 	targetID := r.ReadD()
 	x := int32(r.ReadH())

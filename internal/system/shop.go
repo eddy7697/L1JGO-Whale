@@ -127,9 +127,14 @@ func (s *ShopSystem) BuyFromNpc(sess *net.Session, r *packet.Reader, count int, 
 	}
 
 	// 扣除金幣（含稅）
-	var addWeight int32
+	var addWeight int64
 	for _, ri := range resolved {
-		addWeight += ri.weight * ri.qty
+		weight := world.AddWeight(ri.weight, ri.qty)
+		if weight < 0 {
+			handler.SendServerMessage(sess, 82)
+			return
+		}
+		addWeight += weight
 	}
 	if player.Inv.IsOverWeight(addWeight, world.PlayerMaxWeight(player)) {
 		handler.SendServerMessage(sess, 82)

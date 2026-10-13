@@ -79,6 +79,7 @@ base_ac = 10                       # 基礎防禦等級
 max_food_satiety = 225             # 飽食度上限
 house_hpr_bonus = 10               # 血盟小屋 HP 回復加成（Java: HOMEHPR）
 house_mpr_bonus = 10               # 血盟小屋 MP 回復加成（Java: HOMEMPR）
+rate_weight_limit = 1.0            # 最大負重倍率（Java: RATE_WEIGHT_LIMIT；0 = 負重條永遠為 0）
 enable_tomb_effect = false         # 3.80C 原生客戶端沒有墓碑圖檔；安裝 yiwei 額外圖檔後才可開啟
 
 # ── Lua 腳本引擎設定 ──────────────────────────────────────

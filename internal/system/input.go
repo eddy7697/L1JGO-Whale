@@ -341,6 +341,8 @@ func (s *InputSystem) handleDisconnect(sess *net.Session) {
 		}
 		row := &persist.CharacterRow{
 			Name:        player.Name,
+			OriginalStr: player.OriginalStr,
+			OriginalCon: player.OriginalCon,
 			Level:       player.Level,
 			Exp:         int64(player.Exp),
 			HP:          player.HP,

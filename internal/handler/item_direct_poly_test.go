@@ -27,6 +27,7 @@ func TestHandleUseItemRoutesDirectPolyScrollToPolymorphManager(t *testing.T) {
 		Session:   sess,
 		CharID:    1001,
 		Name:      "direct-poly",
+		HP:        100,
 		Level:     50,
 		Inv:       world.NewInventory(),
 	}

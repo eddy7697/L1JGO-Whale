@@ -173,6 +173,7 @@ func run() error {
 	// 5. Create ECS World and game World State
 	ecsWorld := ecs.NewWorld()
 	worldState := world.NewState()
+	world.WeightLimitRate = cfg.Gameplay.RateWeightLimit // Java Config.RATE_WEIGHT_LIMIT
 
 	// 5a. Load NPC data and spawn NPCs
 	printSection("資料載入")

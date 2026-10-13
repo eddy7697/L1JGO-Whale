@@ -101,6 +101,8 @@ func (s *PersistenceSystem) savePlayers(dirtyOnly bool) error {
 		}
 		row := &persist.CharacterRow{
 			Name:        p.Name,
+			OriginalStr: p.OriginalStr,
+			OriginalCon: p.OriginalCon,
 			Level:       p.Level,
 			Exp:         int64(p.Exp),
 			HP:          p.HP,

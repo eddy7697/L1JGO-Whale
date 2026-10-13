@@ -70,6 +70,13 @@ func HandleMove(sess *net.Session, r *packet.Reader, deps *Deps) {
 	if player.Paralyzed || player.Sleeped {
 		return
 	}
+	// The Java client stops movement at a full weight bar. Enforce this on
+	// the server too, and correct any client-predicted step before it moves.
+	if player.Inv != nil && player.Inv.Weight242(world.PlayerMaxWeight(player)) >= world.WeightBarMax {
+		SendWeightUpdate(sess, player)
+		rejectMove(sess, player, ws, deps)
+		return
+	}
 
 	// InputSystem 一次輪詢可批次分派多包，處理間隔不是客戶端送包間隔。
 	// 不可在此用牆鐘間隔丟棄後續步伐，否則伺服器座標會永久落後。

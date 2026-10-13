@@ -18,6 +18,8 @@ type CharacterRow struct {
 	Sex         int16
 	ClassID     int32
 	Str         int16
+	OriginalStr int16
+	OriginalCon int16
 	Dex         int16
 	Con         int16
 	Wis         int16
@@ -98,7 +100,7 @@ func (r *CharacterRepo) LoadByAccount(ctx context.Context, accountName string) (
 		        x, y, map_id, heading,
 		        lawful, title, clan_id, clan_name, clan_rank,
 		        pk_count, karma, bonus_stats, elixir_stats, partner_id,
-		        food, high_level, access_level, birthday, deleted_at
+		        food, high_level, access_level, birthday, deleted_at, original_str, original_con
 		 FROM characters
 		 WHERE account_name = $1 AND deleted_at IS NULL
 		 ORDER BY id`, accountName,
@@ -119,6 +121,7 @@ func (r *CharacterRepo) LoadByAccount(ctx context.Context, accountName string) (
 			&c.Lawful, &c.Title, &c.ClanID, &c.ClanName, &c.ClanRank,
 			&c.PKCount, &c.Karma, &c.BonusStats, &c.ElixirStats, &c.PartnerID,
 			&c.Food, &c.HighLevel, &c.AccessLevel, &c.Birthday, &c.DeletedAt,
+			&c.OriginalStr, &c.OriginalCon,
 		); err != nil {
 			return nil, err
 		}
@@ -136,11 +139,11 @@ func (r *CharacterRepo) Create(ctx context.Context, c *CharacterRow) error {
 			x, y, map_id, heading,
 			lawful, title, clan_id, clan_name, clan_rank,
 			pk_count, karma, bonus_stats, elixir_stats, partner_id,
-			food, high_level, access_level, birthday
+			food, high_level, access_level, birthday, original_str, original_con
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,
 			$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,
-			$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36
+			$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38
 		) RETURNING id`,
 		c.AccountName, c.Name, c.ClassType, c.Sex, c.ClassID,
 		c.Str, c.Dex, c.Con, c.Wis, c.Cha, c.Intel,
@@ -149,6 +152,7 @@ func (r *CharacterRepo) Create(ctx context.Context, c *CharacterRow) error {
 		c.Lawful, c.Title, c.ClanID, c.ClanName, c.ClanRank,
 		c.PKCount, c.Karma, c.BonusStats, c.ElixirStats, c.PartnerID,
 		c.Food, c.HighLevel, c.AccessLevel, c.Birthday,
+		c.Str, c.Con,
 	).Scan(&c.ID)
 }
 
@@ -213,7 +217,9 @@ func (r *CharacterRepo) SaveCharacter(ctx context.Context, c *CharacterRow) erro
 			lawful = $11, str = $12, dex = $13, con = $14, wis = $15, cha = $16, intel = $17,
 			bonus_stats = $18, elixir_stats = $19,
 			clan_id = $20, clan_name = $21, clan_rank = $22,
-			title = $23, karma = $24, pk_count = $25, food = $26
+			title = $23, karma = $24, pk_count = $25, food = $26,
+			original_str = CASE WHEN $28 > 0 THEN $28 ELSE original_str END,
+			original_con = CASE WHEN $29 > 0 THEN $29 ELSE original_con END
 		WHERE name = $27`,
 		c.Level, c.Exp, c.HP, c.MP, c.MaxHP, c.MaxMP,
 		c.X, c.Y, c.MapID, c.Heading,
@@ -222,6 +228,7 @@ func (r *CharacterRepo) SaveCharacter(ctx context.Context, c *CharacterRow) erro
 		c.ClanID, c.ClanName, c.ClanRank,
 		c.Title, c.Karma, c.PKCount, c.Food,
 		c.Name,
+		c.OriginalStr, c.OriginalCon,
 	)
 	return err
 }
@@ -389,7 +396,7 @@ func (r *CharacterRepo) LoadByName(ctx context.Context, name string) (*Character
 		        x, y, map_id, heading,
 		        lawful, title, clan_id, clan_name, clan_rank,
 		        pk_count, karma, bonus_stats, elixir_stats, partner_id,
-		        food, high_level, access_level, birthday, deleted_at
+		        food, high_level, access_level, birthday, deleted_at, original_str, original_con
 		 FROM characters WHERE name = $1 AND deleted_at IS NULL`, name,
 	).Scan(
 		&c.ID, &c.AccountName, &c.Name, &c.ClassType, &c.Sex, &c.ClassID,
@@ -399,6 +406,7 @@ func (r *CharacterRepo) LoadByName(ctx context.Context, name string) (*Character
 		&c.Lawful, &c.Title, &c.ClanID, &c.ClanName, &c.ClanRank,
 		&c.PKCount, &c.Karma, &c.BonusStats, &c.ElixirStats, &c.PartnerID,
 		&c.Food, &c.HighLevel, &c.AccessLevel, &c.Birthday, &c.DeletedAt,
+		&c.OriginalStr, &c.OriginalCon,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil

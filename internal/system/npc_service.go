@@ -524,8 +524,7 @@ func (s *NpcServiceSystem) canReceiveNpcServiceItem(sess *net.Session, player *w
 		handler.SendServerMessage(sess, 263)
 		return false
 	}
-	addWeight := info.Weight * count
-	if addWeight > 0 && player.Inv.IsOverWeight(addWeight, world.PlayerMaxWeight(player)) {
+	if info.Weight > 0 && player.Inv.IsOverWeightAdd(info.Weight, count, world.PlayerMaxWeight(player)) {
 		handler.SendServerMessage(sess, 82)
 		return false
 	}

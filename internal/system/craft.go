@@ -153,10 +153,10 @@ func (s *CraftSystem) ExecuteCraft(sess *net.Session, player *world.PlayerInfo, 
 	}
 
 	// 負重檢查
-	var addWeight int32
+	var addWeight int64
 	for _, out := range recipe.Items {
 		if outInfo := s.deps.Items.Get(out.ItemID); outInfo != nil {
-			addWeight += outInfo.Weight * out.Amount * amount
+			addWeight += int64(outInfo.Weight) * int64(out.Amount) * int64(amount) / 1000
 		}
 	}
 	maxW := world.PlayerMaxWeight(player)

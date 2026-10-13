@@ -188,9 +188,9 @@ func (s *ItemGroundSystem) PickupItem(sess *net.Session, player *world.PlayerInf
 	// 負重檢查
 	pickupInfo := s.deps.Items.Get(gndItem.ItemID)
 	if pickupInfo != nil {
-		addWeight := pickupInfo.Weight * gndItem.Count
+		// Java C_PickUpItem → L1Inventory.checkAddItem == WEIGHT_OVER → S_ServerMessage(82)
 		maxW := world.PlayerMaxWeight(player)
-		if player.Inv.IsOverWeight(addWeight, maxW) {
+		if player.Inv.IsOverWeightAdd(pickupInfo.Weight, gndItem.Count, maxW) {
 			handler.SendServerMessage(sess, 82) // 此物品太重了，所以你無法攜帶。
 			return
 		}

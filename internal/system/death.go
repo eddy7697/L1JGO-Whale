@@ -33,6 +33,7 @@ func (s *DeathSystem) KillPlayer(player *world.PlayerInfo) {
 
 	player.Dead = true
 	player.HP = 0
+	player.Dirty = true
 
 	// 清除限時地圖計時器（Java: MapTimerThread.TIMINGMAP.remove）
 	if player.MapTimerGroupIdx > 0 {
@@ -45,7 +46,7 @@ func (s *DeathSystem) KillPlayer(player *world.PlayerInfo) {
 	s.deps.World.VacateEntity(player.MapID, player.X, player.Y, player.CharID)
 
 	// 廣播死亡動畫
-	nearby := s.deps.World.GetNearbyPlayersInShow(player.X, player.Y, player.MapID, 0, player.ShowID)
+	nearby := s.deps.World.GetNearbyPlayersInShow(player.X, player.Y, player.MapID, player.SessionID, player.ShowID)
 	for _, viewer := range nearby {
 		handler.SendActionGfx(viewer.Session, player.CharID, 8) // ACTION_Die = 8
 	}

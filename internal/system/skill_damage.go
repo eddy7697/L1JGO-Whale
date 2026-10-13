@@ -735,8 +735,7 @@ func (s *SkillSystem) executeAttackSkill(sess *net.Session, player *world.Player
 			if directedAreaSkill {
 				// S_RangeSkill 已一次帶出方向範圍攻擊的施法與命中特效。
 			} else if isPhysicalSkill {
-				atkData := handler.BuildAttackPacket(player.CharID, t.npc.ID, dmg, player.Heading)
-				handler.BroadcastToPlayers(nearby, atkData)
+				broadcastPlayerMeleeAttack(s.deps.World, player, t.npc.ID, dmg)
 				if skill.CastGfx > 0 {
 					effData := handler.BuildSkillEffect(t.npc.ID, skill.CastGfx)
 					handler.BroadcastToPlayers(nearby, effData)
