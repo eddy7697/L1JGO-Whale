@@ -28,7 +28,40 @@
 3. 對其他玩家揮刀：一般區、戰鬥區、安全區都測試，安全區維持零傷害。
 4. 若同一客戶端連 Java 正常、Go 不正常，再比較同一操作的地圖、角色外觀、攻擊、角色設定封包；若兩邊都不正常，檢查客戶端音樂設定及資源。
 
-本次沒有執行遊戲內音訊／畫面驗收，也沒有足夠資料確認實際使用中的客戶端資料夾。
+本次沒有執行遊戲內音訊／畫面驗收。後續由使用者確認測試客戶端為 `E:\lin-golang\lin380clean`；檔案核對結果如下。
+
+## Login38 與實際客戶端追加核對
+
+追加核對日期：2026-10-13。使用者指定第 1、2 項同時比對 `E:\lin-golang\Login38`，並確認客戶端為 `E:\lin-golang\lin380clean`。
+
+Login38 已 fetch `origin/main`，本次測試基準為 `da102a8`。其原工作樹有其他任務的未提交變更，因此測試在獨立分支／工作樹執行。另檢查目前工作檔及與 `v1.1.0` 的差異：設定檔解析、封包代理、傷害數字 cave、通知 cave 在這段版本間均未改動；測試結果不代表驗證過所有未提交變更或發行二進位。
+
+| 檢查路徑（相對於 Login38） | 實際行為 | 能確認的範圍 |
+| --- | --- | --- |
+| `src/Login38.Core/Configuration/LineageConfigFile.cs`、`LineageConfigDocument.cs` | 已有 `lineage.cfg` 時只改 FullScreen `0x12`、WindowMode `0x1A`，其他記錄保留。不存在時建立包含三個顯示記錄的最小設定。 | 未發現登入器主動改音樂開關／音量；實際客戶端已有設定檔。本次沒有從未知 key 猜測聲音開關是否開啟。 |
+| `src/Login38.Core/Net/PacketEncryptProxy.cs` | 僅在客戶端送出方向做 XOR；消耗握手 challenge 後，伺服器送往客戶端方向以 `key: 0` 原樣轉送，沒有按 opcode 過濾。 | 地圖、攻擊等伺服器資料不會被這個代理依種類吞掉；實際 socket 測試通過。 |
+| `src/Login38.Aux/Toggles/DamageCave.cs` | 單體傷害數字補丁保存／恢復暫存器與旗標，執行被取代的原始比較，保留原本兩條分支目的地。 | 未發現此處直接跳過原本攻擊流程或控制 BGM；不能據此排除所有執行期補丁交互影響。 |
+| `src/Login38.Aux/Notifications/NotificationHookCave.cs`、`src/Login38.Patching/Patches/SmoothRunPatch.cs` | 通知擴充處理自身通知種類；平滑移動補丁限定移動相關呼叫，保留攻擊動作。 | 相關 cave／補丁測試通過，未找到直接播放或禁止戰鬥配樂的程式碼。 |
+| `src/Login38.App/Services/GameLaunchService.cs`、`src/Login38.Interop/GameProcessLauncher.cs` | 以選定的遊戲資料夾定位遊戲執行檔，且以該資料夾作為工作目錄啟動。 | 原始碼未發現因啟動工作目錄設定而必然找錯 Sound 的問題。 |
+
+核對已包含 Java 核心，並非只比對登入器：前述 `S_MapID`、`S_AttackPacket`、`L1Attack.actionPc()` 與 `L1PcInstance.onAction()` 都直接讀取 `E:\L1JTW-Eddy` 原始碼。普通玩家外觀的 PC 旗標及一般 NPC 的角色類別欄位亦已檢視；這些檢查不能延伸為整個 Go 核心與 Java 所有行為完全一致。
+
+### 實際客戶端的檔案檢查
+
+- 資料夾內 `launcher.exe` 的 ProductVersion 為 `1.2.1-debugtoggle.20261013.1+da102a81154ea0a36f9fa8efd261323c6a872d29`；`TW13081901.bin` 為 `13,08,19,1`。這是磁碟檔案版本，檢查時未發現執行中的 launcher／遊戲程序。
+- `Sound` 中有 142 個檔名含 music 的 MP3，無零位元組檔；SHA-256 有 141 組不同內容，只有 `music17.mp3` 與 `music42.mp3` 相同。可排除這批檔案全部被替換成同一首，但不能推定地圖選曲表或音樂資源已完整。
+- 142 個檔案皆以 FFmpeg 完整解碼，無錯誤。客戶端使用的 `Mss32.dll`（6.6a）與 `mssmp3.asi` 也存在；FFmpeg 成功不等於遊戲的 Miles 播放流程正常。
+- 現有 `lineage.cfg` 為 315 bytes，可依 Login38 的 TLV 格式完整解析；未改寫檔案，也未臆測未知設定 key 的含義。
+
+### 本次新增驗證
+
+在 Login38 的乾淨 `da102a8` 工作樹執行既有測試，共 104 項通過，無失敗或略過：
+
+- `dotnet test tests/Login38.Core.Tests/Login38.Core.Tests.csproj --filter "FullyQualifiedName~LineageConfigDocumentTests|FullyQualifiedName~PacketEncryptProxyTests"`：35 項。
+- `dotnet test tests/Login38.Aux.Tests/Login38.Aux.Tests.csproj --filter "FullyQualifiedName~DamageCaveTests|FullyQualifiedName~NotificationHookCaveTests|FullyQualifiedName~LowCpuDetourTests"`：45 項。
+- `dotnet test tests/Login38.Patching.Tests/Login38.Patching.Tests.csproj --filter "FullyQualifiedName~SmoothRunPatchTests"`：24 項。
+
+目前結論是「未找到可證明場景／戰鬥配樂故障的 Java 封包差異或 Login38 直接控制」，不是「音樂已修好」，也不是「已排除登入器」。尚缺同一套客戶端連 Java／Go 的實機播放對照，以及必要時的客戶端音訊呼叫追蹤。本次未新增配樂封包、修改未知音樂設定或替換登入器／客戶端檔案。
 
 ## 雨雪畫面的呈現
 
