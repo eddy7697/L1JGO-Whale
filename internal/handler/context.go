@@ -736,6 +736,7 @@ type Deps struct {
 	AccountRepo      *persist.AccountRepo
 	CharRepo         *persist.CharacterRepo
 	ItemRepo         *persist.ItemRepo
+	BeginnerRepo     *persist.BeginnerRepo // Java beginner 資料表：建角初始物品
 	Config           *config.Config
 	Log              *zap.Logger
 	World            *world.State

@@ -138,6 +138,7 @@ func run() error {
 	accountRepo := persist.NewAccountRepo(db)
 	charRepo := persist.NewCharacterRepo(db)
 	itemRepo := persist.NewItemRepo(db)
+	beginnerRepo := persist.NewBeginnerRepo(db)
 	warehouseRepo := persist.NewWarehouseRepo(db)
 	walRepo := persist.NewWALRepo(db)
 	clanRepo := persist.NewClanRepo(db)
@@ -525,6 +526,7 @@ func run() error {
 		AccountRepo:      accountRepo,
 		CharRepo:         charRepo,
 		ItemRepo:         itemRepo,
+		BeginnerRepo:     beginnerRepo,
 		Config:           cfg,
 		Log:              log,
 		World:            worldState,
