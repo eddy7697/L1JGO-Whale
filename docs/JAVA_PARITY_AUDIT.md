@@ -53,9 +53,9 @@
 | 1-8 | 屬性強化卷軸 | 41429-41432 走 `scrollOfEnchantWeaponAttr` | `data/yaml/etcitem_list.yaml:32228` 標 `use_type: dai`，被當一般武器卷軸；屬性值只有存檔欄位 | 待辦 | |
 | 1-9 | 象牙塔與飾品卷軸 | 49312 等象牙塔卷軸、49148 飾品卷軸各有獨立流程 | 49312 標 `dai`；49148 標 `del` 無處理 | 待辦 | |
 | 1-10 | 武器衝裝成功率 | `(100+3C)/3`，+9 以上 `/6`；排除象牙塔裝備、試煉之劍、幻象武器 40128 | `scripts/item/enchant.lua` 改為 `(100+lvl·C)/lvl`（註解「Fixed」） | 待辦 | 若要保留請改 `保留差異` |
-| 1-11 | 致盲藥水封包 | `S_CurseBlind`（op 47 + writeH） | `system/item_use.go:1471` 送 PacketBox 子碼 45 | 待辦 | `broadcast.go:868` 的技能版正確 |
-| 1-12 | 伊娃的祝福（水底呼吸）圖示 | `S_SkillIconBlessOfEva`（op 126） | `item_use.go:1462` 送 PacketBox 44（風之枷鎖格式）；Go 無 126 常數 | 待辦 | |
-| 1-13 | 等級上限道具提示 | `MSG_LEVEL_OVER`（PacketBox 12） | `handler/item.go:97` 送 msg 318「%0 以上才可使用」，語意相反 | 待辦 | |
+| 1-11 | 致盲藥水封包 | `S_CurseBlind`（op 47 + writeH） | 致盲藥水改走 `handler.SendCurseBlind`（op 47 + H type=1），與技能版共用 `BuildCurseBlind` | 待驗證 | 2026-10-14 合併；見第八節 V-4 |
+| 1-12 | 伊娃的祝福（水底呼吸）圖示 | `S_SkillIconBlessOfEva`（op 126：D objectId + H time） | 新增 `S_OPCODE_BLESSOFEVA = 126` 與 `BuildSkillIconBlessOfEva`，水底呼吸藥水改送 op 126 | 待驗證 | 2026-10-14 合併；見第八節 V-5 |
+| 1-13 | 等級上限道具提示 | `MSG_LEVEL_OVER`（PacketBox 12：C 0 + C level） | `checkLevelRestriction` 超過 `max_level` 時改送 `BuildPacketBoxLevelOver(max)`；低於下限仍送 318 | 待驗證 | 2026-10-14 合併；Java 註明 level 0-49 以外客戶端不顯示；見第八節 V-6 |
 | 1-14 | 旅館房門傳送 | `Dungeon` 傳送前 `checkInnKey`，分房間／會議室 | `data/yaml/portal_list.yaml:41-48` 等旅館門口傳送點不檢查鑰匙 | 待辦 | |
 | 1-15 | 高等級經驗懲罰 | `ExpTable.getPenaltyRate`（50 級以上） | `system/combat.go:938` 直接加經驗 | 待辦 | |
 | 1-16 | 組隊經驗分配 | `CalcExp` 隊伍加成與分配；善惡依仇恨分配 | 只依仇恨分經驗（`combat.go:797-835`）；善惡只給 killer；寵物拿全額 `npc.Exp` | 待辦 | |
@@ -197,6 +197,9 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 |---|---|---|---|---|---|
 | V-1（1-1、1-4） | 1. 將 `war_time`、`war_interval` 暫設為短值（如 `"5m"`、`"30m"`），把肯特 `castles.war_time` 設為一分鐘後。2. 以已宣戰的非城盟角色在開戰後打掉守護塔（81111）。3. 不去點王冠，等攻城結束。 | 塔死亡後原地出現王冠；攻城結束廣播後王冠消失、塔屍體消失，同一座標立刻出現滿血守護塔；伺服器 log 有「守護塔已重生」。亞丁城則主塔與 4 座子塔同時重生。 | 若塔屍體殘留或新塔看不到：檢查 `removeWarNpc` 的 `NpcCorpseCleanup`／`SetImpassable` 與 `spawnWarNpc` 的 `SendNpcPack` 範圍，必要時改用 `GetNearbyPlayersInShow`。 | 中 | |
 | V-2（1-4） | 1. 開戰前讓三個角色站在肯特旗內：城盟成員、一般非城盟、GM（`AccessLevel 200`、未 `.gm off`）。2. 等攻城開始。3. 另以奪城流程（點王冠）再測一次。 | 一般非城盟角色被傳到肯特村回城點之一（如 33048,32750 地圖 4），面向 5；城盟成員與 GM 留在原地；多次測試落點在 `castles.yaml` 的 `getback` 清單內隨機變化。 | 若落點不可站立：核對 `castles.yaml` 該城 `getback` 座標與 Java `GETBACK_LOC_*` 是否抄錯；若 GM 仍被趕：確認角色 `AccessLevel` 與 `GMModeOff`。 | 中 | |
+| V-4（1-11） | 1. 使用致盲藥水（Java `Potion.useBlindPotion` 對應道具）。 | 畫面出現致盲遮罩（只看到自己），效果到期後解除；伺服器無斷線。 | 若畫面無反應：比對封包抓包 `47 01 00`；若客戶端斷線：改回 PacketBox 版並記錄客戶端版本。 | 高 | |
+| V-5（1-12） | 1. 使用伊娃的祝福（水底呼吸）藥水。2. 再喝一瓶確認時間疊加。 | 狀態列出現水底呼吸圖示並顯示剩餘秒數；第二瓶後秒數累加（上限 7200）。 | 若圖示不出現：抓包確認 opcode 126 + D objectId + H time；若客戶端斷線：改回 PacketBox 44 並記錄客戶端版本。 | 高 | |
+| V-6（1-13） | 1. 以等級高於道具 `max_level` 的角色使用該道具（如 `max_level: 49` 的新手道具，用 52 級角色）。 | 客戶端顯示「此道具只能在 49 等級以下使用」類訊息；道具未被消耗。 | 若無訊息：確認道具 `max_level` 在 0-49 內（Java 註明範圍外不顯示）；若仍無訊息再抓包比對 `FA 0C 00 31`。 | 中 | |
 | V-3（1-1） | 1. 攻城中以已宣戰的盟主（君主）打掉塔後點王冠奪城。 | 王冠消失、城主轉移，塔立刻重生為新城主的守護塔，非新城盟玩家被趕回回城點，城門修復。 | 若塔未重生：檢查 `HandleCrownClick` 是否在 `removeWarNpc` 後呼叫 `SpawnTower`。 | 中 | |
 
 風險值：`高`（opcode／封包格式錯誤可能造成客戶端斷線或畫面異常，須單獨測試）、`中`（行為錯誤但不影響連線）、`低`（僅訊息文字或圖示差異）。
@@ -214,4 +217,5 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 | 2026-10-13 | 初版盤點（唯讀稽核，基準 Java `E:/L1JTW-Eddy`、Go `master` d35ff80） |
 | 2026-10-14 | 與 Claude Code 重讀登入實際呼叫鏈，修正 1-23 的正常重複登入描述，補登入／在線狀態實作與回歸。 |
 | 2026-10-14 | 新增 `待驗證` 狀態、對齊階段實作原則與第八節「實機待驗證清單」；需實機確認的項目改為先實作合併、再集中驗證。 |
+| 2026-10-14 | 封包格式 1-11～1-13：致盲藥水改送 `S_CurseBlind`（op 47）、水底呼吸圖示改送 `S_SkillIconBlessOfEva`（op 126）、等級上限改送 `MSG_LEVEL_OVER`（PacketBox 12）；皆 `待驗證`（第八節 V-4～V-6）。 |
 | 2026-10-14 | 攻城叢集 1-1～1-4：守護塔刪除後重生（含亞丁子塔、主塔 3 座子塔門檻）、攻城結束刪王冠、趕人改隨機回城點並排除 GM、過期攻城時間往後推、`war_time`／`war_interval` 設定鍵。1-2、1-3 完成；1-1、1-4 待驗證（第八節 V-1～V-3）。 |

@@ -1458,21 +1458,16 @@ func sendBravePacket(sess *net.Session, charID int32, braveType byte, duration u
 	sess.Send(w.Bytes())
 }
 
-// sendEvaBreathIcon sends S_SkillIconBlessOfEva (S_PacketBox sub 44)。
+// sendEvaBreathIcon sends S_SkillIconBlessOfEva (opcode 126)。
+// Java: Potion.useBlessOfEva → S_SkillIconBlessOfEva(objectId, time)。
 func sendEvaBreathIcon(sess *net.Session, charID int32, timeSec uint16) {
-	w := packet.NewWriterWithOpcode(packet.S_OPCODE_EVENT)
-	w.WriteC(44)
-	w.WriteD(charID)
-	w.WriteH(timeSec)
-	sess.Send(w.Bytes())
+	handler.SendSkillIconBlessOfEva(sess, charID, timeSec)
 }
 
-// sendCurseBlindPacket sends S_CurseBlind (S_PacketBox sub 45)。
-func sendCurseBlindPacket(sess *net.Session, blindType byte) {
-	w := packet.NewWriterWithOpcode(packet.S_OPCODE_EVENT)
-	w.WriteC(45)
-	w.WriteC(blindType)
-	sess.Send(w.Bytes())
+// sendCurseBlindPacket sends S_CurseBlind (opcode 47 + writeH type)。
+// Java: Potion.useBlindPotion → S_CurseBlind(1)。
+func sendCurseBlindPacket(sess *net.Session, blindType uint16) {
+	handler.SendCurseBlind(sess, blindType)
 }
 
 // ConsumeBoxItem 消耗 1 個寶箱物品。
