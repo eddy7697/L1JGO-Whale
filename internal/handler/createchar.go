@@ -169,6 +169,16 @@ func HandleCreateChar(sess *net.Session, r *packet.Reader, deps *Deps) {
 		return
 	}
 
+	// Java C_CreateChar: Beginner.getInstance().GiveItem(pc) — 依 beginner 資料表
+	// 發放初始物品。與 Java 相同，失敗只記錄，不中斷建角。
+	if deps.BeginnerRepo != nil {
+		inserted, errs := deps.BeginnerRepo.GiveItems(ctx, row.ID, classType)
+		for _, err := range errs {
+			deps.Log.Error("發放初始物品", zap.String("name", name), zap.Error(err))
+		}
+		deps.Log.Info("發放初始物品", zap.String("name", name), zap.Int16("class", classType), zap.Int("count", inserted))
+	}
+
 	// Grant initial spells from Lua data
 	if len(classData.InitialSpells) > 0 {
 		spells := make([]int32, len(classData.InitialSpells))
