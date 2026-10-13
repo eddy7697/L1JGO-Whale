@@ -228,6 +228,8 @@ L1JGO-Whale/
 
 角色權限 `200` 為 GM、`100` 為監察員、`0` 為玩家。首位 GM 可用 `go run ./cmd/gm -config config/server.local.toml -name "角色名稱" -level 200` 設定，重新登入後生效。遊戲內 `.help` 依權限列出指令；完整中英文指令、Java 對照差異與部署方式見 [GM 操作說明](docs/GM_COMMANDS.md)。
 
+與 Java 權威版（`E:\L1JTW-Eddy`）尚未同步的功能缺口、認領狀態與建議順序，見 [Java 功能同步盤點](docs/JAVA_PARITY_AUDIT.md)；商城點數與自動練功機器人不在搬移範圍。
+
 | 指令 | 說明 |
 |------|------|
 | `.level <n>` | 設定等級 |
