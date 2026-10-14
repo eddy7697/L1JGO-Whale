@@ -69,7 +69,7 @@
 | 1-24 | 盟屋拍賣結算 | 訊息 524/527/528；無人得標延後 5 天；更新血盟 has_house；重設 onSale/tax_deadline | `auction_sys.go:207-331` 不發訊息、只延到隔天午夜、`clan.HasHouse` 只改記憶體 | 待辦 | |
 | 1-25 | 龍騎士覺醒 | 安塔瑞斯 +127 MaxHP/AC-12；法利昂 MR+30 四屬性+30；巴拉卡斯六屬性+5；變身 6894；每週期扣 8 MP 扣完解除；再施放解除 | `skill_buff.go:1291-1312`、`buffs.lua` 參照 yiwei 版，以上皆無 | 待辦 | |
 | 1-26 | 地面物品擁有者保護 | `L1ItemOwnerTimer` | `GroundItem.OwnerTicks` 由 `TickGroundItems` 倒數並清除 `OwnerID`；撿取時他人遇保護回 623；釣魚背包滿／超重改為停止釣魚並把魚丟地上保護 10 秒（Java `successFishing`）；玩家手動丟棄不再設擁有者（Java 亦無） | 完成 | `pk_parity_test.go`。Java 只有釣魚使用此計時器 |
-| 1-27 | 隱身後攻擊延遲 | `L1PcInvisDelay` 3 秒內不能攻擊／撿物／施法 | `PlayerInfo.InvisDelayTicks`（15 tick）：無所遁形術揭露自己、隱身中脫下隱身斗篷時啟動；期間近戰／遠攻／撿物忽略，施法僅允許 Java `CAST_WITH_INVIS` 清單（`system/invis_delay.go`）；撿物另補 Java 的隱身中不可撿取 | 完成 | `pk_parity_test.go`。保留差異待拍板：Java `C_Attack` 隱身中直接忽略攻擊，Go 仍維持攻擊時自動解除隱身（`combat.go`） |
+| 1-27 | 隱身後攻擊延遲 | `L1PcInvisDelay` 3 秒內不能攻擊／撿物／施法 | `PlayerInfo.InvisDelayTicks`（15 tick）：無所遁形術揭露自己、隱身中脫下隱身斗篷時啟動；期間近戰／遠攻／撿物忽略，施法僅允許 Java `CAST_WITH_INVIS` 清單（`system/invis_delay.go`）；撿物另補 Java 的隱身中不可撿取 | 完成 | `pk_parity_test.go`。2026-10-14 使用者拍板改為 Java 行為：隱身中近戰／遠攻／攻擊封包直接忽略且不解除隱身（`combat.go`），施法同 Java `isCastableStatus` 只允許 `CAST_WITH_INVIS` 清單、允許的技能不解除隱身（`skill.go`） |
 
 ## 二、整套未實作的系統
 
@@ -224,4 +224,5 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 | 2026-10-14 | 攻城叢集 1-1～1-4：守護塔刪除後重生（含亞丁子塔、主塔 3 座子塔門檻）、攻城結束刪王冠、趕人改隨機回城點並排除 GM、過期攻城時間往後推、`war_time`／`war_interval` 設定鍵。1-2、1-3 完成；1-1、1-4 待驗證（第八節 V-1～V-3）。 |
 | 2026-10-14 | 第八節新增 V-7：更換 Login38 登入器後，啟用輔助情境的點擊移動與原生連續攻擊實機驗證。 |
 | 2026-10-14 | PK 叢集 1-22、1-26、1-27：PK 地獄（門檻入獄、每秒倒數、重生／重登續算、火田村釋放、`hell_time` 持久化）、地面物品擁有者保護（釣魚 10 秒）、隱身解除 3 秒行動延遲。1-26、1-27 完成；1-22 待驗證（第八節 V-9）。1-27 另記 Java 隱身中忽略攻擊 vs Go 自動解除為待拍板差異。 |
+| 2026-10-14 | 1-27 補齊：依使用者拍板移除 Go「攻擊／施法時自動解除隱身」，改為 Java 隱身中忽略攻擊、非 `CAST_WITH_INVIS` 技能靜默拒絕。 |
 | 2026-10-14 | 經驗／公式叢集 1-15～1-18：高等級經驗懲罰、Java 組隊／仇恨／寵物經驗分配、AC／MR 衍生公式、地圖與單品掉落倍率（新增 `drop_item.yaml`、`[rates] high_level_exp_divisors`）。1-15、1-16、1-18 完成；1-17 待驗證（第八節 V-8）。 |
