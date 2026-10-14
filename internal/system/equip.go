@@ -369,7 +369,12 @@ func (s *EquipSystem) RecalcEquipStats(sess *net.Session, player *world.PlayerIn
 //  2. 偵測護甲套裝
 //  3. 計算裝備屬性加成
 func (s *EquipSystem) InitEquipStats(player *world.PlayerInfo) {
-	player.AC = int16(s.deps.Config.Gameplay.BaseAC)
+	// 基礎 AC／MR 由等級、敏捷、精神與職業換算（Java: resetBaseAc / resetBaseMr），
+	// 其餘來源（裝備、buff、娃娃）之後以差值疊加。
+	player.AC, player.BaseAC = 0, 0
+	player.MR, player.BaseMR = 0, 0
+	ResetBaseAC(player, s.deps)
+	ResetBaseMR(player)
 	detectActiveArmorSet(player, s.deps.ArmorSets)
 	applyEquipStats(player, s.deps.Items, s.deps.ArmorSets, s.deps.ItemPowers)
 	s.restoreHasteItemStateOnInit(player)
@@ -524,6 +529,10 @@ func applyEquipStats(player *world.PlayerInfo, items *data.ItemTable, armorSets 
 	player.MPR += int16(neo.AddMPR - old.AddMPR)
 	player.SP += int16(neo.AddSP - old.AddSP)
 	player.MR += int16(neo.MDef - old.MDef)
+	if neo.AddWis != old.AddWis {
+		// 精神變動影響基礎 MR（Java: L1EquipmentSlot → resetBaseMr）
+		ResetBaseMR(player)
+	}
 
 	// 元素抗性
 	player.FireRes += int16(neo.DefFire - old.DefFire)

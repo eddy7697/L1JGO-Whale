@@ -789,51 +789,19 @@ func handleNpcDeath(npc *world.NpcInfo, killer *world.PlayerInfo, nearby []*worl
 	// 守衛：無經驗、無善惡、無掉落（Java: L1GuardInstance 無獎勵邏輯）
 	expGain := int32(0)
 	if npc.Impl != "L1Guard" {
-		// 計算基礎經驗（套用伺服器經驗倍率）
-		baseExp := npc.Exp
+		// 事件與日誌沿用「套用倍率後的 NPC 經驗」作為擊殺經驗量。
+		expGain = npc.Exp
 		if deps.Config.Rates.ExpRate > 0 {
-			baseExp = int32(float64(baseExp) * deps.Config.Rates.ExpRate)
+			expGain = int32(float64(expGain) * deps.Config.Rates.ExpRate)
 		}
 
-		// 按仇恨比例分配經驗（Java: CalcExp.calcExp）
-		totalHate := GetTotalHate(npc)
-		if totalHate > 0 && len(npc.HateList) > 1 && baseExp > 0 {
-			// 多人打怪：按傷害比例分配
-			for sid, hate := range npc.HateList {
-				p := deps.World.GetBySession(sid)
-				if p == nil || p.Dead {
-					continue
-				}
-				share := baseExp * hate / totalHate
-				if share > 0 {
-					addExp(p, share, deps)
-				}
-			}
-			expGain = baseExp
+		// 經驗、善惡依仇恨與隊伍分配，寵物按自身仇恨份額取得（Java: CalcExp.calcExp）
+		if len(npc.HateList) == 0 && killer != nil && !killer.Dead && npc.Exp > 0 {
+			// 無仇恨列表（例如腳本直接擊殺）：全部給 killer
+			awardGroupExpLikeJava(&expAcquisitor{player: killer}, int64(npc.Exp), int64(npc.Lawful), npc, deps)
 		} else {
-			// 單人或無仇恨列表：全部給 killer（向下相容）
-			expGain = baseExp
-			if expGain > 0 {
-				addExp(killer, expGain, deps)
-			}
+			distributeNpcExpLikeJava(killer, npc, deps)
 		}
-
-		// 給予 killer 的寵物經驗（同地圖）
-		for _, pet := range deps.World.GetPetsByOwner(killer.CharID) {
-			if !pet.Dead && pet.MapID == killer.MapID {
-				petExp := npc.Exp
-				if deps.Config.Rates.PetExpRate > 0 {
-					petExp = int32(float64(petExp) * deps.Config.Rates.PetExpRate)
-				}
-				if petExp > 0 && deps.PetLife != nil {
-					deps.PetLife.AddPetExp(pet, petExp)
-					handler.SendPetHpMeter(killer.Session, pet.ID, pet.HP, pet.MaxHP)
-				}
-			}
-		}
-
-		// 善惡值只給 killer（最高仇恨者）
-		deps.PvP.AddLawfulFromNpc(killer, npc.Lawful)
 
 		// 掉落物品（支援自動分配隊伍）
 		handler.GiveDrops(killer, npc, deps)
@@ -952,6 +920,12 @@ func addExp(player *world.PlayerInfo, expGain int32, deps *handler.Deps) {
 		player.HP = player.MaxHP // 升級時滿血
 		player.MP = player.MaxMP
 	}
+	mrChanged := false
+	if leveledUp {
+		// 等級影響基礎 AC 與 MR（Java: levelUp → resetBaseAc / resetBaseMr）
+		ResetBaseAC(player, deps)
+		mrChanged = ResetBaseMR(player)
+	}
 
 	// 升級時由 S_OwnCharStatus 首次通知新等級，對齊 Java levelUp。
 	// 先送 S_Exp 會提早更新客戶端等級，讓後續狀態封包失去升級差值。
@@ -966,6 +940,9 @@ func addExp(player *world.PlayerInfo, expGain int32, deps *handler.Deps) {
 		player.Dirty = true
 		// 發送完整狀態更新（客戶端偵測等級變化後自動播放升級特效）
 		handler.SendPlayerStatus(player.Session, player)
+		if mrChanged {
+			handler.SendMagicStatus(player.Session, byte(player.SP), int32(player.MR))
+		}
 
 		// 51 級以上顯示加點對話框
 		if player.Level >= bonusStatMinLevel {

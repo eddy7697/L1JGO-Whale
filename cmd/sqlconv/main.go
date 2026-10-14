@@ -106,6 +106,17 @@ type dropItemYAML struct {
 	EnchantLevel int   `yaml:"enchant_level"`
 }
 
+// drop_item.yaml（Java DropItemTable：單品掉落倍率）
+type dropItemRateListYAML struct {
+	Items []dropItemRateYAML `yaml:"items"`
+}
+type dropItemRateYAML struct {
+	ItemID     int32   `yaml:"item_id"`
+	DropRate   float64 `yaml:"drop_rate"`
+	DropAmount float64 `yaml:"drop_amount"`
+	Note       string  `yaml:"note"`
+}
+
 // --- Shop ---
 type shopListYAML struct {
 	Shops []npcShopYAML `yaml:"shops"`
@@ -806,6 +817,30 @@ func convertSpawn(sqlDir, outDir string) error {
 	return writeYAML(filepath.Join(outDir, "spawn_list.yaml"),
 		spawnListYAML{Spawns: spawns},
 		"# NPC spawn list - converted from spawnlist.sql + spawnlist_npc.sql")
+}
+
+// convertDropItem 轉換 drop_item.sql → drop_item.yaml（item_id, drop_rate, drop_amount, note）。
+func convertDropItem(sqlDir, outDir string) error {
+	rows, err := parseAllInserts(filepath.Join(sqlDir, "drop_item.sql"))
+	if err != nil {
+		return err
+	}
+	var items []dropItemRateYAML
+	for _, r := range rows {
+		if len(r) < 3 {
+			continue
+		}
+		item := dropItemRateYAML{ItemID: parseInt32(r[0]), DropRate: parseFloat64(r[1]), DropAmount: parseFloat64(r[2])}
+		if len(r) > 3 {
+			item.Note = r[3]
+		}
+		items = append(items, item)
+	}
+	sort.Slice(items, func(i, j int) bool { return items[i].ItemID < items[j].ItemID })
+	fmt.Printf("  dropitem: %d items\n", len(items))
+	return writeYAML(filepath.Join(outDir, "drop_item.yaml"),
+		dropItemRateListYAML{Items: items},
+		"# Per-item drop rate / amount multipliers - converted from drop_item.sql (Java DropItemTable)")
 }
 
 func convertDrop(sqlDir, outDir string) error {
@@ -2315,6 +2350,7 @@ func printUsage() {
 	fmt.Println("  npc       Convert npc.sql -> npc_list.yaml")
 	fmt.Println("  spawn     Convert spawnlist.sql + spawnlist_npc.sql -> spawn_list.yaml")
 	fmt.Println("  drop      Convert droplist.sql -> drop_list.yaml")
+	fmt.Println("  dropitem  Convert drop_item.sql -> drop_item.yaml")
 	fmt.Println("  shop      Convert shop.sql -> shop_list.yaml")
 	fmt.Println("  mapids    Convert mapids.sql -> map_list.yaml")
 	fmt.Println("  skills    Convert skills.sql -> skill_list.yaml")
@@ -2350,6 +2386,7 @@ func main() {
 		"npc":        convertNpc,
 		"spawn":      convertSpawn,
 		"drop":       convertDrop,
+		"dropitem":   convertDropItem,
 		"shop":       convertShop,
 		"mapids":     convertMapIDs,
 		"skills":     convertSkills,
@@ -2369,7 +2406,7 @@ func main() {
 
 	// Ordered list for "all" (deterministic output)
 	allOrder := []string{
-		"npc", "spawn", "drop", "shop", "mapids", "skills", "items", "mobskill", "npcaction",
+		"npc", "spawn", "drop", "dropitem", "shop", "mapids", "skills", "items", "mobskill", "npcaction",
 		"portal", "polymorph", "spr", "door", "pettype", "petitem", "teleport", "doll", "itemmaking",
 	}
 

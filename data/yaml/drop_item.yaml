@@ -1,0 +1,307 @@
+# Per-item drop rate / amount multipliers - converted from drop_item (Java DropItemTable)
+# drop_rate multiplies the drop chance, drop_amount multiplies min/max count; items absent default to 1.
+items:
+  - item_id: 1
+    drop_rate: 1
+    drop_amount: 1
+    note: 歐西斯匕首
+  - item_id: 21
+    drop_rate: 1
+    drop_amount: 1
+    note: 歐西斯短劍
+  - item_id: 23
+    drop_rate: 1
+    drop_amount: 1
+    note: 闊劍
+  - item_id: 25
+    drop_rate: 1
+    drop_amount: 1
+    note: 銀劍
+  - item_id: 26
+    drop_rate: 1
+    drop_amount: 1
+    note: 小侏儒短劍
+  - item_id: 27
+    drop_rate: 1
+    drop_amount: 1
+    note: 彎刀
+  - item_id: 31
+    drop_rate: 1
+    drop_amount: 1
+    note: 長劍
+  - item_id: 91
+    drop_rate: 1
+    drop_amount: 1
+    note: 歐西斯之矛
+  - item_id: 93
+    drop_rate: 1
+    drop_amount: 1
+    note: 三叉戟
+  - item_id: 94
+    drop_rate: 1
+    drop_amount: 1
+    note: 帕提森
+  - item_id: 96
+    drop_rate: 1
+    drop_amount: 1
+    note: 矛
+  - item_id: 98
+    drop_rate: 1
+    drop_amount: 1
+    note: 闊矛
+  - item_id: 102
+    drop_rate: 1
+    drop_amount: 1
+    note: 露西錘
+  - item_id: 103
+    drop_rate: 1
+    drop_amount: 1
+    note: 戟
+  - item_id: 136
+    drop_rate: 1
+    drop_amount: 1
+    note: 斧
+  - item_id: 137
+    drop_rate: 1
+    drop_amount: 1
+    note: 亞連
+  - item_id: 138
+    drop_rate: 1
+    drop_amount: 1
+    note: 木棒
+  - item_id: 139
+    drop_rate: 1
+    drop_amount: 1
+    note: 弗萊爾
+  - item_id: 140
+    drop_rate: 1
+    drop_amount: 1
+    note: 釘錘
+  - item_id: 143
+    drop_rate: 1
+    drop_amount: 1
+    note: 戰斧
+  - item_id: 144
+    drop_rate: 1
+    drop_amount: 1
+    note: 侏儒鐵斧
+  - item_id: 171
+    drop_rate: 1
+    drop_amount: 1
+    note: 歐西斯弓
+  - item_id: 172
+    drop_rate: 1
+    drop_amount: 1
+    note: 弓
+  - item_id: 173
+    drop_rate: 1
+    drop_amount: 1
+    note: 短弓
+  - item_id: 20007
+    drop_rate: 1
+    drop_amount: 1
+    note: 侏儒鐵盔
+  - item_id: 20034
+    drop_rate: 1
+    drop_amount: 1
+    note: 歐西斯頭盔
+  - item_id: 20043
+    drop_rate: 1
+    drop_amount: 1
+    note: 鋼盔
+  - item_id: 20052
+    drop_rate: 1
+    drop_amount: 1
+    note: 侏儒斗篷
+  - item_id: 20072
+    drop_rate: 1
+    drop_amount: 1
+    note: 歐西斯斗篷
+  - item_id: 20089
+    drop_rate: 1
+    drop_amount: 1
+    note: 小籐甲
+  - item_id: 20096
+    drop_rate: 1
+    drop_amount: 1
+    note: 環甲
+  - item_id: 20101
+    drop_rate: 1
+    drop_amount: 1
+    note: 皮甲
+  - item_id: 20115
+    drop_rate: 1
+    drop_amount: 1
+    note: 籐甲
+  - item_id: 20122
+    drop_rate: 1
+    drop_amount: 1
+    note: 鱗甲
+  - item_id: 20125
+    drop_rate: 1
+    drop_amount: 1
+    note: 鏈甲
+  - item_id: 20135
+    drop_rate: 1
+    drop_amount: 1
+    note: 歐西斯環甲
+  - item_id: 20136
+    drop_rate: 1
+    drop_amount: 1
+    note: 歐西斯鏈甲
+  - item_id: 20147
+    drop_rate: 1
+    drop_amount: 1
+    note: 銀釘皮甲
+  - item_id: 20149
+    drop_rate: 1
+    drop_amount: 1
+    note: 青銅盔甲
+  - item_id: 20162
+    drop_rate: 1
+    drop_amount: 1
+    note: 皮手套
+  - item_id: 20182
+    drop_rate: 1
+    drop_amount: 1
+    note: 手套
+  - item_id: 20205
+    drop_rate: 1
+    drop_amount: 1
+    note: 長靴
+  - item_id: 20213
+    drop_rate: 1
+    drop_amount: 1
+    note: 短統靴
+  - item_id: 20223
+    drop_rate: 1
+    drop_amount: 1
+    note: 侏儒圓盾
+  - item_id: 20237
+    drop_rate: 1
+    drop_amount: 1
+    note: 阿克海盾牌
+  - item_id: 20239
+    drop_rate: 1
+    drop_amount: 1
+    note: 小盾牌
+  - item_id: 20242
+    drop_rate: 1
+    drop_amount: 1
+    note: 大盾牌
+  - item_id: 40001
+    drop_rate: 1
+    drop_amount: 1
+    note: 燈
+  - item_id: 40002
+    drop_rate: 1
+    drop_amount: 1
+    note: 燈籠
+  - item_id: 40005
+    drop_rate: 1
+    drop_amount: 1
+    note: 蠟燭
+  - item_id: 100025
+    drop_rate: 1
+    drop_amount: 1
+    note: 銀劍
+  - item_id: 100027
+    drop_rate: 1
+    drop_amount: 1
+    note: 彎刀
+  - item_id: 100098
+    drop_rate: 1
+    drop_amount: 1
+    note: 闊矛
+  - item_id: 100102
+    drop_rate: 1
+    drop_amount: 1
+    note: 露西錘
+  - item_id: 100103
+    drop_rate: 1
+    drop_amount: 1
+    note: 戟
+  - item_id: 100143
+    drop_rate: 1
+    drop_amount: 1
+    note: 戰斧
+  - item_id: 100172
+    drop_rate: 1
+    drop_amount: 1
+    note: 弓
+  - item_id: 120043
+    drop_rate: 1
+    drop_amount: 1
+    note: 鋼盔
+  - item_id: 120101
+    drop_rate: 1
+    drop_amount: 1
+    note: 皮甲
+  - item_id: 120149
+    drop_rate: 1
+    drop_amount: 1
+    note: 青銅盔甲
+  - item_id: 120182
+    drop_rate: 1
+    drop_amount: 1
+    note: 手套
+  - item_id: 120242
+    drop_rate: 1
+    drop_amount: 1
+    note: 大盾牌
+  - item_id: 200001
+    drop_rate: 1
+    drop_amount: 1
+    note: 歐西斯匕首
+  - item_id: 200027
+    drop_rate: 1
+    drop_amount: 1
+    note: 彎刀
+  - item_id: 200171
+    drop_rate: 1
+    drop_amount: 1
+    note: 歐西斯弓
+  - item_id: 220034
+    drop_rate: 1
+    drop_amount: 1
+    note: 歐西斯頭盔
+  - item_id: 220043
+    drop_rate: 1
+    drop_amount: 1
+    note: 鋼盔
+  - item_id: 220101
+    drop_rate: 1
+    drop_amount: 1
+    note: 皮甲
+  - item_id: 220115
+    drop_rate: 1
+    drop_amount: 1
+    note: 籐甲
+  - item_id: 220122
+    drop_rate: 1
+    drop_amount: 1
+    note: 鱗甲
+  - item_id: 220125
+    drop_rate: 1
+    drop_amount: 1
+    note: 鏈甲
+  - item_id: 220135
+    drop_rate: 1
+    drop_amount: 1
+    note: 歐西斯環甲
+  - item_id: 220136
+    drop_rate: 1
+    drop_amount: 1
+    note: 歐西斯鏈甲
+  - item_id: 220147
+    drop_rate: 1
+    drop_amount: 1
+    note: 銀釘皮甲
+  - item_id: 220213
+    drop_rate: 1
+    drop_amount: 1
+    note: 短統靴
+  - item_id: 220237
+    drop_rate: 1
+    drop_amount: 1
+    note: 阿克海盾牌

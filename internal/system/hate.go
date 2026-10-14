@@ -119,6 +119,20 @@ func RemoveHateTarget(npc *world.NpcInfo, sessionID uint64) {
 // ClearHateList 清空仇恨列表（NPC 死亡或重生時呼叫）。
 func ClearHateList(npc *world.NpcInfo) {
 	npc.HateList = nil
+	npc.CompanionHate = nil
+}
+
+// AddCompanionHate 記錄寵物／召喚獸造成的仇恨：仇恨歸主人（驅動 NPC 目標選擇），
+// 同時個別記錄以便經驗分配時拆分主人與寵物份額（Java: CalcExp 以 L1PetInstance 為獨立取得者）。
+func AddCompanionHate(npc *world.NpcInfo, companionID int32, masterSessionID uint64, damage int32) {
+	if damage <= 0 || masterSessionID == 0 {
+		return
+	}
+	AddHate(npc, masterSessionID, damage)
+	if npc.CompanionHate == nil {
+		npc.CompanionHate = make(map[int32]int32)
+	}
+	npc.CompanionHate[companionID] += damage
 }
 
 // GetTotalHate 回傳所有仇恨的累計總值（經驗分配用）。

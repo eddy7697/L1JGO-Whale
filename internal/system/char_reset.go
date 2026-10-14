@@ -74,6 +74,7 @@ func (s *CharResetSystem) Start(sess *net.Session, player *world.PlayerInfo) {
 	player.HP = player.MaxHP
 	player.MP = player.MaxMP
 	player.Level = 1
+	ResetBaseStats(player, s.deps)
 
 	// 凍結玩家
 	handler.SendResetFreeze(sess, 4, true)
@@ -132,6 +133,7 @@ func (s *CharResetSystem) ResetStage1(sess *net.Session, player *world.PlayerInf
 	// 設定 tempLevel = 1
 	player.ResetTempLevel = 1
 	player.Level = 1
+	ResetBaseStats(player, s.deps)
 
 	handler.SendCharResetLevel(sess, player)
 }
@@ -303,6 +305,7 @@ func (s *CharResetSystem) finishCharReset(sess *net.Session, player *world.Playe
 	// 充滿 HP/MP
 	player.HP = player.MaxHP
 	player.MP = player.MaxMP
+	ResetBaseStats(player, s.deps)
 
 	// 消耗回憶蠟燭
 	if candle := player.Inv.FindByItemID(resetItemCandle); candle != nil {

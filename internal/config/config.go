@@ -84,6 +84,9 @@ type RatesConfig struct {
 	GoldRate   float64 `toml:"gold_rate"`
 	LawfulRate float64 `toml:"lawful_rate"`
 	PetExpRate float64 `toml:"pet_exp_rate"`
+	// HighLevelExpDivisors 為 50 級起每級的經驗除數（Java: charsettings Lv50Exp..Lv99Exp）。
+	// 留空或長度不足時以 Java 預設表補齊；填入 50 個整數可整表覆寫。
+	HighLevelExpDivisors []int `toml:"high_level_exp_divisors"`
 }
 
 type CharacterConfig struct {

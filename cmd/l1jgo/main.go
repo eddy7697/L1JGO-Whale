@@ -267,6 +267,12 @@ func run() error {
 	}
 	printStat("掉寶表", dropTable.Count())
 
+	dropItemTable, err := data.LoadDropItemTable("data/yaml/drop_item.yaml")
+	if err != nil {
+		return fmt.Errorf("load drop item table: %w", err)
+	}
+	printStat("掉寶倍率表", dropItemTable.Count())
+
 	teleportTable, err := data.LoadTeleportTable("data/yaml/teleport_list.yaml")
 	if err != nil {
 		return fmt.Errorf("load teleport table: %w", err)
@@ -536,6 +542,7 @@ func run() error {
 		Items:            itemTable,
 		Shops:            shopTable,
 		Drops:            dropTable,
+		DropItems:        dropItemTable,
 		Teleports:        teleportTable,
 		TeleportHtml:     teleportHtmlTable,
 		Portals:          portalTable,

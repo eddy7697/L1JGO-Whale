@@ -121,6 +121,9 @@ type NpcInfo struct {
 	// AI state — 仇恨系統
 	AggroTarget uint64           // SessionID of hate target (0 = no target)，由仇恨列表驅動
 	HateList    map[uint64]int32 // 仇恨列表 — key=SessionID, value=累積傷害仇恨值
+	// CompanionHate 記錄寵物／召喚獸各自造成的仇恨（key=寵物或召喚獸物件 ID）。
+	// 其值已併入主人的 HateList，僅供經驗分配時拆分主人與寵物的份額（Java: CalcExp 以 L1PetInstance 個別計算）。
+	CompanionHate map[int32]int32
 	AttackTimer int              // ticks until next attack (cooldown)
 	MoveTimer   int              // ticks until next move towards target
 	StuckTicks  int              // consecutive ticks blocked by another entity (for stuck detection)

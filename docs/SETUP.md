@@ -249,6 +249,8 @@ UPDATE accounts SET access_level = 200 WHERE login = '你的帳號名';
 | `drop_rate` | `1` | 掉寶倍率 |
 | `gold_rate` | `1` | 金幣倍率 |
 | `lawful_rate` | `1.0` | 正義值倍率 |
+| `pet_exp_rate` | `1.0` | 寵物經驗額外倍率（與 `exp_rate` 相乘；Java 只有 `exp_rate`） |
+| `high_level_exp_divisors` | 未設定 | 50 級起每級的經驗除數陣列（對應 Java `Lv50Exp`…`Lv99Exp`）；未設定或長度不足時沿用 Java 預設（65 級 /2、70 級 /4、75 級 /8、80 級起每級翻倍） |
 
 ### [enchant] 衝裝設定
 

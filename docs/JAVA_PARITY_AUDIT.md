@@ -57,10 +57,10 @@
 | 1-12 | 伊娃的祝福（水底呼吸）圖示 | `S_SkillIconBlessOfEva`（op 126：D objectId + H time） | 新增 `S_OPCODE_BLESSOFEVA = 126` 與 `BuildSkillIconBlessOfEva`，水底呼吸藥水改送 op 126 | 待驗證 | 2026-10-14 合併；見第八節 V-5 |
 | 1-13 | 等級上限道具提示 | `MSG_LEVEL_OVER`（PacketBox 12：C 0 + C level） | `checkLevelRestriction` 超過 `max_level` 時改送 `BuildPacketBoxLevelOver(max)`；低於下限仍送 318 | 待驗證 | 2026-10-14 合併；Java 註明 level 0-49 以外客戶端不顯示；見第八節 V-6 |
 | 1-14 | 旅館房門傳送 | `Dungeon` 傳送前 `checkInnKey`，分房間／會議室 | `data/yaml/portal_list.yaml:41-48` 等旅館門口傳送點不檢查鑰匙 | 待辦 | |
-| 1-15 | 高等級經驗懲罰 | `ExpTable.getPenaltyRate`（50 級以上） | `system/combat.go:938` 直接加經驗 | 待辦 | |
-| 1-16 | 組隊經驗分配 | `CalcExp` 隊伍加成與分配；善惡依仇恨分配 | 只依仇恨分經驗（`combat.go:797-835`）；善惡只給 killer；寵物拿全額 `npc.Exp` | 待辦 | |
-| 1-17 | 屬性衍生公式 | `CalcStat.calcAc`（DEX/等級 → AC）、`calcStatMr`（WIS → MR） | 搜不到對應；只有 HP/MP 成長（`scripts/core/levelup.lua`） | 待辦 | |
-| 1-18 | 掉落倍率 | 乘全域倍率 × 地圖 `drop_rate`；`drop_item` 表單品倍率 | 只乘全域倍率（`item_use.go:971-978`）；`mapdata.go` 的 `DropRate`、`MonsterAmount` 載入後未使用；無 `drop_item` | 待辦 | |
+| 1-15 | 高等級經驗懲罰 | `ExpTable.getPenaltyRate`（50 級以上） | 新增 `ExpPenaltyRateLikeJava`（`system/calc_stat.go`）：50 級起依 Java `Lv50Exp`…`Lv99Exp` 預設除數表折減，`[rates] high_level_exp_divisors` 可覆寫；在 `awardNpcExpLikeJava` 與伺服器倍率、料理／藥水加成一同套用 | 完成 | 單元測試 `TestExpPenaltyRateLikeJava`、`TestHighLevelExpPenaltyLikeJava` |
+| 1-16 | 組隊經驗分配 | `CalcExp` 隊伍加成與分配；善惡依仇恨分配 | 新增 `distributeNpcExpLikeJava`（`system/calc_exp.go`）：非隊員依仇恨領走；隊伍份額乘王族隊長 5.9%、每位可見隊員 4% 後依等級平方分給 killer 與可見隊員；善惡依玩家本人仇恨比例分配；寵物／召喚獸仇恨另記於 `NpcInfo.CompanionHate`（`AddCompanionHate`），寵物依自身仇恨份額取得經驗（乘 `exp_rate` 與 Go 額外的 `pet_exp_rate`），召喚獸份額依 Java 不發放；移除寵物擊殺時重複的整份經驗 | 完成 | 單元測試 `TestNpcExpSplitsByHateAndLawfulLikeJava`、`TestPartyExpDistributionLikeJava`、`TestPetAndSummonHateSharesLikeJava`。Go 的 `knownsObject` 以 `GetNearbyPlayersInShow` 近似 |
+| 1-17 | 屬性衍生公式 | `CalcStat.calcAc`（DEX/等級 → AC）、`calcStatMr`（WIS → MR） | 新增 `CalcAcLikeJava`、`CalcStatMrLikeJava`、`CalcBaseMrLikeJava`（職業值 + 精神 + 等級/2）與 `ResetBaseAC`／`ResetBaseMR`（`system/calc_stat.go`，以 `PlayerInfo.BaseAC`／`BaseMR` 差值疊加）；進入世界、升級、GM `.level`、洗點、51 級配點、萬能藥、裝備與 buff 改變精神時重算，MR 改變時送 `S_SPMR` | 待驗證 | 第八節 V-8。公式由 `TestCalcAcLikeJava` 等測試鎖定；客戶端顯示與戰鬥平衡需實機確認 |
+| 1-18 | 掉落倍率 | 乘全域倍率 × 地圖 `drop_rate`；`drop_item` 表單品倍率 | `GiveDrops` 機率改為 chance × `drop_rate` × 地圖 `drop_rate` × 單品 `drop_rate`，數量 min/max 乘單品 `drop_amount`；新增 `data/yaml/drop_item.yaml`（自 Java `drop_item` 轉出 76 筆，目前皆 1）與 `data.DropItemTable`，`sqlconv dropitem` 可重轉 | 完成 | 單元測試 `TestJavaGiveDropsAppliesMapAndItemRates`。保留差異：Java 查無地圖回 0，Go `map_list.yaml` 仍有缺漏地圖故查無時視為 1；`MonsterAmount` 屬生怪數量不在本項 |
 | 1-19 | 生怪資料不一致 | `spawnlist` | `spawn_list.yaml` 與 Java DB 不符（例：45005 青蛙 Java 93 筆、Go 0 筆） | 待辦 | 需整批核對 |
 | 1-20 | 料理製作 | 24 道、Lv1-4；營火 gfx 5943 檢查（1160）；90/5/5 成功／特級／失敗 | `handler/cooking.go:32-93` 只 8 道 Lv1；cookNo ≥ 2 材料錯（Java 41263+41265，Go 41276）；無營火、無機率、製作時誤送 buff 圖示 | 待辦 | 食用效果已完成 |
 | 1-21 | PK 扣業 | 無此行為 | `system/pvp.go:470-472` PK 時扣 100 業 | 待辦 | |
@@ -201,6 +201,7 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 | V-5（1-12） | 1. 使用伊娃的祝福（水底呼吸）藥水。2. 再喝一瓶確認時間疊加。 | 狀態列出現水底呼吸圖示並顯示剩餘秒數；第二瓶後秒數累加（上限 7200）。 | 若圖示不出現：抓包確認 opcode 126 + D objectId + H time；若客戶端斷線：改回 PacketBox 44 並記錄客戶端版本。 | 高 | |
 | V-6（1-13） | 1. 以等級高於道具 `max_level` 的角色使用該道具（如 `max_level: 49` 的新手道具，用 52 級角色）。 | 客戶端顯示「此道具只能在 49 等級以下使用」類訊息；道具未被消耗。 | 若無訊息：確認道具 `max_level` 在 0-49 內（Java 註明範圍外不顯示）；若仍無訊息再抓包比對 `FA 0C 00 31`。 | 中 | |
 | V-3（1-1） | 1. 攻城中以已宣戰的盟主（君主）打掉塔後點王冠奪城。 | 王冠消失、城主轉移，塔立刻重生為新城主的守護塔，非新城盟玩家被趕回回城點，城門修復。 | 若塔未重生：檢查 `HandleCrownClick` 是否在 `removeWarNpc` 後呼叫 `SpawnTower`。 | 中 | |
+| V-8（1-17） | 1. 以 1 級新角色（記下職業、DEX、WIS）登入，開啟角色視窗。2. 練到 4 級以上（DEX 18 每 4 級 AC -1；DEX 13-15 每 6 級）。3. 穿脫一件有 AC 的防具、喝一瓶增加精神的藥水或施放淨化精神。 | 登入時 AC 為 10 減等級換算值、MR 為職業值（王族 10、騎士 0、妖精 25、法師 15、黑妖 10、龍騎 18、幻術 20）加精神換算加等級/2；升級後 AC／MR 依表變化且不需重登；穿脫裝備與 buff 到期後 AC／MR 回到原值，不累積漂移。 | 若客戶端顯示值與伺服器不同：抓包比對 `S_OwnCharStatus` 的 AC 與 `S_SPMR` 的 MR；若出現漂移：檢查 `ResetBaseMR` 是否在 `applyEquipStats`／buff 套用與還原兩端都被呼叫。 | 中 | |
 | V-7（登入器輔助） | 1. 用已更換的新版 Login38 登入器（`E:\lin-golang\Login38-v1.2.0-win-x86` 1.2.0 或 `Login38-v1.2.1-debugtoggle.20261013.1-win-x86` 1.2.1，先以 `launcher.exe` 檔案版本確認不是 1.1.0）啟動遊戲。2. 不啟用輔助：點擊地圖遠處移動、按住攻擊原生連續攻擊怪物各一次。3. 按 Home 啟用輔助（不開狩獵），重做步驟 2。 | 兩種情境下角色都連續走到目的地、連續攻擊不中斷；伺服器 log 無 `C_MOVE` 丟棄或攻擊被拒。 | 若啟用輔助後仍中斷：核對遊戲目錄 `launcher.exe` 版本是否為 1.2.x，並確認 `HuntTask.Tick()` 已含 1.2.0 的功能檢查；若未啟用輔助也中斷：回到 README 2026-10-13 的伺服器移動／攻擊驗證紀錄重新比對。 | 中 | |
 
 風險值：`高`（opcode／封包格式錯誤可能造成客戶端斷線或畫面異常，須單獨測試）、`中`（行為錯誤但不影響連線）、`低`（僅訊息文字或圖示差異）。
@@ -221,3 +222,4 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 | 2026-10-14 | 封包格式 1-11～1-13：致盲藥水改送 `S_CurseBlind`（op 47）、水底呼吸圖示改送 `S_SkillIconBlessOfEva`（op 126）、等級上限改送 `MSG_LEVEL_OVER`（PacketBox 12）；皆 `待驗證`（第八節 V-4～V-6）。 |
 | 2026-10-14 | 攻城叢集 1-1～1-4：守護塔刪除後重生（含亞丁子塔、主塔 3 座子塔門檻）、攻城結束刪王冠、趕人改隨機回城點並排除 GM、過期攻城時間往後推、`war_time`／`war_interval` 設定鍵。1-2、1-3 完成；1-1、1-4 待驗證（第八節 V-1～V-3）。 |
 | 2026-10-14 | 第八節新增 V-7：更換 Login38 登入器後，啟用輔助情境的點擊移動與原生連續攻擊實機驗證。 |
+| 2026-10-14 | 經驗／公式叢集 1-15～1-18：高等級經驗懲罰、Java 組隊／仇恨／寵物經驗分配、AC／MR 衍生公式、地圖與單品掉落倍率（新增 `drop_item.yaml`、`[rates] high_level_exp_divisors`）。1-15、1-16、1-18 完成；1-17 待驗證（第八節 V-8）。 |
