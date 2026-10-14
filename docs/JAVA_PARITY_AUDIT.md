@@ -64,12 +64,12 @@
 | 1-19 | 生怪資料不一致 | `spawnlist` | `spawn_list.yaml` 與 Java DB 不符（例：45005 青蛙 Java 93 筆、Go 0 筆） | 待辦 | 需整批核對 |
 | 1-20 | 料理製作 | 24 道、Lv1-4；營火 gfx 5943 檢查（1160）；90/5/5 成功／特級／失敗 | `handler/cooking.go:32-93` 只 8 道 Lv1；cookNo ≥ 2 材料錯（Java 41263+41265，Go 41276）；無營火、無機率、製作時誤送 buff 圖示 | 待辦 | 食用效果已完成 |
 | 1-21 | PK 扣業 | 無此行為 | `system/pvp.go:470-472` PK 時扣 100 業 | 待辦 | |
-| 1-22 | PK 懲罰（地獄） | `L1PcHellMonitor`：PK 達 10 次關進地圖 666 倒數；`C_Restart` 依 hellTime 重生 | `engine.go:1310` 有 `Punish` 門檻，`pvp.go:466` 只送警告 | 待辦 | |
+| 1-22 | PK 懲罰（地獄） | `L1PcHellMonitor`：PK 達 10 次關進地圖 666 倒數；`C_Restart` 依 hellTime 重生 | 新增 `system/pk_hell.go`：PK 達門檻 `BeginHell(true)` 依 Java 公式設秒數（≤門檻 300 秒，之後每次 +300）、傳送 666 (32701,32777) 並送 552；`PvPSystem.Update` 每秒倒數、死亡不倒數，歸零傳回火田村回城點；重生（`death.go`）與進入世界續算並送 637；`hell_time` 欄位持久化（migration 038） | 待驗證 | 第八節 V-9。倒數／傳送／門檻由 `pk_parity_test.go` 鎖定；紅字訊息與地獄地圖落點需實機確認 |
 | 1-23 | 登入與在線狀態 | `C_AuthLogin` 在 DB online=1 時回 7、不踢舊；357 只用於 DB 離線但記憶體仍在線的例外路徑；啟動重設與在線上限 | 已補啟動重設、帳號持有者、原子登記、斷線重試、上限及選角保護，詳見 `docs/LOGIN_ONLINE_STATE.md` | 完成 | `89f2e10`；已通過 build／vet／完整測試與 Claude 審查，合併回本機 `master` |
 | 1-24 | 盟屋拍賣結算 | 訊息 524/527/528；無人得標延後 5 天；更新血盟 has_house；重設 onSale/tax_deadline | `auction_sys.go:207-331` 不發訊息、只延到隔天午夜、`clan.HasHouse` 只改記憶體 | 待辦 | |
 | 1-25 | 龍騎士覺醒 | 安塔瑞斯 +127 MaxHP/AC-12；法利昂 MR+30 四屬性+30；巴拉卡斯六屬性+5；變身 6894；每週期扣 8 MP 扣完解除；再施放解除 | `skill_buff.go:1291-1312`、`buffs.lua` 參照 yiwei 版，以上皆無 | 待辦 | |
-| 1-26 | 地面物品擁有者保護 | `L1ItemOwnerTimer` | `world/ground.go:32` 有 `OwnerID` 但撿取不檢查 | 待辦 | |
-| 1-27 | 隱身後攻擊延遲 | `L1PcInvisDelay` 3 秒內不能攻擊／撿物／施法 | `combat.go:132,190` 直接解除隱身後攻擊 | 待辦 | |
+| 1-26 | 地面物品擁有者保護 | `L1ItemOwnerTimer` | `GroundItem.OwnerTicks` 由 `TickGroundItems` 倒數並清除 `OwnerID`；撿取時他人遇保護回 623；釣魚背包滿／超重改為停止釣魚並把魚丟地上保護 10 秒（Java `successFishing`）；玩家手動丟棄不再設擁有者（Java 亦無） | 完成 | `pk_parity_test.go`。Java 只有釣魚使用此計時器 |
+| 1-27 | 隱身後攻擊延遲 | `L1PcInvisDelay` 3 秒內不能攻擊／撿物／施法 | `PlayerInfo.InvisDelayTicks`（15 tick）：無所遁形術揭露自己、隱身中脫下隱身斗篷時啟動；期間近戰／遠攻／撿物忽略，施法僅允許 Java `CAST_WITH_INVIS` 清單（`system/invis_delay.go`）；撿物另補 Java 的隱身中不可撿取 | 完成 | `pk_parity_test.go`。保留差異待拍板：Java `C_Attack` 隱身中直接忽略攻擊，Go 仍維持攻擊時自動解除隱身（`combat.go`） |
 
 ## 二、整套未實作的系統
 
@@ -201,6 +201,7 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 | V-5（1-12） | 1. 使用伊娃的祝福（水底呼吸）藥水。2. 再喝一瓶確認時間疊加。 | 狀態列出現水底呼吸圖示並顯示剩餘秒數；第二瓶後秒數累加（上限 7200）。 | 若圖示不出現：抓包確認 opcode 126 + D objectId + H time；若客戶端斷線：改回 PacketBox 44 並記錄客戶端版本。 | 高 | |
 | V-6（1-13） | 1. 以等級高於道具 `max_level` 的角色使用該道具（如 `max_level: 49` 的新手道具，用 52 級角色）。 | 客戶端顯示「此道具只能在 49 等級以下使用」類訊息；道具未被消耗。 | 若無訊息：確認道具 `max_level` 在 0-49 內（Java 註明範圍外不顯示）；若仍無訊息再抓包比對 `FA 0C 00 31`。 | 中 | |
 | V-3（1-1） | 1. 攻城中以已宣戰的盟主（君主）打掉塔後點王冠奪城。 | 王冠消失、城主轉移，塔立刻重生為新城主的守護塔，非新城盟玩家被趕回回城點，城門修復。 | 若塔未重生：檢查 `HandleCrownClick` 是否在 `removeWarNpc` 後呼叫 `SpawnTower`。 | 中 | |
+| V-9（1-22） | 1. 以 PK 次數 9 的角色（可用 GM 指令設 `pk_count`）擊殺一名藍名玩家。2. 在地獄中按重新開始或重登。3. 等倒數結束（可先把 DB `hell_time` 改為 10 秒再登入）。 | 擊殺後立刻傳到地獄地圖 666 (32701,32777)，畫面中央紅字「PK 次數達到 10…反省 5 分鐘」；重登／重生後仍在地獄並顯示「必須停留 N 秒」；倒數結束自動傳到火田村（地圖 4）且 DB `hell_time` 歸 0。 | 若未傳送：檢查 `processPKKill` 是否走到 `BeginHell`、Lua `pk.lua` 的 `punish` 門檻；若紅字不顯示：抓包確認 opcode 105、msg 552/637 參數數量；若地圖 666 載入失敗：確認客戶端有該地圖檔。 | 中 | |
 | V-8（1-17） | 1. 以 1 級新角色（記下職業、DEX、WIS）登入，開啟角色視窗。2. 練到 4 級以上（DEX 18 每 4 級 AC -1；DEX 13-15 每 6 級）。3. 穿脫一件有 AC 的防具、喝一瓶增加精神的藥水或施放淨化精神。 | 登入時 AC 為 10 減等級換算值、MR 為職業值（王族 10、騎士 0、妖精 25、法師 15、黑妖 10、龍騎 18、幻術 20）加精神換算加等級/2；升級後 AC／MR 依表變化且不需重登；穿脫裝備與 buff 到期後 AC／MR 回到原值，不累積漂移。 | 若客戶端顯示值與伺服器不同：抓包比對 `S_OwnCharStatus` 的 AC 與 `S_SPMR` 的 MR；若出現漂移：檢查 `ResetBaseMR` 是否在 `applyEquipStats`／buff 套用與還原兩端都被呼叫。 | 中 | |
 | V-7（登入器輔助） | 1. 用已更換的新版 Login38 登入器（`E:\lin-golang\Login38-v1.2.0-win-x86` 1.2.0 或 `Login38-v1.2.1-debugtoggle.20261013.1-win-x86` 1.2.1，先以 `launcher.exe` 檔案版本確認不是 1.1.0）啟動遊戲。2. 不啟用輔助：點擊地圖遠處移動、按住攻擊原生連續攻擊怪物各一次。3. 按 Home 啟用輔助（不開狩獵），重做步驟 2。 | 兩種情境下角色都連續走到目的地、連續攻擊不中斷；伺服器 log 無 `C_MOVE` 丟棄或攻擊被拒。 | 若啟用輔助後仍中斷：核對遊戲目錄 `launcher.exe` 版本是否為 1.2.x，並確認 `HuntTask.Tick()` 已含 1.2.0 的功能檢查；若未啟用輔助也中斷：回到 README 2026-10-13 的伺服器移動／攻擊驗證紀錄重新比對。 | 中 | |
 
@@ -222,4 +223,5 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 | 2026-10-14 | 封包格式 1-11～1-13：致盲藥水改送 `S_CurseBlind`（op 47）、水底呼吸圖示改送 `S_SkillIconBlessOfEva`（op 126）、等級上限改送 `MSG_LEVEL_OVER`（PacketBox 12）；皆 `待驗證`（第八節 V-4～V-6）。 |
 | 2026-10-14 | 攻城叢集 1-1～1-4：守護塔刪除後重生（含亞丁子塔、主塔 3 座子塔門檻）、攻城結束刪王冠、趕人改隨機回城點並排除 GM、過期攻城時間往後推、`war_time`／`war_interval` 設定鍵。1-2、1-3 完成；1-1、1-4 待驗證（第八節 V-1～V-3）。 |
 | 2026-10-14 | 第八節新增 V-7：更換 Login38 登入器後，啟用輔助情境的點擊移動與原生連續攻擊實機驗證。 |
+| 2026-10-14 | PK 叢集 1-22、1-26、1-27：PK 地獄（門檻入獄、每秒倒數、重生／重登續算、火田村釋放、`hell_time` 持久化）、地面物品擁有者保護（釣魚 10 秒）、隱身解除 3 秒行動延遲。1-26、1-27 完成；1-22 待驗證（第八節 V-9）。1-27 另記 Java 隱身中忽略攻擊 vs Go 自動解除為待拍板差異。 |
 | 2026-10-14 | 經驗／公式叢集 1-15～1-18：高等級經驗懲罰、Java 組隊／仇恨／寵物經驗分配、AC／MR 衍生公式、地圖與單品掉落倍率（新增 `drop_item.yaml`、`[rates] high_level_exp_divisors`）。1-15、1-16、1-18 完成；1-17 待驗證（第八節 V-8）。 |

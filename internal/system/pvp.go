@@ -14,6 +14,8 @@ import (
 // 實作 handler.PvPManager 介面。
 type PvPSystem struct {
 	deps *handler.Deps
+	// teleport 可由測試替換；nil 時使用 handler.TeleportPlayer。
+	teleport pvpTeleportFunc
 }
 
 // NewPvPSystem 建立 PvP 系統。
@@ -447,8 +449,11 @@ func (s *PvPSystem) processPKKill(killer, victim *world.PlayerInfo) {
 	if victim.Lawful >= 0 && !victim.PinkName {
 		killer.WantedTicks = s.deps.Scripting.GetPKTimers().WantedTicks
 
+		// Java isChangePkCount：只有實際加次數時才判斷警告／入獄
+		pkCountChanged := false
 		if killer.Lawful < 30000 {
 			killer.PKCount++
+			pkCountChanged = true
 		}
 
 		pkResult := s.deps.Scripting.CalcPKLawfulPenalty(int(killer.Level), killer.Lawful)
@@ -463,8 +468,11 @@ func (s *PvPSystem) processPKKill(killer, victim *world.PlayerInfo) {
 		handler.SendPlayerStatus(killer.Session, killer)
 
 		pkThresh := s.deps.Scripting.GetPKThresholds()
-		if killer.PKCount >= pkThresh.Warning && killer.PKCount < pkThresh.Punish {
+		if pkCountChanged && killer.PKCount >= pkThresh.Warning && killer.PKCount < pkThresh.Punish {
 			handler.SendRedMessage(killer.Session, 551, fmt.Sprintf("%d", killer.PKCount), fmt.Sprintf("%d", pkThresh.Punish))
+		} else if pkCountChanged && killer.PKCount >= pkThresh.Punish {
+			// Java L1PcInstance.death: PK 次數達門檻 → beginHell(true)
+			s.BeginHell(killer, true)
 		}
 
 		// Karma 修改（Java: PK 藍名玩家 → karma 下降）

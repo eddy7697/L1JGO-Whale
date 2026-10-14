@@ -236,6 +236,7 @@ func (s *tripleArrowPvPSpy) HandlePvPFarAttack(attacker, target *world.PlayerInf
 	s.target = target
 }
 func (s *tripleArrowPvPSpy) AddLawfulFromNpc(_ *world.PlayerInfo, _ int32) {}
+func (s *tripleArrowPvPSpy) BeginHell(_ *world.PlayerInfo, _ bool)         {}
 func (s *tripleArrowPvPSpy) TriggerPinkName(_, _ *world.PlayerInfo)        {}
 
 // TestSkillTripleArrowRoutesThroughPvPFarAttackThreeTimes 驗證三重矢（132）PvP 路徑

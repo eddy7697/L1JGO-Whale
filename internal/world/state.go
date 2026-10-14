@@ -119,6 +119,9 @@ type PlayerInfo struct {
 	PinkName          bool  // temporary red name (180 seconds after attacking blue player)
 	PinkNameTicks     int   // remaining ticks for pink name timer
 	WantedTicks       int   // >0 = wanted by guards (24h = 432000 ticks at 200ms/tick)
+	HellTime          int32 // PK 地獄剩餘秒數（Java: L1PcInstance.hellTime，持久化）
+	HellTickAcc       int   // 地獄倒數 200ms tick 累計，每 5 tick 扣 1 秒
+	InvisDelayTicks   int   // 隱身解除後的行動延遲（Java: L1PcInvisDelay 3 秒）；>0 不可攻擊／撿物／施法
 	FightId           int32 // 0=無決鬥, >0=決鬥對手角色 ID（Java: L1PcInstance.fightId）
 	WarehousePassword int32 // 倉庫密碼（0=未設定, >0=6位數密碼）。從帳號載入。
 	RegenHPAcc        int   // HP regen accumulator: counts 1-second ticks since last HP regen
@@ -1425,6 +1428,12 @@ func (s *State) GetNearbyGroundItemsInShow(x, y int32, mapID int16, viewerShowID
 func (s *State) TickGroundItems() []*GroundItem {
 	var expired []*GroundItem
 	for id, item := range s.groundItems {
+		if item.OwnerTicks > 0 {
+			item.OwnerTicks--
+			if item.OwnerTicks <= 0 {
+				item.OwnerID = 0
+			}
+		}
 		if item.NoExpire {
 			continue
 		}

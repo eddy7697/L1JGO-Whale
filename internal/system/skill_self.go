@@ -65,10 +65,13 @@ func (s *SkillSystem) executeSelfSkill(sess *net.Session, player *world.PlayerIn
 			}
 		}
 		// 施法者自己若在隱身中也會被揭示
+		// Java L1SkillUse.detection: 自己隱身中 → delInvis + beginInvisTimer（3 秒不可攻擊／撿物／施法）
 		if !isGMInvisible(player) && (player.HasBuff(60) || player.HasBuff(97)) {
 			s.removeBuffAndRevert(player, 60)
 			s.removeBuffAndRevert(player, 97)
 			handler.SendInvisible(sess, player.CharID, player.IsInvisible())
+			s.sendPlayerReappearToVisible(player)
+			player.InvisDelayTicks = InvisDelayTicks
 		}
 		if s.deps.Trap != nil {
 			s.deps.Trap.DetectTraps(sess, player)

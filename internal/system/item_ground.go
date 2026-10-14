@@ -122,7 +122,6 @@ func (s *ItemGroundSystem) DropItem(sess *net.Session, player *world.PlayerInfo,
 		Y:          player.Y,
 		MapID:      player.MapID,
 		ShowID:     player.ShowID,
-		OwnerID:    player.CharID,
 		TTL:        5 * 60 * 5, // 5 分鐘（200ms tick）
 		NoExpire:   inHouse,
 	}
@@ -148,8 +147,19 @@ func (s *ItemGroundSystem) PickupItem(sess *net.Session, player *world.PlayerInf
 		return
 	}
 
+	// Java C_PickUpItem: 隱身中或隱身解除延遲內不可撿取
+	if player.Invisible || player.InvisDelayTicks > 0 {
+		return
+	}
+
 	gndItem := s.deps.World.GetGroundItem(objectID)
 	if gndItem == nil {
+		return
+	}
+
+	// 擁有者保護（Java: item.getItemOwnerId() != 0 && pc.getId() != owner → 623）
+	if gndItem.OwnerID != 0 && gndItem.OwnerID != player.CharID {
+		handler.SendServerMessage(sess, 623) // 無法撿取物品。
 		return
 	}
 

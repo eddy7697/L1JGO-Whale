@@ -91,6 +91,7 @@ func HandleChangeChar(sess *net.Session, _ *packet.Reader, deps *Deps) {
 			Title:       player.Title,
 			Karma:       player.Karma,
 			PKCount:     player.PKCount,
+			HellTime:    player.HellTime,
 			Food:        player.Food,
 		}
 		if err := deps.CharRepo.SaveCharacter(ctx, row); err != nil {

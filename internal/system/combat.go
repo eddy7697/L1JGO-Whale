@@ -68,7 +68,7 @@ func (s *CombatSystem) Update(_ time.Duration) {
 // 回傳 true 表示已拒絕或回覆空揮，不能再進入傷害／仇恨處理。
 func (s *CombatSystem) handleClientAttackMiss(req handler.AttackRequest) bool {
 	player := s.deps.World.GetBySession(req.AttackerSessionID)
-	if player == nil || player.Dead || player.Paralyzed || player.Sleeped {
+	if player == nil || player.Dead || player.Paralyzed || player.Sleeped || player.InvisDelayTicks > 0 {
 		return true
 	}
 
@@ -178,6 +178,11 @@ func (s *CombatSystem) processMeleeAttack(sessID uint64, targetID int32) *handle
 
 	// 麻痺/暈眩/凍結/睡眠時無法攻擊
 	if player.Paralyzed || player.Sleeped {
+		return nil
+	}
+
+	// 隱身解除後 3 秒內不可攻擊（Java C_Attack: pc.isInvisDelay()）
+	if player.InvisDelayTicks > 0 {
 		return nil
 	}
 
@@ -506,6 +511,11 @@ func (s *CombatSystem) processRangedAttackForPlayer(player *world.PlayerInfo, ta
 
 	// 麻痺/暈眩/凍結/睡眠時無法攻擊
 	if player.Paralyzed || player.Sleeped {
+		return nil
+	}
+
+	// 隱身解除後 3 秒內不可攻擊（Java C_Attack: pc.isInvisDelay()）
+	if player.InvisDelayTicks > 0 {
 		return nil
 	}
 

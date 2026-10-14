@@ -28,6 +28,8 @@ func (m *fakePvPManager) TriggerPinkName(_, _ *world.PlayerInfo) {}
 
 func (m *fakePvPManager) AddLawfulFromNpc(_ *world.PlayerInfo, _ int32) {}
 
+func (m *fakePvPManager) BeginHell(_ *world.PlayerInfo, _ bool) {}
+
 func newCombatLOSTestSystem(t *testing.T, ws *world.State, pvp *fakePvPManager) *CombatSystem {
 	t.Helper()
 	engine, err := scripting.NewEngine("../../scripts", zap.NewNop())

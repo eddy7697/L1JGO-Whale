@@ -3,6 +3,7 @@ package system
 import (
 	"math/rand"
 
+	"github.com/l1jgo/server/internal/data"
 	"github.com/l1jgo/server/internal/handler"
 	"github.com/l1jgo/server/internal/world"
 	"go.uber.org/zap"
@@ -115,6 +116,10 @@ func (s *FishingSystem) Tick(player *world.PlayerInfo) {
 	// 隨機獲得魚
 	fish := rollFishReward()
 	if fish != 0 {
+		// Java FishingTimeController.successFishing: 背包放不下 → 停止釣魚，魚掉地上並保護 10 秒
+		if s.dropFishIfCannotCarry(player, fish) {
+			return
+		}
 		if s.deps.ItemCreate != nil {
 			s.deps.ItemCreate.GiveItem(player.Session, player, fish, 1)
 		}
@@ -134,4 +139,46 @@ func rollFishReward() int32 {
 		}
 	}
 	return 0
+}
+
+// fishOwnerTicks 釣魚掉落物的擁有者保護（Java: L1ItemInstance.startItemOwnerTimer 10000ms）。
+const fishOwnerTicks = 10 * 5
+
+// dropFishIfCannotCarry 背包已滿或超重時，把魚放到腳下並設定 10 秒擁有者保護，回傳 true。
+func (s *FishingSystem) dropFishIfCannotCarry(player *world.PlayerInfo, fishID int32) bool {
+	if s.deps.Items == nil {
+		return false
+	}
+	info := s.deps.Items.Get(fishID)
+	if info == nil {
+		return false
+	}
+	full := player.Inv.IsFull()
+	overWeight := info.Weight > 0 && player.Inv.IsOverWeightAdd(info.Weight, 1, world.PlayerMaxWeight(player))
+	if !full && !overWeight {
+		return false
+	}
+	s.StopFishing(player, true)
+	item := &world.InvItem{
+		ItemID: fishID, Count: 1, Name: info.Name,
+		InvGfx: info.InvGfx, Weight: info.Weight,
+		Stackable: info.Stackable, Bless: byte(info.Bless),
+		Identified: info.Category == data.CategoryEtcItem,
+	}
+	applyItemTemplate(item, info)
+	g := &world.GroundItem{
+		ID: world.NextGroundItemID(), ItemID: fishID, Count: 1, Item: item,
+		Name: info.Name, GrdGfx: info.GrdGfx,
+		X: player.X, Y: player.Y, MapID: player.MapID, ShowID: player.ShowID,
+		OwnerID: player.CharID, OwnerTicks: fishOwnerTicks,
+		TTL: 5 * 60 * 5,
+	}
+	s.deps.World.AddGroundItem(g)
+	for _, viewer := range s.deps.World.GetNearbyPlayersInShow(player.X, player.Y, player.MapID, 0, player.ShowID) {
+		handler.SendDropItem(viewer.Session, g)
+		if viewer.Known != nil {
+			viewer.Known.GroundItems[g.ID] = world.KnownPos{X: g.X, Y: g.Y}
+		}
+	}
+	return true
 }

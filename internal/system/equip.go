@@ -315,9 +315,13 @@ func (s *EquipSystem) UnequipSlot(sess *net.Session, player *world.PlayerInfo, s
 	// 重新計算屬性
 	s.RecalcEquipStats(sess, player)
 
-	// 特殊效果解除：隱身斗篷
+	// 特殊效果解除：隱身斗篷。Java 點擊隱身中的斗篷先 delInvis，再由 L1ItemDelay.beginInvisTimer 鎖 3 秒
 	if item.ItemID == 20077 || item.ItemID == 120077 {
+		wasInvisible := player.Invisible
 		s.applyInvisCloak(sess, player, false)
+		if wasInvisible {
+			player.InvisDelayTicks = InvisDelayTicks
+		}
 	}
 
 	// 武器專屬變身解除（item-on-unequip）
