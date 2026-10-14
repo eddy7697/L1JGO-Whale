@@ -50,8 +50,8 @@ ground_item_expiry = 300       # 地面物品過期時間（ticks, 300=60秒）
 
 # ── 衝裝設定 ────────────────────────────────────────────────
 [enchant]
-weapon_chance = 0.68           # 武器衝裝係數（Java預設68, 公式隨等級遞減）
-armor_chance = 0.52            # 防具衝裝係數（Java預設52, 公式隨等級遞減）
+weapon_chance = 0.10           # 武器衝裝係數 C（Eddy EnchantChanceWeapon=10；+8 以下 (100+3C)/3，+9 以上 (100+3C)/6）
+armor_chance = 0.10            # 防具衝裝係數 C（Eddy EnchantChanceArmor=10；(100+lvl·C)/lvl，+9 以上再除 2）
 
 # ── 角色設定 ────────────────────────────────────────────────
 [character]

@@ -52,7 +52,7 @@
 | 1-7 | 寵物指定攻擊目標 | `C_SelectTarget`（opcode 223）回傳目標 | `C_OPCODE_SLAVE_CONTROL=223` 未在 `handler/context.go` 註冊；`pet_mgr.go:184` 已送 `S_SelectTarget` 但回應被丟掉 | 待辦 | `S_SelectTarget` opcode Java 54 / Go 236（`companion_pack.go:432`）需實機驗證 |
 | 1-8 | 屬性強化卷軸 | 41429-41432 走 `scrollOfEnchantWeaponAttr` | `data/yaml/etcitem_list.yaml:32228` 標 `use_type: dai`，被當一般武器卷軸；屬性值只有存檔欄位 | 待辦 | |
 | 1-9 | 象牙塔與飾品卷軸 | 49312 等象牙塔卷軸、49148 飾品卷軸各有獨立流程 | 49312 標 `dai`；49148 標 `del` 無處理 | 待辦 | |
-| 1-10 | 武器衝裝成功率 | `(100+3C)/3`，+9 以上 `/6`；排除象牙塔裝備、試煉之劍、幻象武器 40128 | `scripts/item/enchant.lua` 改為 `(100+lvl·C)/lvl`（註解「Fixed」） | 待辦 | 若要保留請改 `保留差異` |
+| 1-10 | 武器衝裝成功率 | `(100+3C)/3`，+9 以上 `/6`；排除象牙塔裝備、試煉之劍、幻象武器 40128 | `scripts/item/enchant.lua` 改回 Java 固定值 `(100+3C)/3`、+9 以上 `/6`；`weapon_chance`／`armor_chance` 預設改為 0.10 對應 Eddy `rates.properties` 的 10 | 完成 | 2026-10-14 使用者拍板對齊；`scripting/enchant_rate_test.go` |
 | 1-11 | 致盲藥水封包 | `S_CurseBlind`（op 47 + writeH） | 致盲藥水改走 `handler.SendCurseBlind`（op 47 + H type=1），與技能版共用 `BuildCurseBlind` | 待驗證 | 2026-10-14 合併；見第八節 V-4 |
 | 1-12 | 伊娃的祝福（水底呼吸）圖示 | `S_SkillIconBlessOfEva`（op 126：D objectId + H time） | 新增 `S_OPCODE_BLESSOFEVA = 126` 與 `BuildSkillIconBlessOfEva`，水底呼吸藥水改送 op 126 | 待驗證 | 2026-10-14 合併；見第八節 V-5 |
 | 1-13 | 等級上限道具提示 | `MSG_LEVEL_OVER`（PacketBox 12：C 0 + C level） | `checkLevelRestriction` 超過 `max_level` 時改送 `BuildPacketBoxLevelOver(max)`；低於下限仍送 318 | 待驗證 | 2026-10-14 合併；Java 註明 level 0-49 以外客戶端不顯示；見第八節 V-6 |
@@ -63,7 +63,7 @@
 | 1-18 | 掉落倍率 | 乘全域倍率 × 地圖 `drop_rate`；`drop_item` 表單品倍率 | `GiveDrops` 機率改為 chance × `drop_rate` × 地圖 `drop_rate` × 單品 `drop_rate`，數量 min/max 乘單品 `drop_amount`；新增 `data/yaml/drop_item.yaml`（自 Java `drop_item` 轉出 76 筆，目前皆 1）與 `data.DropItemTable`，`sqlconv dropitem` 可重轉 | 完成 | 單元測試 `TestJavaGiveDropsAppliesMapAndItemRates`。保留差異：Java 查無地圖回 0，Go `map_list.yaml` 仍有缺漏地圖故查無時視為 1；`MonsterAmount` 屬生怪數量不在本項 |
 | 1-19 | 生怪資料不一致 | `spawnlist` | `spawn_list.yaml` 與 Java DB 不符（例：45005 青蛙 Java 93 筆、Go 0 筆） | 待辦 | 需整批核對 |
 | 1-20 | 料理製作 | 24 道、Lv1-4；營火 gfx 5943 檢查（1160）；90/5/5 成功／特級／失敗 | `handler/cooking.go:32-93` 只 8 道 Lv1；cookNo ≥ 2 材料錯（Java 41263+41265，Go 41276）；無營火、無機率、製作時誤送 buff 圖示 | 待辦 | 食用效果已完成 |
-| 1-21 | PK 扣業 | 無此行為 | `system/pvp.go:470-472` PK 時扣 100 業 | 待辦 | |
+| 1-21 | PK 扣業 | 無此行為 | `system/pvp.go` 已移除 PK 扣 100 karma | 完成 | 2026-10-14 使用者拍板對齊；`pk_parity_test.go` |
 | 1-22 | PK 懲罰（地獄） | `L1PcHellMonitor`：PK 達 10 次關進地圖 666 倒數；`C_Restart` 依 hellTime 重生 | 新增 `system/pk_hell.go`：PK 達門檻 `BeginHell(true)` 依 Java 公式設秒數（≤門檻 300 秒，之後每次 +300）、傳送 666 (32701,32777) 並送 552；`PvPSystem.Update` 每秒倒數、死亡不倒數，歸零傳回火田村回城點；重生（`death.go`）與進入世界續算並送 637；`hell_time` 欄位持久化（migration 038） | 待驗證 | 第八節 V-9。倒數／傳送／門檻由 `pk_parity_test.go` 鎖定；紅字訊息與地獄地圖落點需實機確認 |
 | 1-23 | 登入與在線狀態 | `C_AuthLogin` 在 DB online=1 時回 7、不踢舊；357 只用於 DB 離線但記憶體仍在線的例外路徑；啟動重設與在線上限 | 已補啟動重設、帳號持有者、原子登記、斷線重試、上限及選角保護，詳見 `docs/LOGIN_ONLINE_STATE.md` | 完成 | `89f2e10`；已通過 build／vet／完整測試與 Claude 審查，合併回本機 `master` |
 | 1-24 | 盟屋拍賣結算 | 訊息 524/527/528；無人得標延後 5 天；更新血盟 has_house；重設 onSale/tax_deadline | `auction_sys.go:207-331` 不發訊息、只延到隔天午夜、`clan.HasHouse` 只改記憶體 | 待辦 | |
@@ -225,4 +225,5 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 | 2026-10-14 | 第八節新增 V-7：更換 Login38 登入器後，啟用輔助情境的點擊移動與原生連續攻擊實機驗證。 |
 | 2026-10-14 | PK 叢集 1-22、1-26、1-27：PK 地獄（門檻入獄、每秒倒數、重生／重登續算、火田村釋放、`hell_time` 持久化）、地面物品擁有者保護（釣魚 10 秒）、隱身解除 3 秒行動延遲。1-26、1-27 完成；1-22 待驗證（第八節 V-9）。1-27 另記 Java 隱身中忽略攻擊 vs Go 自動解除為待拍板差異。 |
 | 2026-10-14 | 1-27 補齊：依使用者拍板移除 Go「攻擊／施法時自動解除隱身」，改為 Java 隱身中忽略攻擊、非 `CAST_WITH_INVIS` 技能靜默拒絕。 |
+| 2026-10-14 | 1-21、1-10 依使用者拍板對齊 Java：PK 不再扣 karma；武器衝裝改回 Java 固定值公式，衝裝係數預設改為 Eddy 設定的 10。 |
 | 2026-10-14 | 經驗／公式叢集 1-15～1-18：高等級經驗懲罰、Java 組隊／仇恨／寵物經驗分配、AC／MR 衍生公式、地圖與單品掉落倍率（新增 `drop_item.yaml`、`[rates] high_level_exp_divisors`）。1-15、1-16、1-18 完成；1-17 待驗證（第八節 V-8）。 |

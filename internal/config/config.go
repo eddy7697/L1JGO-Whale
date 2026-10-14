@@ -218,8 +218,8 @@ func defaults() *Config {
 			PetExpRate: 1.0,
 		},
 		Enchant: EnchantConfig{
-			WeaponChance: 0.68, // Java default ENCHANT_CHANCE_WEAPON = 68
-			ArmorChance:  0.52, // Java default ENCHANT_CHANCE_ARMOR = 52
+			WeaponChance: 0.10, // Eddy rates.properties EnchantChanceWeapon = 10
+			ArmorChance:  0.10, // Eddy rates.properties EnchantChanceArmor = 10
 		},
 		World: WorldConfig{
 			WeatherEnabled:   false, // Java 預設不啟用隨機天氣

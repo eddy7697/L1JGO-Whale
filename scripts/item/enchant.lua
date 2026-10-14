@@ -3,8 +3,8 @@
 -- ctx.enchant_lvl:  current enchant level of target equipment
 -- ctx.safe_enchant: safe enchant level from item template
 -- ctx.category:     1=weapon, 2=armor
--- ctx.weapon_chance: config rate (0.0-1.0, default 0.68 = Java 68)
--- ctx.armor_chance:  config rate (0.0-1.0, default 0.52 = Java 52)
+-- ctx.weapon_chance: config rate (0.0-1.0, default 0.10 = Eddy EnchantChanceWeapon 10)
+-- ctx.armor_chance:  config rate (0.0-1.0, default 0.10 = Eddy EnchantChanceArmor 10)
 --
 -- Returns: { result = "success"/"nochange"/"break"/"minus", amount = N }
 --   success:  +amount enchant levels
@@ -56,21 +56,18 @@ function calc_enchant(ctx)
     local e_lvl = ctx.enchant_lvl
 
     if ctx.category == 1 then
-        -- WEAPON formula
-        -- Fixed: Java original uses flat rate (doesn't scale with enchant_level).
-        -- Now uses enchant_level as divisor (same structure as armor) so chance
-        -- decreases as level rises. Weapon base (68) > armor base (52) so weapons
-        -- are still easier, but no longer trivially risk-free.
-        local wc = math.floor(ctx.weapon_chance * 100 + 0.5) -- default 68
-        if e_lvl <= 0 then e_lvl = 1 end
+        -- WEAPON formula (Java: Enchant.java scrollOfEnchantWeapon)
+        -- Java 為固定值，不隨目前強化等級變化：
+        --   +8 以下 (100 + 3C) / 3，+9 以上 (100 + 3C) / 6
+        local wc = math.floor(ctx.weapon_chance * 100 + 0.5) -- Eddy rates.properties = 10
         if ctx.enchant_lvl >= 9 then
-            chance = math.floor((100 + e_lvl * wc) / (e_lvl * 2))
+            chance = math.floor((100 + 3 * wc) / 6)
         else
-            chance = math.floor((100 + e_lvl * wc) / e_lvl)
+            chance = math.floor((100 + 3 * wc) / 3)
         end
     else
         -- ARMOR formula (Java: Enchant.java lines 156-182)
-        -- Java default ENCHANT_CHANCE_ARMOR = 52
+        -- Eddy rates.properties EnchantChanceArmor = 10
         local ac = math.floor(ctx.armor_chance * 100 + 0.5)
         -- Bone/black mithril correction (safe_enchant == 0)
         if ctx.safe_enchant == 0 then
