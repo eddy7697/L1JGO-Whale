@@ -68,7 +68,7 @@ func (s *CombatSystem) Update(_ time.Duration) {
 // 回傳 true 表示已拒絕或回覆空揮，不能再進入傷害／仇恨處理。
 func (s *CombatSystem) handleClientAttackMiss(req handler.AttackRequest) bool {
 	player := s.deps.World.GetBySession(req.AttackerSessionID)
-	if player == nil || player.Dead || player.Paralyzed || player.Sleeped || player.InvisDelayTicks > 0 {
+	if player == nil || player.Dead || player.Paralyzed || player.Sleeped || player.Invisible || player.InvisDelayTicks > 0 {
 		return true
 	}
 
@@ -129,9 +129,6 @@ func (s *CombatSystem) sendClientAttackMiss(player *world.PlayerInfo, targetID, 
 	if player.AbsoluteBarrier && s.deps.Skill != nil {
 		s.deps.Skill.CancelAbsoluteBarrier(player)
 	}
-	if player.Invisible && s.deps.Skill != nil {
-		s.deps.Skill.CancelInvisibility(player)
-	}
 	player.Heading = CalcHeading(player.X, player.Y, x, y)
 
 	// Java actionPc 依裝備與箭矢決定動畫；遠攻 opcode 本身不代表有箭。
@@ -181,19 +178,14 @@ func (s *CombatSystem) processMeleeAttack(sessID uint64, targetID int32) *handle
 		return nil
 	}
 
-	// 隱身解除後 3 秒內不可攻擊（Java C_Attack: pc.isInvisDelay()）
-	if player.InvisDelayTicks > 0 {
+	// 隱身中與隱身解除後 3 秒內攻擊直接忽略（Java C_Attack: pc.isInvisble() / pc.isInvisDelay()）
+	if player.Invisible || player.InvisDelayTicks > 0 {
 		return nil
 	}
 
 	// 絕對屏障：攻擊時自動解除（Java: C_Attack.java 第 164-169 行）
 	if player.AbsoluteBarrier && s.deps.Skill != nil {
 		s.deps.Skill.CancelAbsoluteBarrier(player)
-	}
-
-	// 隱身：攻擊時自動解除（Java: L1BuffUtil.cancelInvisibility）
-	if player.Invisible && s.deps.Skill != nil {
-		s.deps.Skill.CancelInvisibility(player)
 	}
 
 	// 查找目標 — 可能是 NPC 或玩家
@@ -514,19 +506,14 @@ func (s *CombatSystem) processRangedAttackForPlayer(player *world.PlayerInfo, ta
 		return nil
 	}
 
-	// 隱身解除後 3 秒內不可攻擊（Java C_Attack: pc.isInvisDelay()）
-	if player.InvisDelayTicks > 0 {
+	// 隱身中與隱身解除後 3 秒內攻擊直接忽略（Java C_Attack: pc.isInvisble() / pc.isInvisDelay()）
+	if player.Invisible || player.InvisDelayTicks > 0 {
 		return nil
 	}
 
 	// 絕對屏障：攻擊時自動解除
 	if player.AbsoluteBarrier && s.deps.Skill != nil {
 		s.deps.Skill.CancelAbsoluteBarrier(player)
-	}
-
-	// 隱身：攻擊時自動解除
-	if player.Invisible && s.deps.Skill != nil {
-		s.deps.Skill.CancelInvisibility(player)
 	}
 
 	npc := ws.GetNpc(targetID)

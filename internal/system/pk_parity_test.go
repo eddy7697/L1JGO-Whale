@@ -503,3 +503,86 @@ func TestFishingDropsFishWithOwnerProtectionWhenBagFull(t *testing.T) {
 		t.Fatalf("背包有空間不應掉落")
 	}
 }
+
+func TestMeleeAttackIgnoredWhileInvisibleLikeJava(t *testing.T) {
+	ws := world.NewState()
+	player := addSkillTestPlayer(ws, &world.PlayerInfo{
+		SessionID: 1, Session: newSkillTestSession(t, 1), CharID: 1001, Name: "attacker",
+		X: 100, Y: 100, MapID: 900, ShowID: 100, HP: 100, MaxHP: 100, Str: 20, Dex: 20, Level: 50,
+		Invisible: true,
+	})
+	target := addSkillTestPlayer(ws, &world.PlayerInfo{
+		SessionID: 2, Session: newSkillTestSession(t, 2), CharID: 1002, Name: "target",
+		X: 101, Y: 100, MapID: 900, ShowID: 100, HP: 1000, MaxHP: 1000,
+	})
+	pvp := &fakePvPManager{}
+	s := newCombatLOSTestSystem(t, ws, pvp)
+
+	s.processMeleeAttack(player.SessionID, target.CharID)
+	s.processRangedAttackForPlayer(player, target.CharID)
+	if pvp.meleeCalls != 0 {
+		t.Fatalf("Java C_Attack 隱身中直接忽略攻擊，got %d", pvp.meleeCalls)
+	}
+	if !player.Invisible {
+		t.Fatal("隱身中攻擊不應解除隱身")
+	}
+	if !s.handleClientAttackMiss(handler.AttackRequest{AttackerSessionID: player.SessionID, TargetID: target.CharID, TargetX: 101, TargetY: 100}) {
+		t.Fatal("隱身中的攻擊封包應被忽略")
+	}
+
+	player.Invisible = false
+	s.processMeleeAttack(player.SessionID, target.CharID)
+	if pvp.meleeCalls != 1 {
+		t.Fatalf("解除隱身後應可攻擊，got %d", pvp.meleeCalls)
+	}
+}
+
+func TestSkillCastWhileInvisibleOnlyAllowsInvisListLikeJava(t *testing.T) {
+	ws := world.NewState()
+	caster := addSkillTestPlayer(ws, &world.PlayerInfo{
+		SessionID: 1, Session: newSkillTestSession(t, 1), CharID: 1001, Name: "invis-caster",
+		X: 100, Y: 100, MapID: 4, HP: 100, MaxHP: 100, MP: 100, MaxMP: 100, Level: 52,
+		KnownSpells: []int32{9, 23},
+		Invisible:   true,
+	})
+	viewer := addSkillTestPlayer(ws, &world.PlayerInfo{
+		SessionID: 2, Session: newSkillTestSession(t, 2), CharID: 1002, Name: "invis-viewer",
+		X: 101, Y: 100, MapID: 4,
+	})
+	npc := &world.NpcInfo{
+		ID: world.NextNpcID(), NpcID: 45000, Impl: "L1Monster", Name: "weak target",
+		X: 102, Y: 100, MapID: 4, HP: 100, MaxHP: 100, WeakAttr: 1 | 4,
+	}
+	ws.AddNpc(npc)
+	caster.PoisonType = 1
+	caster.PoisonTicksLeft = 150
+	caster.PoisonDmgAmount = 5
+	s := newSkillBuffTestSystem(t, ws)
+
+	// 23（能量感測，CAST_WITH_INVIS 外）隱身中靜默拒絕且不解除隱身
+	s.processSkill(handler.SkillRequest{SessionID: caster.SessionID, SkillID: 23, TargetID: npc.ID})
+	if packets := drainSkillTestPackets(viewer.Session); hasSkillEffectPacket(packets, npc.ID, 2169) {
+		t.Fatal("Java 隱身中不可施放 CAST_WITH_INVIS 以外的技能，23 不應生效")
+	}
+	if !caster.Invisible {
+		t.Fatal("隱身中施法被拒不應解除隱身")
+	}
+
+	// 9（解毒術，CAST_WITH_INVIS 內）隱身中可施放，且不解除隱身
+	s.processSkill(handler.SkillRequest{SessionID: caster.SessionID, SkillID: 9, TargetID: caster.CharID})
+	if caster.PoisonType != 0 {
+		t.Fatal("CAST_WITH_INVIS 內的解毒術隱身中應可施放")
+	}
+	if !caster.Invisible {
+		t.Fatal("Java 隱身中施放允許的技能不會解除隱身")
+	}
+
+	// 解除隱身後 23 應正常生效（先清掉全域施法冷卻）
+	caster.Invisible = false
+	caster.SkillDelayUntil = time.Time{}
+	caster.MP = 100
+	s.processSkill(handler.SkillRequest{SessionID: caster.SessionID, SkillID: 23, TargetID: npc.ID})
+	if packets := drainSkillTestPackets(viewer.Session); !hasSkillEffectPacket(packets, npc.ID, 2169) {
+		t.Fatal("非隱身時 23 應生效並廣播 2169")
+	}
+}
