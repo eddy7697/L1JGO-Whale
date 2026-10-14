@@ -215,6 +215,9 @@ func TestProcessPKKillBelowThresholdOnlyWarns(t *testing.T) {
 	if !hasRedMessage(drainSkillTestPackets(killer.Session), 551) {
 		t.Fatalf("5 次應送警告 551")
 	}
+	if killer.Karma != 0 {
+		t.Fatalf("Java PK 不扣 karma，got %d", killer.Karma)
+	}
 }
 
 type hellRestartPvPSpy struct {

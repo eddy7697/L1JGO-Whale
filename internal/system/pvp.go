@@ -475,11 +475,8 @@ func (s *PvPSystem) processPKKill(killer, victim *world.PlayerInfo) {
 			s.BeginHell(killer, true)
 		}
 
-		// Karma 修改（Java: PK 藍名玩家 → karma 下降）
-		killer.Karma -= 100
-		handler.SendKarma(killer.Session, killer.Karma)
-
-		s.deps.Log.Info(fmt.Sprintf("PK 擊殺  擊殺者=%s  受害者=%s  PK次數=%d  正義值=%d  善惡值=%d", killer.Name, victim.Name, killer.PKCount, killer.Lawful, killer.Karma))
+		// Java L1PcInstance.death 不會因 PK 改動 karma（karma 只由陣營 NPC／任務增減）
+		s.deps.Log.Info(fmt.Sprintf("PK 擊殺  擊殺者=%s  受害者=%s  PK次數=%d  正義值=%d", killer.Name, victim.Name, killer.PKCount, killer.Lawful))
 	}
 
 	// 發出 PlayerKilled 事件
