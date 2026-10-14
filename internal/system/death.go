@@ -115,8 +115,11 @@ func (s *DeathSystem) ProcessRestart(sess *net.Session, player *world.PlayerInfo
 	player.Food = int16(s.deps.Config.Gameplay.InitialFood)
 	player.Dirty = true
 
-	// 取得重生位置（Lua: scripts/world/respawn.lua）
+	// 取得重生位置（Lua: scripts/world/respawn.lua）；地獄中重生回地獄（Java C_Restart）
 	rx, ry, rmap := getBackLocation(player.MapID, s.deps)
+	if player.HellTime > 0 {
+		rx, ry, rmap = HellX, HellY, HellMapID
+	}
 
 	// 清除舊格子碰撞
 	if s.deps.MapData != nil {
@@ -242,6 +245,11 @@ func (s *DeathSystem) ProcessRestart(sess *net.Session, player *world.PlayerInfo
 
 	// 發送天氣
 	handler.SendWeather(sess, s.deps.World.Weather)
+
+	// 地獄中重生續算倒數並提示剩餘秒數（Java C_Restart 末尾 beginHell(false)）
+	if player.HellTime > 0 && s.deps.PvP != nil {
+		s.deps.PvP.BeginHell(player, false)
+	}
 
 	s.deps.Log.Info(fmt.Sprintf("玩家重新開始  角色=%s  x=%d  y=%d  地圖=%d", player.Name, rx, ry, rmap))
 }

@@ -708,8 +708,10 @@ func run() error {
 	deps.Trap = system.NewTrapSystem(deps)
 	// 倉庫系統（直接呼叫，非 Phase 系統）
 	deps.Warehouse = system.NewWarehouseSystem(deps)
-	// PvP 系統（直接呼叫，非 Phase 系統）
-	deps.PvP = system.NewPvPSystem(deps)
+	// PvP 系統（直接呼叫；另以 Phase 系統跑 PK 地獄倒數）
+	pvpSys := system.NewPvPSystem(deps)
+	deps.PvP = pvpSys
+	runner.Register(pvpSys)
 	// 天寶幣商城系統（直接呼叫，非 Phase 系統）
 	deps.ShopCnMgr = system.NewShopCnSystem(deps)
 	// 強化物品購買系統（直接呼叫，非 Phase 系統）

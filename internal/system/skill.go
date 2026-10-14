@@ -425,6 +425,12 @@ func (s *SkillSystem) processSkill(req handler.SkillRequest) {
 		return
 	}
 
+	// 隱身解除延遲中只能施放隱身可用技能（Java L1SkillUse: isInvisDelay && !isInvisUsableSkill → 靜默拒絕）
+	if player.InvisDelayTicks > 0 && !castableWithInvisLikeJava(skillID) {
+		s.failTeleportSkill(sess, skillID)
+		return
+	}
+
 	// 隱身：施法時自動解除（Java: L1BuffUtil.cancelInvisibility 在 C_UseSkill）
 	if player.Invisible {
 		s.cancelInvisibility(player)

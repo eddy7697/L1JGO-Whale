@@ -381,6 +381,7 @@ func (s *InputSystem) handleDisconnect(sess *net.Session) {
 			Title:       player.Title,
 			Karma:       player.Karma,
 			PKCount:     player.PKCount,
+			HellTime:    player.HellTime,
 			Food:        player.Food,
 		}
 		if err := s.charRepo.SaveCharacter(ctx, row); err != nil {

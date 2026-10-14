@@ -29,7 +29,8 @@ type GroundItem struct {
 	Y          int32
 	MapID      int16
 	ShowID     int32
-	OwnerID    int32 // CharID of dropper (0 = anyone can pick up)
+	OwnerID    int32 // 擁有者 CharID（Java: L1ItemInstance.itemOwnerId，0 = 任何人可撿）
+	OwnerTicks int   // 擁有者保護剩餘 tick（Java: L1ItemOwnerTimer 10 秒）；歸零時清除 OwnerID
 	TTL        int   // ticks remaining until auto-delete (0 = permanent)
 	NoExpire   bool  // true = 不自動消失（血盟小屋內物品）
 }

@@ -128,6 +128,7 @@ func (s *PersistenceSystem) savePlayers(dirtyOnly bool) error {
 			Title:       p.Title,
 			Karma:       p.Karma,
 			PKCount:     p.PKCount,
+			HellTime:    p.HellTime,
 			Food:        p.Food,
 		}
 		recordError("自動存檔角色失敗", s.charRepo.SaveCharacter(ctx, row))

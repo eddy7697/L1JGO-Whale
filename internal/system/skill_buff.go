@@ -838,6 +838,10 @@ func (s *SkillSystem) tickPlayerBuffs(p *world.PlayerInfo) {
 }
 
 func (s *SkillSystem) tickPlayerBuffsAt(p *world.PlayerInfo, now time.Time) {
+	// 隱身解除延遲（Java: L1PcInvisDelay）；不依賴是否有 buff
+	if p.InvisDelayTicks > 0 {
+		p.InvisDelayTicks--
+	}
 	if p.ActiveBuffs == nil {
 		return
 	}
@@ -963,6 +967,7 @@ func (s *SkillSystem) tickPlayerBuffsAt(p *world.PlayerInfo, now time.Time) {
 	if p.WantedTicks > 0 {
 		p.WantedTicks--
 	}
+
 }
 
 // ========================================================================

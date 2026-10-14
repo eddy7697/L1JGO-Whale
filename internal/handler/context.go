@@ -226,6 +226,8 @@ type PvPManager interface {
 	TriggerPinkName(attacker, target *world.PlayerInfo)
 	// AddLawfulFromNpc 根據 NPC 善惡值增加擊殺者善惡值。
 	AddLawfulFromNpc(killer *world.PlayerInfo, npcLawful int32)
+	// BeginHell PK 地獄：first=true 依 PK 次數設定時間並通知 552；false 為重登／重生續算（637）。
+	BeginHell(player *world.PlayerInfo, first bool)
 }
 
 // MailManager 處理信件邏輯（讀取/寫入/刪除/搬移）。由 system.MailSystem 實作。

@@ -120,6 +120,7 @@ func HandleEnterWorld(sess *net.Session, r *packet.Reader, deps *Deps) {
 		FoodFullTime: -1,      // 登入時重置生存吶喊計時（Java: _h_time = -1）
 		AccessLevel:  ch.AccessLevel,
 		PKCount:      ch.PKCount,
+		HellTime:     ch.HellTime,
 		Karma:        ch.Karma,
 		AttackView:   true, // Java: is_attack_view 預設啟用浮動傷害數字
 		Inv:          world.NewInventory(),
@@ -366,6 +367,11 @@ func HandleEnterWorld(sess *net.Session, r *packet.Reader, deps *Deps) {
 
 	// S_GameTime — 最後發送，避免干擾客戶端初始化
 	sendGameTime(sess, world.GameTimeNow().Seconds())
+
+	// PK 地獄續算（Java C_LoginToServer: hellTime > 0 → beginHell(false)）
+	if player.HellTime > 0 && deps.PvP != nil {
+		deps.PvP.BeginHell(player, false)
+	}
 }
 
 func sendLoginGame(sess *net.Session, clanID int32, clanMemberID int32) {

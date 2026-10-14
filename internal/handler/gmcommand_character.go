@@ -214,7 +214,7 @@ func gmCharacterRow(p *world.PlayerInfo) *persist.CharacterRow {
 		MaxHP: p.MaxHP, MaxMP: p.MaxMP, X: p.X, Y: p.Y, MapID: p.MapID, Heading: p.Heading,
 		Lawful: p.Lawful, Str: p.Str, Dex: p.Dex, Con: p.Con, Wis: p.Wis, Cha: p.Cha, Intel: p.Intel,
 		BonusStats: p.BonusStats, ElixirStats: p.ElixirStats, ClanID: p.ClanID, ClanName: p.ClanName,
-		ClanRank: p.ClanRank, Title: p.Title, Karma: p.Karma, PKCount: p.PKCount, Food: p.Food}
+		ClanRank: p.ClanRank, Title: p.Title, Karma: p.Karma, PKCount: p.PKCount, HellTime: p.HellTime, Food: p.Food}
 	eq := p.EquipBonuses
 	row.Str -= int16(eq.AddStr)
 	row.Dex -= int16(eq.AddDex)

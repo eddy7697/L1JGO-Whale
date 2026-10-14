@@ -78,6 +78,8 @@ func (s *shockStunPvPSpy) HandlePvPFarAttack(_, _ *world.PlayerInfo) {}
 
 func (s *shockStunPvPSpy) AddLawfulFromNpc(_ *world.PlayerInfo, _ int32) {}
 
+func (s *shockStunPvPSpy) BeginHell(_ *world.PlayerInfo, _ bool) {}
+
 func (s *shockStunPvPSpy) TriggerPinkName(attacker, target *world.PlayerInfo) {
 	s.called++
 	s.attacker = attacker
