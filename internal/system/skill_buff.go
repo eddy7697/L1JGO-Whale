@@ -206,6 +206,9 @@ func (s *SkillSystem) applyBuffEffect(target *world.PlayerInfo, skill *data.Skil
 		target.MPR += buff.DeltaMPR
 		target.BowHitMod += buff.DeltaBowHit
 		target.BowDmgMod += buff.DeltaBowDmg
+		if buff.DeltaWis != 0 {
+			ResetBaseMR(target) // Java: L1BuffUtil → resetBaseMr
+		}
 		target.WeightBonusPct += buff.DeltaWeightPct
 		target.Dodge += buff.DeltaDodge
 		target.RegistSustain += buff.DeltaRegistSustain
@@ -584,6 +587,9 @@ func (s *SkillSystem) revertBuffStats(target *world.PlayerInfo, buff *world.Acti
 	target.MPR -= buff.DeltaMPR
 	target.BowHitMod -= buff.DeltaBowHit
 	target.BowDmgMod -= buff.DeltaBowDmg
+	if buff.DeltaWis != 0 {
+		ResetBaseMR(target) // Java: L1SkillTimer → resetBaseMr
+	}
 	target.WeightBonusPct -= buff.DeltaWeightPct
 	target.FireRes -= buff.DeltaFireRes
 	target.WaterRes -= buff.DeltaWaterRes
@@ -678,6 +684,9 @@ func (s *SkillSystem) ApplyBuffStats(player *world.PlayerInfo, buff *world.Activ
 	player.BowHitMod += buff.DeltaBowHit
 	player.BowDmgMod += buff.DeltaBowDmg
 	player.WeightBonusPct += buff.DeltaWeightPct
+	if buff.DeltaWis != 0 {
+		ResetBaseMR(player)
+	}
 	player.Dodge += buff.DeltaDodge
 	player.FireRes += buff.DeltaFireRes
 	player.WaterRes += buff.DeltaWaterRes

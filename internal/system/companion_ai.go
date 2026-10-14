@@ -260,7 +260,7 @@ func (s *CompanionAISystem) summonAttackTarget(sum *world.SummonInfo) {
 	// 傷害歸屬主人（仇恨累加到主人 SessionID）
 	master := ws.GetByCharID(sum.OwnerCharID)
 	if master != nil && dmg > 0 {
-		AddHate(targetNpc, master.SessionID, dmg)
+		AddCompanionHate(targetNpc, sum.ID, master.SessionID, dmg)
 		sendCompanionHpMeter(master.Session, sum.ID, sum.HP, sum.MaxHP)
 	}
 
@@ -760,7 +760,7 @@ func (s *CompanionAISystem) petAttackTarget(pet *world.PetInfo) {
 	// 傷害歸屬主人（仇恨累加到主人 SessionID）
 	master := ws.GetByCharID(pet.OwnerCharID)
 	if master != nil && dmg > 0 {
-		AddHate(targetNpc, master.SessionID, dmg)
+		AddCompanionHate(targetNpc, pet.ID, master.SessionID, dmg)
 	}
 
 	// NPC 反擊 — 簡化傷害計算
@@ -803,7 +803,7 @@ func (s *CompanionAISystem) petAttackTarget(pet *world.PetInfo) {
 	}
 	pet.AttackTimer = atkCooldown
 
-	// NPC 死亡 → 統一走 handleNpcDeath（含經驗分配、掉落、善惡）+ 寵物自身經驗
+	// NPC 死亡 → 統一走 handleNpcDeath（含經驗分配、掉落、善惡；寵物依其仇恨份額取得經驗，Java: CalcExp.AddExpPet）
 	if targetNpc.HP <= 0 {
 		targetNpc.HP = 0
 		pet.AggroTarget = 0
@@ -822,18 +822,6 @@ func (s *CompanionAISystem) petAttackTarget(pet *world.PetInfo) {
 			for _, viewer := range nearby {
 				handler.SendActionGfx(viewer.Session, targetNpc.ID, 8)
 				handler.SendNpcDeadPack(viewer.Session, targetNpc)
-			}
-		}
-
-		// 寵物自身經驗（獨立於玩家經驗分配）
-		petExp := targetNpc.Exp
-		if s.deps.Config.Rates.PetExpRate > 0 {
-			petExp = int32(float64(petExp) * s.deps.Config.Rates.PetExpRate)
-		}
-		if petExp > 0 && s.deps.PetLife != nil {
-			s.deps.PetLife.AddPetExp(pet, petExp)
-			if master != nil {
-				sendCompanionHpMeter(master.Session, pet.ID, pet.HP, pet.MaxHP)
 			}
 		}
 	}

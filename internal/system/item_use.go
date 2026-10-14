@@ -970,12 +970,26 @@ func (s *ItemUseSystem) GiveDrops(killer *world.PlayerInfo, npc *world.NpcInfo) 
 
 	dropRate := s.deps.Config.Rates.DropRate
 	goldRate := s.deps.Config.Rates.GoldRate
+	// 地圖掉落倍率（Java: MapsTable.getDropRate）。Java 查無地圖時回 0；
+	// Go 的 map_list 尚有缺漏地圖，查無時視為 1 以免整張地圖無掉落。
+	mapRate := 1.0
+	if s.deps.MapData != nil {
+		if info := s.deps.MapData.GetInfo(npc.MapID); info != nil {
+			mapRate = info.DropRate
+		}
+	}
 
 	for _, drop := range dropList {
 		if dropRate <= 0 || (drop.ItemID == world.AdenaItemID && goldRate <= 0) {
 			continue
 		}
-		chance := int(float64(drop.Chance) * dropRate)
+		// 單品倍率（Java: DropItemTable.getDropRate / getDropAmount，查無時為 1）
+		itemRate, itemAmount := 1.0, 1.0
+		if s.deps.DropItems != nil {
+			itemRate = s.deps.DropItems.DropRate(drop.ItemID)
+			itemAmount = s.deps.DropItems.DropAmount(drop.ItemID)
+		}
+		chance := int(float64(drop.Chance) * dropRate * mapRate * itemRate)
 		if chance > 1000000 {
 			chance = 1000000
 		}
@@ -985,9 +999,12 @@ func (s *ItemUseSystem) GiveDrops(killer *world.PlayerInfo, npc *world.NpcInfo) 
 			continue
 		}
 
-		qty := int32(drop.Min)
-		if drop.Max > drop.Min {
-			qty = int32(drop.Min + world.RandInt(drop.Max-drop.Min+1))
+		// 數量：min/max 乘單品數量倍率後取整（Java: (int)(drop.getMin() * amount)）
+		minQty := int(float64(drop.Min) * itemAmount)
+		maxQty := int(float64(drop.Max) * itemAmount)
+		qty := int32(minQty)
+		if maxQty > minQty {
+			qty = int32(minQty + world.RandInt(maxQty-minQty+1))
 		}
 		if qty <= 0 {
 			qty = 1
@@ -998,6 +1015,9 @@ func (s *ItemUseSystem) GiveDrops(killer *world.PlayerInfo, npc *world.NpcInfo) 
 			if qty <= 0 {
 				qty = 1
 			}
+		}
+		if qty > 2000000000 {
+			qty = 2000000000
 		}
 
 		// 無有效攻擊者時落在怪物位置，否則依仇恨選擇接收者。
@@ -1406,6 +1426,16 @@ func (s *ItemUseSystem) useElixir(sess *net.Session, player *world.PlayerInfo, i
 	*stat++
 	player.ElixirStats++
 	player.Dirty = true
+
+	// 敏捷／精神萬能藥影響基礎 AC／MR（Java: C_ItemUSe → resetBaseAc / resetBaseMr）
+	switch itemID {
+	case 40035:
+		ResetBaseAC(player, s.deps)
+	case 40037:
+		if ResetBaseMR(player) {
+			handler.SendMagicStatus(sess, byte(player.SP), int32(player.MR))
+		}
+	}
 
 	handler.SendPlayerStatus(sess, player)
 	handler.SendAbilityScores(sess, player)

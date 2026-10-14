@@ -41,6 +41,10 @@ func (s *GMCommandSystem) SetLevel(sess *net.Session, player *world.PlayerInfo, 
 	player.MaxMP = baseMP + bonusMP
 	player.HP = player.MaxHP
 	player.MP = player.MaxMP
+	ResetBaseAC(player, s.deps)
+	if ResetBaseMR(player) {
+		handler.SendMagicStatus(sess, byte(player.SP), int32(player.MR))
+	}
 
 	handler.SendPlayerStatus(sess, player)
 	handler.SendExpUpdate(sess, player.Level, player.Exp)

@@ -225,6 +225,7 @@ func (s *SkillSystem) resurrectNpcWithHP(npc *world.NpcInfo, hp int32) bool {
 	npc.RespawnTimer = 0
 	npc.AggroTarget = 0
 	npc.HateList = nil
+	npc.CompanionHate = nil
 	npc.AttackTimer = 0
 	npc.MoveTimer = 0
 	npc.StuckTicks = 0

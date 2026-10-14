@@ -26,14 +26,17 @@ func TestSkillElementalBuffElfElementalDefenseBuffsUseJavaValues(t *testing.T) {
 		EarthRes:  4,
 	})
 	s := newSkillTestSystem(t, ws)
+	// 基礎 MR 依職業／精神／等級換算（Java: resetBaseMr）；淨化精神 WIS 12→15 會讓基礎 MR 再 +3。
+	ResetBaseStats(player, s.deps)
+	baseMR := player.MR
 
 	s.applyBuffEffect(player, &data.SkillInfo{SkillID: 129, BuffDuration: 960})
 	s.applyBuffEffect(player, &data.SkillInfo{SkillID: 137, BuffDuration: 960})
 	s.applyBuffEffect(player, &data.SkillInfo{SkillID: 138, BuffDuration: 960})
 	s.applyBuffEffect(player, &data.SkillInfo{SkillID: 147, BuffDuration: 64})
 
-	if player.MR != 15 || player.Wis != 15 {
-		t.Fatalf("魔法防禦/淨化精神應為 MR+10、WIS+3，MR=%d WIS=%d", player.MR, player.Wis)
+	if player.MR != baseMR+10+3 || player.Wis != 15 {
+		t.Fatalf("魔法防禦/淨化精神應為 MR+10（另含精神換算 +3）、WIS+3，MR=%d(base %d) WIS=%d", player.MR, baseMR, player.Wis)
 	}
 	if player.FireRes != 61 || player.WaterRes != 12 || player.WindRes != 13 || player.EarthRes != 14 {
 		t.Fatalf("屬性防禦應四屬 +10，單屬性防禦應依 ElfAttr 只加火抗 +50，四抗=%d/%d/%d/%d",

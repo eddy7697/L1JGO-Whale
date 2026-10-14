@@ -746,6 +746,7 @@ type Deps struct {
 	Items            *data.ItemTable
 	Shops            *data.ShopTable
 	Drops            *data.DropTable
+	DropItems        *data.DropItemTable // 單品掉落倍率（Java: DropItemTable），可為 nil
 	Teleports        *data.TeleportTable
 	TeleportHtml     *data.TeleportHtmlTable
 	Portals          *data.PortalTable

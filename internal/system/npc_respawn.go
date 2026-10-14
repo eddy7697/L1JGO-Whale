@@ -71,6 +71,7 @@ func (s *NpcRespawnSystem) respawnNpc(npc *world.NpcInfo) {
 	npc.SpawnY = spawnY
 	npc.AggroTarget = 0
 	npc.HateList = nil // 清空仇恨列表
+	npc.CompanionHate = nil
 	npc.AttackTimer = 0
 	npc.MoveTimer = 0
 	npc.StuckTicks = 0

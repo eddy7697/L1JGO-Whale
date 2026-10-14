@@ -53,6 +53,8 @@ type PlayerInfo struct {
 	WisdomSP                  int16 // SP bonus from wisdom potion (removed when buff expires)
 	AC                        int16 // current AC (base 10 - equipment bonus; lower = better)
 	MR                        int16 // magic resistance
+	BaseAC                    int16 // 等級/敏捷換算的基礎 AC（Java: _baseAc），不存檔
+	BaseMR                    int16 // 職業/精神/等級換算的基礎 MR（Java: _baseMr），不存檔
 	HitMod                    int16 // melee hit bonus from buffs
 	DmgMod                    int16 // melee damage bonus from buffs
 	BowHitMod                 int16 // bow hit bonus from buffs

@@ -82,6 +82,16 @@ func (s *StatAllocSystem) AllocStat(sess *net.Session, player *world.PlayerInfo,
 	player.BonusStats++
 	player.Dirty = true
 
+	// 敏捷影響基礎 AC、精神影響基礎 MR（Java: C_Attr → resetBaseAc / resetBaseMr）
+	switch statName {
+	case "dex":
+		ResetBaseAC(player, s.deps)
+	case "wis":
+		if ResetBaseMR(player) {
+			handler.SendMagicStatus(sess, byte(player.SP), int32(player.MR))
+		}
+	}
+
 	s.deps.Log.Info(fmt.Sprintf("配點完成  角色=%s  屬性=%s  已用配點=%d", player.Name, statName, player.BonusStats))
 
 	handler.SendPlayerStatus(sess, player)
