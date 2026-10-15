@@ -102,7 +102,7 @@ acc_earth_mr, acc_fire_mr, acc_water_mr, acc_wind_mr  SMALLINT NOT NULL DEFAULT 
 | E-2 | 同一把再用風卷軸至 3 級，第四次 | 第三次成功後第四次送 1453、卷軸不消耗 | 低 | — |
 | E-3 | 風 3 級武器改用火卷軸 | 成功後變火 1 級 | 低 | — |
 | E-4 | 對非武器／封印武器／天空之劍(65) 使用 | 79 或 1453，不消耗 | 低 | — |
-| E-5 | 風 3 級武器打弱風 NPC（npc `weak_attr=8`）與普通 NPC | 浮動傷害約 +7 與 +5 | 中：若 Lua `dmg_mod` 有其他倍率，數值略有偏差 | 將附加傷害改為結果後相加 |
+| E-5 | 風 3 級武器打弱風 NPC（npc `weak_attr=8`）與普通 NPC | 倍率前的附加值為 7 與 5，最終結果另受既有戰鬥公式影響 | 中：需固定角色與目標條件比較 | 比對 Java 屬性抗性及倍率順序，不直接搬到最終傷害之後 |
 | E-6 | `.item 49312` 對象牙塔短劍(7) +5 與 +6 使用；對長劍使用 | +5→+6 並顯示 161 藍光；+6 與長劍回 79 不消耗 | 低 | — |
 | E-7 | `.item 49311` 對修練者皮頭盔 +0 | 79（safe_enchant 0） | 低：資料現況 | 若希望可用，需改資料 safe_enchant |
 | E-8 | `.item 49148` 對修練者銀戒指(20282) 使用數次 | 成功 161 銀光、戒指 +N、識別視窗 MP 增加；失敗 164 戒指消失 | 中：status bytes 新增 27-30 元素 tag 與防具 header grade 位元組（非飾品改送 0xFF）會影響所有防具識別視窗 | 若客戶端識別視窗異常：先將 header grade 改回 0 觀察，再移除 27-30 tag |
@@ -114,3 +114,9 @@ acc_earth_mr, acc_fire_mr, acc_water_mr, acc_wind_mr  SMALLINT NOT NULL DEFAULT 
 ## 完整測試
 
 `go test ./...` 於 `0a79f88` 全數通過（exit 0）；修正提交後 `go build ./...`、`go vet`、handler／system 受影響測試、`git diff --check` 通過。
+
+## 整合者收尾（2026-10-15）
+
+- `d98c3c9` 已移除新卷軸流程額外的 GFX 2583，並新增七種卷軸真實 C_USE_ITEM 回歸；原一般卷軸不變。
+- `scripts/test_java_items.ps1` 已在隔離 PostgreSQL 通過 040 對舊資料的零預設、角色物品／四種倉庫與旅館鑰匙／租約往返；容器已清理。
+- 卷軸、旅館、料理整合後，build／vet／全套測試通過。完整實機清單以 `JAVA_PARITY_LIVE_CHECKLIST.md` V-13～V-16 為準；上方未合併描述為 Claude 交付時狀態，最終合併由整合者完成。
