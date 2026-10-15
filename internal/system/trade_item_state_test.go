@@ -49,6 +49,7 @@ func addTradeStateItem(player *world.PlayerInfo) *world.InvItem {
 	item.InnNpcID = 70012
 	item.InnHall = true
 	item.InnDueTime = 99_999
+	item.Accessory = world.AccessoryBonus{AddHP: 2, MDef: 1}
 	return item
 }
 
@@ -68,7 +69,8 @@ func assertTradeItemStatePreserved(t *testing.T, item *world.InvItem, objectID i
 		item.InnKeyID != 12345 ||
 		item.InnNpcID != 70012 ||
 		item.InnHall != true ||
-		item.InnDueTime != 99_999 {
+		item.InnDueTime != 99_999 ||
+		item.Accessory != (world.AccessoryBonus{AddHP: 2, MDef: 1}) {
 		t.Fatalf("交易後物品狀態未完整保留: %+v", item)
 	}
 }

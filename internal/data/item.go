@@ -195,6 +195,9 @@ type ItemInfo struct {
 	Tradeable    bool
 	MinLevel     int
 	MaxLevel     int
+	// Grade 飾品級別（Java L1Armor.getGrade）：-1=非飾品/不可強化，0=上等，1=中等，2=初等，3=特等。
+	// 僅飾品強化卷軸（49148）使用；武器與其他物品固定 -1。
+	Grade int
 
 	// Class restrictions
 	UseRoyal        bool
@@ -423,12 +426,21 @@ func loadWeapons(t *ItemTable, path string) error {
 			SuckingHP:       w.SuckingHP,
 			DiceMP:          w.DiceMP,
 			SuckingMP:       w.SuckingMP,
+			Grade:           -1,
 		}
 	}
 	return nil
 }
 
 // --- armor loading ---
+
+// armorGrade 將 YAML 的 grade 欄位轉成 Java 慣例：缺省即 -1。
+func armorGrade(g *int) int {
+	if g == nil {
+		return -1
+	}
+	return *g
+}
 
 type armorEntry struct {
 	ItemID          int32  `yaml:"item_id"`
@@ -483,6 +495,7 @@ type armorEntry struct {
 	Tradeable       bool   `yaml:"tradeable"`
 	MinLevel        int    `yaml:"min_level"`
 	MaxLevel        int    `yaml:"max_level"`
+	Grade           *int   `yaml:"grade"` // 飾品級別，缺省視為 -1（Java armor.grade 預設 -1）
 }
 
 type armorListFile struct {
@@ -522,6 +535,7 @@ func loadArmors(t *ItemTable, path string) error {
 			Tradeable:       a.Tradeable,
 			MinLevel:        a.MinLevel,
 			MaxLevel:        a.MaxLevel,
+			Grade:           armorGrade(a.Grade),
 			UseRoyal:        a.UseRoyal,
 			UseKnight:       a.UseKnight,
 			UseMage:         a.UseMage,
@@ -611,6 +625,7 @@ func loadEtcItems(t *ItemTable, path string) error {
 			GrdGfx:         e.GrdGfx,
 			Weight:         e.Weight,
 			Category:       CategoryEtcItem,
+			Grade:          -1,
 			Type:           e.ItemType,
 			UseType:        e.UseType,
 			UseTypeID:      UseTypeToID(e.UseType), // Java: item.setUseType(_useTypes.get(use_type))

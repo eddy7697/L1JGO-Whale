@@ -50,19 +50,19 @@
 | 1-5 | 模擬戰自動休戰 | 240 分鐘後自動結束 | 新增 `ActiveWar.EndTime` 與 `SimWarTickSystem`；`[gameplay] sim_war_time` 預設 `"240m"`，嚴格超過期限的第一個 tick 自動休戰，不影響攻城戰 | 完成 | `2000759`；可替換時鐘測試確認 240 分鐘邊界、僅結束一次及攻城隔離；客戶端通知併入 V-10 |
 | 1-6 | 血盟戰同意流程 | 宣戰／投降／休戰需對方盟主 `S_Message_YN` 217/221/222 同意；檢查 Lv ≤ 15（232）、戰區內（477）、已在戰爭中（234/236） | 已接 217/221/222 同意流程與 Java 檢查順序；專用 pending 綁雙方角色／連線／血盟／盟主資格、訊息類型及原模擬戰，拒絕過期、重複與錯類型回應；攻城仍直接生效 | 待驗證 | `2000759`、`0b7cb61`、`81ef17f`；38 個戰爭測試通過，見獨立清單 V-10。保留 Go 攻城單一攻方投降只移除該攻方的既有語意；共同攻方互送模擬戰投降／休戰不得影響攻城戰 |
 | 1-7 | 寵物指定攻擊目標 | `C_SelectTarget`（opcode 223）回傳目標 | 已註冊／解碼 223，寵物所有權與攻擊／警戒模式檢查後，指定怪物、玩家、他人寵物或召喚物；AI 逐次重驗地圖／ShowID／安區與目標狀態；`S_SelectTarget` 改 Java opcode 54 + D + 三個 C(0) | 待驗證 | `6dd2163`；封包、四類目標、保護／反射／死亡與比賽回歸通過；見獨立清單 V-11。保留既有簡化戰鬥數值；非怪物 NPC、食物、全域 NonPvP 與召喚物反擊寵物仍未擴張 |
-| 1-8 | 屬性強化卷軸 | 41429-41432 走 `scrollOfEnchantWeaponAttr` | `data/yaml/etcitem_list.yaml:32228` 標 `use_type: dai`，被當一般武器卷軸；屬性值只有存檔欄位 | 待辦 | |
-| 1-9 | 象牙塔與飾品卷軸 | 49312 等象牙塔卷軸、49148 飾品卷軸各有獨立流程 | 49312 標 `dai`；49148 標 `del` 無處理 | 待辦 | |
+| 1-8 | 屬性強化卷軸 | 41429-41432 走 `scrollOfEnchantWeaponAttr` | 已接獨立路由、合法目標／封印／上限檢查、預設 10% 成功率、異屬性重設為 1 級、訊息／消耗／名稱／保存；屬性傷害接入近戰及弓的 NPC／PvP 計算 | 待驗證 | `0a79f88`、`d98c3c9`；四卷軸實際 C_USE_ITEM、機率邊界與傷害公式回歸、PostgreSQL 保存通過；見 V-13 |
+| 1-9 | 象牙塔與飾品卷軸 | 49311/49312 象牙塔卷軸、49148 飾品卷軸各有獨立流程 | 已接象牙塔白名單／安全值與飾品 grade／門檻／+6 獎勵／失敗消失；裝備即時重算、識別 MR／grade／四抗，migration 040 保存 10 個飾品加成欄位，含倉庫與登入 | 待驗證 | `0a79f88`、`9cacece`、`d98c3c9`；路由、成功／失敗、裝備、轉移與 PostgreSQL 往返通過；見 V-14。沿用一般衝裝公式；無 Java 衝裝歷史表，僅 log；Java 有而 Go 缺的物品未新增 |
 | 1-10 | 武器衝裝成功率 | `(100+3C)/3`，+9 以上 `/6`；排除象牙塔裝備、試煉之劍、幻象武器 40128 | `scripts/item/enchant.lua` 改回 Java 固定值 `(100+3C)/3`、+9 以上 `/6`；`weapon_chance`／`armor_chance` 預設改為 0.10 對應 Eddy `rates.properties` 的 10 | 完成 | 2026-10-14 使用者拍板對齊；`scripting/enchant_rate_test.go` |
 | 1-11 | 致盲藥水封包 | `S_CurseBlind`（op 47 + writeH） | 致盲藥水改走 `handler.SendCurseBlind`（op 47 + H type=1），與技能版共用 `BuildCurseBlind` | 待驗證 | 2026-10-14 合併；見第八節 V-4 |
 | 1-12 | 伊娃的祝福（水底呼吸）圖示 | `S_SkillIconBlessOfEva`（op 126：D objectId + H time） | 新增 `S_OPCODE_BLESSOFEVA = 126` 與 `BuildSkillIconBlessOfEva`，水底呼吸藥水改送 op 126 | 待驗證 | 2026-10-14 合併；見第八節 V-5 |
 | 1-13 | 等級上限道具提示 | `MSG_LEVEL_OVER`（PacketBox 12：C 0 + C level） | `checkLevelRestriction` 超過 `max_level` 時改送 `BuildPacketBoxLevelOver(max)`；低於下限仍送 318 | 待驗證 | 2026-10-14 合併；Java 註明 level 0-49 以外客戶端不顯示；見第八節 V-6 |
-| 1-14 | 旅館房門傳送 | `Dungeon` 傳送前 `checkInnKey`，分房間／會議室 | `data/yaml/portal_list.yaml:41-48` 等旅館門口傳送點不檢查鑰匙 | 待辦 | |
+| 1-14 | 旅館房門傳送 | `Dungeon` 傳送前 `checkInnKey`，分房間／會議室 | 七處旅館步行／入口封包／NPC 動作共用有效鑰匙及當前租約檢查，依鑰匙選房間／會議室；租房 ShowID 隔離、離開還原，14 張室內地圖重登回門外 | 待驗證 | `e898505`、`d98c3c9`；三入口×七旅館×房型、失效鑰匙／距離／隔離／隨從／重登位置及 PostgreSQL 租約回歸通過；見 V-15。亞丁／海賊島不在 Java 七入口及這組重登資料內，未擴充其地圖規則 |
 | 1-15 | 高等級經驗懲罰 | `ExpTable.getPenaltyRate`（50 級以上） | 新增 `ExpPenaltyRateLikeJava`（`system/calc_stat.go`）：50 級起依 Java `Lv50Exp`…`Lv99Exp` 預設除數表折減，`[rates] high_level_exp_divisors` 可覆寫；在 `awardNpcExpLikeJava` 與伺服器倍率、料理／藥水加成一同套用 | 完成 | 單元測試 `TestExpPenaltyRateLikeJava`、`TestHighLevelExpPenaltyLikeJava` |
 | 1-16 | 組隊經驗分配 | `CalcExp` 隊伍加成與分配；善惡依仇恨分配 | 新增 `distributeNpcExpLikeJava`（`system/calc_exp.go`）：非隊員依仇恨領走；隊伍份額乘王族隊長 5.9%、每位可見隊員 4% 後依等級平方分給 killer 與可見隊員；善惡依玩家本人仇恨比例分配；寵物／召喚獸仇恨另記於 `NpcInfo.CompanionHate`（`AddCompanionHate`），寵物依自身仇恨份額取得經驗（乘 `exp_rate` 與 Go 額外的 `pet_exp_rate`），召喚獸份額依 Java 不發放；移除寵物擊殺時重複的整份經驗 | 完成 | 單元測試 `TestNpcExpSplitsByHateAndLawfulLikeJava`、`TestPartyExpDistributionLikeJava`、`TestPetAndSummonHateSharesLikeJava`。Go 的 `knownsObject` 以 `GetNearbyPlayersInShow` 近似 |
 | 1-17 | 屬性衍生公式 | `CalcStat.calcAc`（DEX/等級 → AC）、`calcStatMr`（WIS → MR） | 新增 `CalcAcLikeJava`、`CalcStatMrLikeJava`、`CalcBaseMrLikeJava`（職業值 + 精神 + 等級/2）與 `ResetBaseAC`／`ResetBaseMR`（`system/calc_stat.go`，以 `PlayerInfo.BaseAC`／`BaseMR` 差值疊加）；進入世界、升級、GM `.level`、洗點、51 級配點、萬能藥、裝備與 buff 改變精神時重算，MR 改變時送 `S_SPMR` | 待驗證 | 第八節 V-8。公式由 `TestCalcAcLikeJava` 等測試鎖定；客戶端顯示與戰鬥平衡需實機確認 |
 | 1-18 | 掉落倍率 | 乘全域倍率 × 地圖 `drop_rate`；`drop_item` 表單品倍率 | `GiveDrops` 機率改為 chance × `drop_rate` × 地圖 `drop_rate` × 單品 `drop_rate`，數量 min/max 乘單品 `drop_amount`；新增 `data/yaml/drop_item.yaml`（自 Java `drop_item` 轉出 76 筆，目前皆 1）與 `data.DropItemTable`，`sqlconv dropitem` 可重轉 | 完成 | 單元測試 `TestJavaGiveDropsAppliesMapAndItemRates`。保留差異：Java 查無地圖回 0，Go `map_list.yaml` 仍有缺漏地圖故查無時視為 1；`MonsterAmount` 屬生怪數量不在本項 |
 | 1-19 | 生怪資料不一致 | `spawnlist` | `spawn_list.yaml` 與 Java DB 不符（例：45005 青蛙 Java 93 筆、Go 0 筆） | 待辦 | 需整批核對 |
-| 1-20 | 料理製作 | 24 道、Lv1-4；營火 gfx 5943 檢查（1160）；90/5/5 成功／特級／失敗 | `handler/cooking.go:32-93` 只 8 道 Lv1；cookNo ≥ 2 材料錯（Java 41263+41265，Go 41276）；無營火、無機率、製作時誤送 buff 圖示 | 待辦 | 食用效果已完成 |
+| 1-20 | 料理製作 | 24 道、Lv1–3；五本書提供選單 index 0–4，無另設書本等級限制；營火 gfx 5943（1160）；90/5/5 普通／特級／失敗 | 已接 C_USE_ITEM 製作路由、24 道完整多材料配方、營火／負重／材料檢查、三秒冷卻、機率與動畫；修正選單封包，製作不發食用 buff；柴火生前方營火 10 分鐘，背包拒收時成品落地 | 待驗證 | `52718bf`；24 道機率邊界／100 個 roll 分布、封包、扣料、冷卻、營火方向／隔離／到期與成品落地回歸通過；食用效果沿用，見 V-16 |
 | 1-21 | PK 扣業 | 無此行為 | `system/pvp.go` 已移除 PK 扣 100 karma | 完成 | 2026-10-14 使用者拍板對齊；`pk_parity_test.go` |
 | 1-22 | PK 懲罰（地獄） | `L1PcHellMonitor`：PK 達 10 次關進地圖 666 倒數；`C_Restart` 依 hellTime 重生 | 新增 `system/pk_hell.go`：PK 達門檻 `BeginHell(true)` 依 Java 公式設秒數（≤門檻 300 秒，之後每次 +300）、傳送 666 (32701,32777) 並送 552；`PvPSystem.Update` 每秒倒數、死亡不倒數，歸零傳回火田村回城點；重生（`death.go`）與進入世界續算並送 637；`hell_time` 欄位持久化（migration 038） | 待驗證 | 第八節 V-9。倒數／傳送／門檻由 `pk_parity_test.go` 鎖定；紅字訊息與地獄地圖落點需實機確認 |
 | 1-23 | 登入與在線狀態 | `C_AuthLogin` 在 DB online=1 時回 7、不踢舊；357 只用於 DB 離線但記憶體仍在線的例外路徑；啟動重設與在線上限 | 已補啟動重設、帳號持有者、原子登記、斷線重試、上限及選角保護，詳見 `docs/LOGIN_ONLINE_STATE.md` | 完成 | `89f2e10`；已通過 build／vet／完整測試與 Claude 審查，合併回本機 `master` |
@@ -128,7 +128,7 @@
 | `S_Disconnect` | 只有 GM 踢人（`gmcommand_admin.go:247`）；封鎖帳號、加速器、刪角計時器未送 | 待辦 |
 | `S_ChatPacket` | 缺 14、17；聯盟頻道號不一致 | 待辦 |
 | `S_Message_YN` | 缺 738/1256；217/221/222 已接（1-6，V-10） | 待辦 |
-| `S_PacketBox` 子碼 | 缺 21、168、176；12（LEVEL_OVER）、15（ELF）已接（V-6、V-12）；80（WAR_IS_GOING_ALL）改逐城送 | 待辦 |
+| `S_PacketBox` 子碼 | 缺 21、168、176；12（LEVEL_OVER）、15（ELF）已接（V-6、V-12）；52（料理選單）已修正 Java 位元組格式（V-16）；80（WAR_IS_GOING_ALL）改逐城送 | 待辦 |
 | `S_OwnCharStatus2`（155）、`S_NpcChangeShape`（230） | Go 以完整版替代，影響小 | 保留差異 |
 | `S_Exp`（Go 113，每次擊殺送） | Java 無此封包（opcode 無效並已註解） | 待辦 | 需確認 3.81 客戶端是否接受 113 |
 
@@ -169,7 +169,7 @@
 | 寶箱 | `data/yaml/item_box.yaml` | 約 3（測試資料） | `TreasureBox.xml` 117 | 待辦 |
 | 物品升級 | `data/yaml/item_upgrade.yaml` | 2（測試資料） | — | 待辦 |
 | 任務 | `data/yaml/quests.yaml` | 13 | `C_NPCAction` 內多條 | 待辦 |
-| 料理配方 | `handler/cooking.go` | 8 | 24 | 待辦 |
+| 料理配方 | `handler/cooking.go` | 24 | 24（Lv1–3） | 完成（製作介面實測見 1-20／V-16） |
 | 回城點 | `scripts/world/respawn.lua` | 約 46 張地圖 | `getback` 398、`getback_restart` 215 | 待辦 |
 | 生怪 | `data/yaml/spawn_list.yaml` | 與 Java 不一致 | `spawnlist` | 待辦 |
 | 物品欄位 | `data/item.go:276` | 缺 `delete_day`、`unit_type`、`cant_delete`、`can_seal`、`max_use_time`、`magicdmgmodifier`、`save_at_once`、`grade` | — | 待辦 |
@@ -185,9 +185,9 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 
 ## 七、尚未逐項比對
 
-- `C_ItemUSe`（Java 5,425 行）只確認主分派路由，未逐分支比對。
+- `C_ItemUSe`（Java 5,425 行）未逐分支全面比對；本批已逐項補核屬性／象牙塔／飾品卷軸、料理書／製作與柴火分支，見 1-8、1-9、1-20。
 - `C_NPCAction` 依 NPC ID 的任務分支，只確認 NPC 存在於 Go 程式或 YAML。
-- `C_Trade` 系列、`C_UseSkill`、`C_LoginToServer`、`C_SkillBuy/OK`、`C_EnterPortal` 標「已實作」僅因處理器存在，未檢視內部邏輯。
+- `C_Trade` 系列、`C_UseSkill`、`C_LoginToServer`、`C_SkillBuy/OK`、`C_EnterPortal` 未全面核對內部邏輯；本批補核七處旅館入口及對應重登位置（1-14），不代表其他分支已完成對齊。
 - `S_Exp` 113 與 `S_SelectTarget` 54（本輪改採 Java 值，舊 Go 為 236）的 opcode 數值是否符合 3.81 客戶端，需實機驗證；寵物封包備案見 V-11。
 
 ## 八、實機待驗證清單
@@ -217,3 +217,4 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 | 2026-10-14 | 1-21、1-10 依使用者拍板對齊 Java：PK 不再扣 karma；武器衝裝改回 Java 固定值公式，衝裝係數預設改為 Eddy 設定的 10。 |
 | 2026-10-14 | 經驗／公式叢集 1-15～1-18：高等級經驗懲罰、Java 組隊／仇恨／寵物經驗分配、AC／MR 衍生公式、地圖與單品掉落倍率（新增 `drop_item.yaml`、`[rates] high_level_exp_divisors`）。1-15、1-16、1-18 完成；1-17 待驗證（第八節 V-8）。 |
 | 2026-10-15 | 與 Claude 協作完成本輪 1-5、1-6、1-7、2-1：模擬戰計時／盟戰同意、寵物指定四類目標、精靈屬性選擇與重置及持久化。1-5 完成，其餘待客戶端驗證；實機清單獨立為 `JAVA_PARITY_LIVE_CHECKLIST.md`（保留 V-1～V-9，新增 V-10～V-12）。寵物完整戰鬥公式等剩餘差異另列待辦，不以實機通過視為已實作。 |
+| 2026-10-15 | 第二批與 Claude 協作完成 1-8、1-9、1-14、1-20 的伺服器實作：卷軸獨立路由與屬性傷害／飾品保存、七處旅館鑰匙及租房隔離、24 道料理與營火。新增 migration 040 與隔離 PostgreSQL 往返，實機項目 V-13～V-16 獨立列出，四項標待驗證；更正原「料理 Lv1–4」為 Java 實際 Lv1–3。 |

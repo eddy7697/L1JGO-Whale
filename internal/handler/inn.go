@@ -61,7 +61,10 @@ func handleInnAction(sess *net.Session, player *world.PlayerInfo, objID int32, n
 		handleInnReturn(sess, player, objID, npcID, deps)
 		return true
 	case "enter":
-		handleInnEnter(sess, player, npcID, deps)
+		npc := deps.World.GetNpc(objID)
+		if npc != nil && npc.MapID == player.MapID && npc.ShowID == player.ShowID {
+			handleInnEnter(sess, player, npcID, deps)
+		}
 		return true
 	}
 	return false
@@ -207,39 +210,7 @@ func handleInnReturn(sess *net.Session, player *world.PlayerInfo, npcObjID, npcI
 // handleInnEnter 處理 "enter" 動作 — 使用鑰匙進入房間。
 // Java: C_NPCAction.java line 665-733
 func handleInnEnter(sess *net.Session, player *world.PlayerInfo, npcID int32, deps *Deps) {
-	coords, ok := innRoomCoords[npcID]
-	if !ok {
-		return
-	}
-
-	rooms := deps.InnRooms[npcID]
-	now := time.Now()
-
-	for _, item := range player.Inv.Items {
-		if item.InnNpcID != npcID {
-			continue
-		}
-		// 找到對應房間
-		if rooms != nil {
-			for i := int32(0); i < 16; i++ {
-				room := rooms[i]
-				if room == nil || room.KeyID != item.InnKeyID {
-					continue
-				}
-				// 檢查租約是否到期
-				dueTime := time.Unix(item.InnDueTime, 0)
-				if now.Before(dueTime) {
-					// 傳送到房間
-					if !item.InnHall {
-						teleportPlayer(sess, player, coords[0], coords[1], int16(coords[2]), 6, deps)
-					} else {
-						teleportPlayer(sess, player, coords[3], coords[4], int16(coords[5]), 6, deps)
-					}
-					return
-				}
-			}
-		}
-	}
+	enterInnWithKey(sess, player, npcID, false, deps)
 }
 
 // HandleInnRental 處理 C_Amount (opcode 11) 中旅館租房回應。
@@ -299,7 +270,7 @@ func sendInnKeyDialog(sess *net.Session, npcObjID, price, min, max int32, htmlID
 	if npc != nil {
 		npcName = npc.Name
 	}
-	w.WriteS(npcName)                    // NPC 名稱
+	w.WriteS(npcName)                  // NPC 名稱
 	w.WriteS(fmt.Sprintf("%d", price)) // 價格字串
 
 	sess.Send(w.Bytes())

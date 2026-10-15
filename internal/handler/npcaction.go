@@ -613,7 +613,11 @@ func TeleportPlayer(sess *net.Session, player *world.PlayerInfo, x, y int32, map
 }
 
 func teleportPlayer(sess *net.Session, player *world.PlayerInfo, x, y int32, mapID, heading int16, deps *Deps) {
-	teleportPlayerInShow(sess, player, x, y, mapID, heading, player.ShowID, deps)
+	showID := player.ShowID
+	if _, isInn := innRestartLocations[innNPCForMap(player.MapID)]; isInn && innNPCForMap(mapID) == 0 {
+		showID = 0 // Leave the rental instance when returning to the outside world.
+	}
+	teleportPlayerInShow(sess, player, x, y, mapID, heading, showID, deps)
 }
 
 // teleportPlayerInShow changes instance only after removing the character from
