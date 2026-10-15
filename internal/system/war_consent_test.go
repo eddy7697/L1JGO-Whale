@@ -961,3 +961,52 @@ func TestSimWarConsentIgnoresGenericTempID(t *testing.T) {
 		t.Fatal("戰爭回應不應依賴通用 TempID")
 	}
 }
+
+// 兩個無城堡攻方同在一場攻城戰：互送投降／休戰不得建立請求，也不得影響攻城戰。
+func TestCastleWarCoAttackersSurrenderCeaseDoesNotTouchCastleWar(t *testing.T) {
+	env, a, b := twoClans(t)
+	c := env.addPlayer(1004, "LeaderC", 0, 50)
+	env.addClan(3, "ClanC", c, 0)
+	env.ws.Clans.GetClan(3).HasCastle = 1
+	env.castle.castles[1].OwnerClanID = 3
+	env.castle.castles[1].IsWar = true
+	env.war.DeclareWar(a.Session, a, "ClanC")
+	env.war.DeclareWar(b.Session, b, "ClanC")
+	castleWar := env.war.GetActiveWars()[0]
+	if castleWar.WarType != 1 || !castleWar.AttackClans["ClanA"] || !castleWar.AttackClans["ClanB"] {
+		t.Fatalf("測試前提：A、B 應同在攻城戰，got %+v", castleWar)
+	}
+	drainWarPackets(a)
+	drainWarPackets(b)
+	drainWarPackets(c)
+
+	// A 對 B（無城堡）送投降與休戰 → 走 requestSimWar，對方在攻城戰中 → 不建立請求
+	env.war.SurrenderWar(a.Session, a, "ClanB")
+	env.war.CeaseWar(a.Session, a, "ClanB")
+	if yn := yesNoTypes(drainWarPackets(b)); len(yn) != 0 {
+		t.Fatalf("攻城戰共同攻方不應收到 221/222 對話框，got %v", yn)
+	}
+	if env.war.pending[b.CharID] != nil {
+		t.Fatal("不應建立 pending 請求")
+	}
+
+	// 即使有人硬塞綁定攻城戰的 pending，回應也不得刪除攻城戰
+	env.war.pending[b.CharID] = &warConsentRequest{
+		msgType: warYNSurrender, requesterCharID: a.CharID, requesterSessionID: a.SessionID, requesterClanID: 1,
+		responderCharID: b.CharID, responderSessionID: b.SessionID, responderClanID: 2, war: castleWar,
+	}
+	env.war.HandleWarConsent(b.Session, b, 221, true)
+	env.war.pending[b.CharID] = &warConsentRequest{
+		msgType: warYNCease, requesterCharID: a.CharID, requesterSessionID: a.SessionID, requesterClanID: 1,
+		responderCharID: b.CharID, responderSessionID: b.SessionID, responderClanID: 2, war: castleWar,
+	}
+	env.war.HandleWarConsent(b.Session, b, 222, true)
+
+	wars := env.war.GetActiveWars()
+	if len(wars) != 1 || wars[0] != castleWar || !wars[0].AttackClans["ClanA"] || !wars[0].AttackClans["ClanB"] {
+		t.Fatalf("攻城戰不得被影響，got %+v", wars)
+	}
+	if pk := warPacketTypes(drainWarPackets(c)); len(pk) != 0 {
+		t.Fatalf("城主不應收到任何結束封包，got %v", pk)
+	}
+}

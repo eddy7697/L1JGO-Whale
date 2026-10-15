@@ -13,7 +13,7 @@
 | `internal/handler/attr.go` | `C_Attr` case 217/221/222 轉交 `deps.War.HandleWarConsent` |
 | `internal/config/config.go`、`config/server.toml` | 新增 `[gameplay] sim_war_time`（預設 `"240m"`，零值回退 240 分鐘） |
 | `cmd/l1jgo/main.go` | 註冊 `system.NewSimWarTickSystem(deps.War)`（PostUpdate 階段，與攻城 tick 同處） |
-| `internal/system/war_consent_test.go` | 37 個測試：同意流程、拒絕、離線、換盟（含換到另一個非零血盟）、換盟主、重複請求、錯 mode、過期回覆、原戰已結束又開新戰、pending 覆蓋保護、無 pending 偽造回應、通用 TempID 被覆寫、計時邊界、攻城回歸 |
+| `internal/system/war_consent_test.go` | 38 個測試：同意流程、拒絕、離線、換盟（含換到另一個非零血盟）、換盟主、重複請求、錯 mode、過期回覆、原戰已結束又開新戰、pending 覆蓋保護、無 pending 偽造回應、通用 TempID 被覆寫、計時邊界、攻城回歸（含兩個無城堡攻方同在攻城戰時互送 221/222 不影響攻城戰） |
 
 ### 1-6 血盟戰同意流程（Java `C_War` → `S_Message_YN` → `C_Attr`）
 
@@ -24,7 +24,7 @@
 3. 自己有城堡：宣戰 474；投降／休戰靜默。
 4. 對方無城堡且君主等級 ≤ 15：232。對方有城堡且等級 < 25：475。
 5. 對方有城堡 → 攻城戰流程（見下）；否則血盟戰流程：
-   - 對方已在戰爭：宣戰 236（帶對方盟名）；投降／休戰須同一場戰爭否則靜默。
+   - 對方已在戰爭：宣戰 236（帶對方盟名）；投降／休戰須同一場戰爭否則靜默；該戰爭若是攻城戰（`WarType != 2`，例如兩個無城堡攻方同在一場攻城戰）亦靜默，不建立請求。
    - 對方盟主不在線：218（帶對方盟名）。
    - 設定對方盟主 `TempID = 請求者 CharID`，送 `S_Message_YN`：宣戰 217（盟名、角色名）、投降 221（盟名）、休戰 222（盟名）。**此時不成立戰爭。**
 
@@ -35,7 +35,7 @@
 
 - 無 pending、或回應 mode 與 pending 類型不符（例如發 221 回 222）→ 靜默且不消耗請求。
 - mode 相符即消耗（刪除）pending，重複回覆只生效一次。
-- 消耗後再核對：回應者 session 相符；雙方仍以同一 session 在線；雙方 `ClanID` 與請求時相同（換到另一個非零血盟也視為失效）；雙方仍是各自血盟的盟主；221/222 的原戰爭仍在清單中且雙方仍參與。任一不符 → 靜默，不改動任何戰爭。
+- 消耗後再核對：回應者 session 相符；雙方仍以同一 session 在線；雙方 `ClanID` 與請求時相同（換到另一個非零血盟也視為失效）；雙方仍是各自血盟的盟主；221/222 的原戰爭仍在清單中、`WarType == 2` 且雙方仍參與。任一不符 → 靜默，不改動任何戰爭。
 - 221/222 同意時結束的是**綁定的原戰爭實例**，不再以「回應者目前參與的戰爭」查找，原戰已結束又開新戰時不會誤套。
 - `removeWar` 會清除綁定該戰爭的 pending；`TickSimWar` 每 tick 清除失效 pending。
 - 拒絕：217 → 請求者收 236（帶回應方盟名）；221/222 → 237。
@@ -67,7 +67,7 @@
 ## 驗證結果
 
 - `go build ./...` 通過；`go vet ./...` 通過。
-- `go test ./internal/system/ ./internal/handler/ ./internal/config/ -count=1` 全部通過（system 87s、handler 4.4s、config 0.5s）；`-run 'SimWar|CastleWar'` 37 個測試通過。
+- `go test ./internal/system/ ./internal/handler/ ./internal/config/ -count=1` 全部通過（system 87s、handler 4.4s、config 0.5s）；`-run 'SimWar|CastleWar'` 38 個測試通過。
 - 無 DB 需求，未使用 Docker。
 
 ## 實機待驗證（建議登記為第八節 V-10）
@@ -79,5 +79,5 @@
 ## 給整合者
 
 - 與 `codex/java-parity-companions-elf` 的衝突點僅 `internal/handler/context.go`（我改 `WarManager` 介面與 `ActiveWar`，位於第 692-722 行附近）與 `cmd/l1jgo/main.go`（我在 `NewCastleWarTickSystem` 註冊後加一行），區塊不同，應可自動合併。
-- 提交順序：`2000759`（初版，依賴通用 TempID）→ 第二個提交補強為專用 pending 紀錄；整合時取分支最新提交即可。
+- 提交順序：`2000759`（初版，依賴通用 TempID）→ `0b7cb61`（專用 pending 紀錄）→ 第三個提交補 `WarType == 2` guard；整合時取分支最新提交即可。
 - 未合併 `master`、未清理 worktree、未推送遠端，依協作約定交由整合者處理。

@@ -229,6 +229,11 @@ func (s *WarSystem) requestSimWar(sess *net.Session, player *world.PlayerInfo, c
 		if !s.clanInWar(existing, clan.ClanName) {
 			return
 		}
+		// 對方參與的是攻城戰（例如兩個無城堡攻方同在一場攻城戰）：
+		// 投降／休戰請求不得建立，否則同意後會結束整場攻城戰
+		if existing.WarType != 2 {
+			return
+		}
 	} else if reqType != warReqDeclare {
 		return
 	}
@@ -326,7 +331,7 @@ func (s *WarSystem) consentRequestValid(req *warConsentRequest) bool {
 		return false
 	}
 	if req.msgType != warYNDeclare {
-		if req.war == nil || !s.warActive(req.war) {
+		if req.war == nil || req.war.WarType != 2 || !s.warActive(req.war) {
 			return false
 		}
 		if !s.clanInWar(req.war, reqClan.ClanName) || !s.clanInWar(req.war, resClan.ClanName) {
