@@ -299,6 +299,7 @@ func TestIvoryTowerArmorScrollFollowsSafeEnchantAndWhitelist(t *testing.T) {
 // ---------- 飾品強化卷軸 49148 ----------
 
 func TestAccessoryEnchantChanceMatchesJava(t *testing.T) {
+	// 門檻值（roll < 門檻才成功，實際機率為門檻 -1%）
 	want := map[int]int{0: 85, 1: 60, 2: 52, 3: 48, 4: 45, 5: 44, 6: 43, 7: 42, 8: 41, 9: 40}
 	for lvl, chance := range want {
 		if got := accessoryEnchantChance(lvl); got != chance {
@@ -395,7 +396,7 @@ func TestAccessoryScrollFailureDestroysAccessoryAndConsumesScroll(t *testing.T) 
 	scroll := addEnchantScrollTestItem(s, player, 7001, world.ScrollEnchantAccessory, 2)
 	ring := addEnchantScrollTestItem(s, player, 7002, 20282, 1)
 
-	// +0 成功率 85：roll 85 → 失敗（Java rnd < chance 才成功）
+	// +0 門檻 85：roll 85 → 失敗、roll 84 才成功（Java rnd < chance，實際 84%）
 	if !scrollTestUse(t, s, player, scroll, ring, 85) {
 		t.Fatal("失敗仍應消耗卷軸")
 	}
