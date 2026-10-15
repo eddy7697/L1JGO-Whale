@@ -356,6 +356,7 @@ type WarehouseCache struct {
 	Durability       int8
 	AttrEnchantKind  int8
 	AttrEnchantLevel int8
+	Accessory        AccessoryBonus
 	InnKeyID         int32
 	InnNpcID         int32
 	InnHall          bool

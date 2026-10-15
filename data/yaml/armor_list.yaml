@@ -8742,6 +8742,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: false
     use_knight: true
     use_mage: false
@@ -8779,6 +8780,7 @@ armors:
     itemdesc_id: 311
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -8816,6 +8818,7 @@ armors:
     itemdesc_id: 307
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -8853,6 +8856,7 @@ armors:
     itemdesc_id: 306
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -8890,6 +8894,7 @@ armors:
     itemdesc_id: 309
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -8927,6 +8932,7 @@ armors:
     itemdesc_id: 310
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -8964,6 +8970,7 @@ armors:
     itemdesc_id: 308
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9001,6 +9008,7 @@ armors:
     itemdesc_id: 991
     ac: -2
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9075,6 +9083,7 @@ armors:
     itemdesc_id: 1167
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: false
     use_knight: false
     use_mage: true
@@ -9112,6 +9121,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: false
     use_knight: false
     use_mage: true
@@ -9149,6 +9159,7 @@ armors:
     itemdesc_id: 311
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9186,6 +9197,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: false
     use_mage: true
@@ -9223,6 +9235,7 @@ armors:
     itemdesc_id: 307
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9260,6 +9273,7 @@ armors:
     itemdesc_id: 1175
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: false
     use_knight: false
     use_mage: true
@@ -9334,6 +9348,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: false
     use_mage: true
@@ -9371,6 +9386,7 @@ armors:
     itemdesc_id: 0
     ac: 3
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9408,6 +9424,7 @@ armors:
     itemdesc_id: 1722
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9445,6 +9462,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9482,6 +9500,7 @@ armors:
     itemdesc_id: 314
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9519,6 +9538,7 @@ armors:
     itemdesc_id: 306
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9556,6 +9576,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9593,6 +9614,7 @@ armors:
     itemdesc_id: 309
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9630,6 +9652,7 @@ armors:
     itemdesc_id: 310
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9667,6 +9690,7 @@ armors:
     itemdesc_id: 308
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9704,6 +9728,7 @@ armors:
     itemdesc_id: 1491
     ac: -2
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9778,6 +9803,7 @@ armors:
     itemdesc_id: 990
     ac: -2
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9815,6 +9841,7 @@ armors:
     itemdesc_id: 989
     ac: -2
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9852,6 +9879,7 @@ armors:
     itemdesc_id: 1168
     ac: -5
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9889,6 +9917,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9926,6 +9955,7 @@ armors:
     itemdesc_id: 65
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -9963,6 +9993,7 @@ armors:
     itemdesc_id: 1335
     ac: -1
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10000,6 +10031,7 @@ armors:
     itemdesc_id: 658
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: false
     use_knight: false
     use_mage: true
@@ -10037,6 +10069,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10074,6 +10107,7 @@ armors:
     itemdesc_id: 1113
     ac: -1
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10111,6 +10145,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: false
     use_mage: false
@@ -10148,6 +10183,7 @@ armors:
     itemdesc_id: 64
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10185,6 +10221,7 @@ armors:
     itemdesc_id: 1292
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10222,6 +10259,7 @@ armors:
     itemdesc_id: 1721
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10259,6 +10297,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10296,6 +10335,7 @@ armors:
     itemdesc_id: 1495
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10333,6 +10373,7 @@ armors:
     itemdesc_id: 1492
     ac: 2
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10370,6 +10411,7 @@ armors:
     itemdesc_id: 1493
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10407,6 +10449,7 @@ armors:
     itemdesc_id: 1494
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10444,6 +10487,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10481,6 +10525,7 @@ armors:
     itemdesc_id: 0
     ac: -1
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10518,6 +10563,7 @@ armors:
     itemdesc_id: 1185
     ac: -1
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10555,6 +10601,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10592,6 +10639,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10629,6 +10677,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10666,6 +10715,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10703,6 +10753,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10777,6 +10828,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10814,6 +10866,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10851,6 +10904,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10888,6 +10942,7 @@ armors:
     itemdesc_id: 936
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10925,6 +10980,7 @@ armors:
     itemdesc_id: 928
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10962,6 +11018,7 @@ armors:
     itemdesc_id: 937
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -10999,6 +11056,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -11036,6 +11094,7 @@ armors:
     itemdesc_id: 0
     ac: -1
     safe_enchant: 0
+    grade: 0
     use_royal: false
     use_knight: false
     use_mage: false
@@ -11073,6 +11132,7 @@ armors:
     itemdesc_id: 0
     ac: -2
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -11110,6 +11170,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -11147,6 +11208,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -11185,6 +11247,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -11222,6 +11285,7 @@ armors:
     itemdesc_id: 770
     ac: -1
     safe_enchant: 0
+    grade: 1
     use_royal: false
     use_knight: true
     use_mage: false
@@ -11259,6 +11323,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -11297,6 +11362,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -11335,6 +11401,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -12001,6 +12068,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -12038,6 +12106,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -12075,6 +12144,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -12112,6 +12182,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -12149,6 +12220,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -12186,6 +12258,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -12223,6 +12296,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -12260,6 +12334,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -13962,6 +14037,7 @@ armors:
     itemdesc_id: 2105
     ac: -1
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -13999,6 +14075,7 @@ armors:
     itemdesc_id: 2106
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -14332,6 +14409,7 @@ armors:
     itemdesc_id: 2053
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -14369,6 +14447,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -14406,6 +14485,7 @@ armors:
     itemdesc_id: 1816
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -14443,6 +14523,7 @@ armors:
     itemdesc_id: 1817
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -14480,6 +14561,7 @@ armors:
     itemdesc_id: 1818
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -14776,6 +14858,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -14813,6 +14896,7 @@ armors:
     itemdesc_id: 2054
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -14850,6 +14934,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -14887,6 +14972,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -14924,6 +15010,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -14961,6 +15048,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -14998,6 +15086,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -15035,6 +15124,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -15072,6 +15162,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -15109,6 +15200,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -15146,6 +15238,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -15183,6 +15276,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -15220,6 +15314,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -15257,6 +15352,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -15294,6 +15390,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -15331,6 +15428,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -15368,6 +15466,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -15405,6 +15504,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -15738,6 +15838,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -16071,6 +16172,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -16108,6 +16210,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -16145,6 +16248,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -16182,6 +16286,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: -1
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: false
@@ -16219,6 +16324,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: -1
+    grade: 0
     use_royal: false
     use_knight: false
     use_mage: false
@@ -16256,6 +16362,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: false
     use_knight: false
     use_mage: false
@@ -16293,6 +16400,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: false
@@ -16330,6 +16438,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: false
     use_knight: false
     use_mage: false
@@ -16367,6 +16476,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: false
     use_knight: false
     use_mage: false
@@ -16404,6 +16514,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: false
@@ -16441,6 +16552,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: false
@@ -16478,6 +16590,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: false
     use_knight: false
     use_mage: true
@@ -16515,6 +16628,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: false
     use_knight: false
     use_mage: true
@@ -16552,6 +16666,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: false
     use_knight: false
     use_mage: true
@@ -16589,6 +16704,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: false
     use_knight: false
     use_mage: true
@@ -16663,6 +16779,7 @@ armors:
     itemdesc_id: 1815
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -16700,6 +16817,7 @@ armors:
     itemdesc_id: 1724
     ac: -1
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -16737,6 +16855,7 @@ armors:
     itemdesc_id: 1725
     ac: -2
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -16774,6 +16893,7 @@ armors:
     itemdesc_id: 1726
     ac: -3
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -16811,6 +16931,7 @@ armors:
     itemdesc_id: 1727
     ac: -3
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -16848,6 +16969,7 @@ armors:
     itemdesc_id: 1728
     ac: -3
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -16886,6 +17008,7 @@ armors:
     itemdesc_id: 1729
     ac: -3
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -16924,6 +17047,7 @@ armors:
     itemdesc_id: 1730
     ac: -3
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -16962,6 +17086,7 @@ armors:
     itemdesc_id: 1731
     ac: -3
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -17665,6 +17790,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -17702,6 +17828,7 @@ armors:
     itemdesc_id: 0
     ac: -1
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -17739,6 +17866,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -18898,6 +19026,7 @@ armors:
     itemdesc_id: 3055
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -18935,6 +19064,7 @@ armors:
     itemdesc_id: 3055
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -18972,6 +19102,7 @@ armors:
     itemdesc_id: 3055
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -19009,6 +19140,7 @@ armors:
     itemdesc_id: 3055
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -19046,6 +19178,7 @@ armors:
     itemdesc_id: 3055
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -19083,6 +19216,7 @@ armors:
     itemdesc_id: 3055
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -19120,6 +19254,7 @@ armors:
     itemdesc_id: 3055
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -19157,6 +19292,7 @@ armors:
     itemdesc_id: 3055
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -19194,6 +19330,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -19231,6 +19368,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -19268,6 +19406,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -19342,6 +19481,7 @@ armors:
     itemdesc_id: 3268
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -19379,6 +19519,7 @@ armors:
     itemdesc_id: 3269
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -19417,6 +19558,7 @@ armors:
     itemdesc_id: 3267
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -20564,6 +20706,7 @@ armors:
     itemdesc_id: 311
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -20601,6 +20744,7 @@ armors:
     itemdesc_id: 307
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -20638,6 +20782,7 @@ armors:
     itemdesc_id: 306
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -20675,6 +20820,7 @@ armors:
     itemdesc_id: 309
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -20712,6 +20858,7 @@ armors:
     itemdesc_id: 310
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -20749,6 +20896,7 @@ armors:
     itemdesc_id: 308
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -20786,6 +20934,7 @@ armors:
     itemdesc_id: 311
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -20823,6 +20972,7 @@ armors:
     itemdesc_id: 307
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -20860,6 +21010,7 @@ armors:
     itemdesc_id: 306
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -20897,6 +21048,7 @@ armors:
     itemdesc_id: 309
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -20934,6 +21086,7 @@ armors:
     itemdesc_id: 310
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -20971,6 +21124,7 @@ armors:
     itemdesc_id: 308
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21008,6 +21162,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21045,6 +21200,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21082,6 +21238,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21119,6 +21276,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21156,6 +21314,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21193,6 +21352,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21230,6 +21390,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21267,6 +21428,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21304,6 +21466,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21341,6 +21504,7 @@ armors:
     itemdesc_id: 936
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21378,6 +21542,7 @@ armors:
     itemdesc_id: 938
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21415,6 +21580,7 @@ armors:
     itemdesc_id: 937
     ac: 0
     safe_enchant: 0
+    grade: 0
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21452,6 +21618,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21489,6 +21656,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21527,6 +21695,7 @@ armors:
     itemdesc_id: 0
     ac: -2
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21564,6 +21733,7 @@ armors:
     itemdesc_id: 0
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -21602,6 +21772,7 @@ armors:
     itemdesc_id: 0
     ac: -2
     safe_enchant: 0
+    grade: 0
     use_royal: false
     use_knight: true
     use_mage: false
@@ -21640,6 +21811,7 @@ armors:
     itemdesc_id: 0
     ac: -2
     safe_enchant: 0
+    grade: 2
     use_royal: true
     use_knight: true
     use_mage: false
@@ -22158,6 +22330,7 @@ armors:
     itemdesc_id: 1495
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -22195,6 +22368,7 @@ armors:
     itemdesc_id: 1492
     ac: 2
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -22232,6 +22406,7 @@ armors:
     itemdesc_id: 1493
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true
@@ -22269,6 +22444,7 @@ armors:
     itemdesc_id: 1494
     ac: 0
     safe_enchant: 0
+    grade: 1
     use_royal: true
     use_knight: true
     use_mage: true

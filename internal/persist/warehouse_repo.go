@@ -2,6 +2,8 @@ package persist
 
 import (
 	"context"
+
+	"github.com/l1jgo/server/internal/world"
 )
 
 // WarehouseItem represents a single item stored in the warehouse.
@@ -25,6 +27,7 @@ type WarehouseItem struct {
 	InnHall          bool
 	InnDueTime       int64
 	LastUsedAt       int64
+	Accessory        world.AccessoryBonus // 飾品強化累積加成（acc_* 欄位）
 }
 
 type WarehouseRepo struct {
@@ -40,7 +43,8 @@ func (r *WarehouseRepo) Load(ctx context.Context, accountName string, whType int
 	rows, err := r.db.Pool.Query(ctx,
 		`SELECT id, account_name, char_name, wh_type, item_id, count, enchant_lvl, bless, identified,
 			item_obj_id, charge_count, durability, attr_enchant_kind, attr_enchant_level,
-			inn_key_id, inn_npc_id, inn_hall, inn_due_time, last_used_at
+			inn_key_id, inn_npc_id, inn_hall, inn_due_time, last_used_at,
+			acc_add_hp, acc_add_mp, acc_hpr, acc_mpr, acc_add_sp, acc_m_def, acc_earth_mr, acc_fire_mr, acc_water_mr, acc_wind_mr
 		 FROM warehouse_items WHERE account_name = $1 AND wh_type = $2`, accountName, whType,
 	)
 	if err != nil {
@@ -56,6 +60,7 @@ func (r *WarehouseRepo) Load(ctx context.Context, accountName string, whType int
 			&it.ItemID, &it.Count, &it.EnchantLvl, &it.Bless, &it.Identified,
 			&it.ItemObjID, &it.ChargeCount, &it.Durability, &it.AttrEnchantKind, &it.AttrEnchantLevel,
 			&it.InnKeyID, &it.InnNpcID, &it.InnHall, &it.InnDueTime, &it.LastUsedAt,
+			&it.Accessory.AddHP, &it.Accessory.AddMP, &it.Accessory.HPR, &it.Accessory.MPR, &it.Accessory.AddSP, &it.Accessory.MDef, &it.Accessory.EarthMr, &it.Accessory.FireMr, &it.Accessory.WaterMr, &it.Accessory.WindMr,
 		); err != nil {
 			return nil, err
 		}
@@ -71,13 +76,16 @@ func (r *WarehouseRepo) Deposit(ctx context.Context, item WarehouseItem) (int32,
 		`INSERT INTO warehouse_items (
 			account_name, char_name, wh_type, item_id, count, enchant_lvl, bless, identified,
 			item_obj_id, charge_count, durability, attr_enchant_kind, attr_enchant_level,
-			inn_key_id, inn_npc_id, inn_hall, inn_due_time, last_used_at
+			inn_key_id, inn_npc_id, inn_hall, inn_due_time, last_used_at,
+			acc_add_hp, acc_add_mp, acc_hpr, acc_mpr, acc_add_sp, acc_m_def, acc_earth_mr, acc_fire_mr, acc_water_mr, acc_wind_mr
 		)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
+		         $19, $20, $21, $22, $23, $24, $25, $26, $27, $28) RETURNING id`,
 		item.AccountName, item.CharName, item.WhType, item.ItemID, item.Count,
 		item.EnchantLvl, item.Bless, item.Identified,
 		item.ItemObjID, item.ChargeCount, item.Durability, item.AttrEnchantKind, item.AttrEnchantLevel,
 		item.InnKeyID, item.InnNpcID, item.InnHall, item.InnDueTime, item.LastUsedAt,
+		item.Accessory.AddHP, item.Accessory.AddMP, item.Accessory.HPR, item.Accessory.MPR, item.Accessory.AddSP, item.Accessory.MDef, item.Accessory.EarthMr, item.Accessory.FireMr, item.Accessory.WaterMr, item.Accessory.WindMr,
 	).Scan(&id)
 	return id, err
 }
@@ -116,7 +124,8 @@ func (r *WarehouseRepo) LoadByCharName(ctx context.Context, charName string, whT
 	rows, err := r.db.Pool.Query(ctx,
 		`SELECT id, account_name, char_name, wh_type, item_id, count, enchant_lvl, bless, identified,
 			item_obj_id, charge_count, durability, attr_enchant_kind, attr_enchant_level,
-			inn_key_id, inn_npc_id, inn_hall, inn_due_time, last_used_at
+			inn_key_id, inn_npc_id, inn_hall, inn_due_time, last_used_at,
+			acc_add_hp, acc_add_mp, acc_hpr, acc_mpr, acc_add_sp, acc_m_def, acc_earth_mr, acc_fire_mr, acc_water_mr, acc_wind_mr
 		 FROM warehouse_items WHERE char_name = $1 AND wh_type = $2`, charName, whType,
 	)
 	if err != nil {
@@ -132,6 +141,7 @@ func (r *WarehouseRepo) LoadByCharName(ctx context.Context, charName string, whT
 			&it.ItemID, &it.Count, &it.EnchantLvl, &it.Bless, &it.Identified,
 			&it.ItemObjID, &it.ChargeCount, &it.Durability, &it.AttrEnchantKind, &it.AttrEnchantLevel,
 			&it.InnKeyID, &it.InnNpcID, &it.InnHall, &it.InnDueTime, &it.LastUsedAt,
+			&it.Accessory.AddHP, &it.Accessory.AddMP, &it.Accessory.HPR, &it.Accessory.MPR, &it.Accessory.AddSP, &it.Accessory.MDef, &it.Accessory.EarthMr, &it.Accessory.FireMr, &it.Accessory.WaterMr, &it.Accessory.WindMr,
 		); err != nil {
 			return nil, err
 		}

@@ -619,6 +619,21 @@ func calcEquipStats(player *world.PlayerInfo, items *data.ItemTable, armorSets *
 		stats.MDef += info.MDef
 		stats.WeightReduction += info.WeightReduction // Java L1EquipmentSlot: pc.addWeightReduction(armor.getWeightReduction())
 
+		// 飾品強化累積加成（Java L1EquipmentSlot.setArmor: equipment.getaddHp/getaddMp/getaddSp/getMr + armor.getXxxMr；
+		// hpr/mpr 走 L1PcInventory.hpRegenPerTick/mpRegenPerTick 的 item.getHpr/getMpr）
+		if acc := invItem.Accessory; !acc.IsZero() {
+			stats.AddHP += int(acc.AddHP)
+			stats.AddMP += int(acc.AddMP)
+			stats.AddHPR += int(acc.HPR)
+			stats.AddMPR += int(acc.MPR)
+			stats.AddSP += int(acc.AddSP)
+			stats.MDef += int(acc.MDef)
+			stats.DefEarth += int(acc.EarthMr)
+			stats.DefFire += int(acc.FireMr)
+			stats.DefWater += int(acc.WaterMr)
+			stats.DefWind += int(acc.WindMr)
+		}
+
 		// 元素抗性
 		stats.DefFire += info.DefFire
 		stats.DefWater += info.DefWater

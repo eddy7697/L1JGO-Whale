@@ -45,6 +45,7 @@ func TestItemGroundDropAndPickupPreservesItemState(t *testing.T) {
 	item.InnNpcID = 70012
 	item.InnHall = true
 	item.InnDueTime = 99_999
+	item.Accessory = world.AccessoryBonus{AddHP: 2, MDef: 1}
 
 	sys := NewItemGroundSystem(&handler.Deps{
 		World: ws,
@@ -72,7 +73,8 @@ func TestItemGroundDropAndPickupPreservesItemState(t *testing.T) {
 		picked.InnKeyID != 12345 ||
 		picked.InnNpcID != 70012 ||
 		picked.InnHall != true ||
-		picked.InnDueTime != 99_999 {
+		picked.InnDueTime != 99_999 ||
+		picked.Accessory != (world.AccessoryBonus{AddHP: 2, MDef: 1}) {
 		t.Fatalf("撿取後物品狀態未完整保留: %+v", picked)
 	}
 }
