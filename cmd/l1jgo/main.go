@@ -794,6 +794,7 @@ func run() error {
 	deps.Fishing = system.NewFishingSystem(deps)
 	runner.Register(system.NewTrapRespawnSystem(trapMgr))
 	runner.Register(system.NewCastleWarTickSystem(deps.Castle))
+	runner.Register(system.NewSimWarTickSystem(deps.War))
 	runner.Register(system.NewVisibilitySystem(worldState, deps))
 	// Phase 4: Output — flush buffered packets to TCP
 	runner.Register(system.NewOutputSystem(sessStore))

@@ -144,12 +144,15 @@ type GameplayConfig struct {
 	WarTime time.Duration `toml:"war_time"`
 	// WarInterval 對應 Java Config.ALT_WAR_INTERVAL：攻城戰間隔（預設 4d = 96h）。
 	WarInterval time.Duration `toml:"war_interval"`
+	// SimWarTime 對應 Java L1War.SimWarTimer：血盟戰（模擬戰）自動休戰時間（預設 240m）。
+	SimWarTime time.Duration `toml:"sim_war_time"`
 }
 
-// 攻城排程預設值（Java altsettings.properties：WarTime = 2h、WarInterval = 4d）。
+// 攻城排程預設值（Java altsettings.properties：WarTime = 2h、WarInterval = 4d；SimWarTimer 固定 240 分鐘）。
 const (
 	DefaultWarTime     = 2 * time.Hour
 	DefaultWarInterval = 4 * 24 * time.Hour
+	DefaultSimWarTime  = 240 * time.Minute
 )
 
 type DebugConfig struct {
@@ -253,6 +256,7 @@ func defaults() *Config {
 			RateWeightLimit:         1.0,
 			WarTime:                 DefaultWarTime,
 			WarInterval:             DefaultWarInterval,
+			SimWarTime:              DefaultSimWarTime,
 		},
 		Lua: LuaConfig{
 			TickBudgetPct: 0.50,                   // warn if Lua uses > 50% of tick

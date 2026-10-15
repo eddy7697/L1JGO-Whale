@@ -715,6 +715,10 @@ type WarManager interface {
 	GetActiveWars() []*ActiveWar
 	// CheckCastleWar 登入時通知攻城戰狀態。
 	CheckCastleWar(sess *net.Session)
+	// HandleWarConsent 對方盟主回應宣戰／投降／休戰（Java: C_Attr case 217/221/222）。
+	HandleWarConsent(sess *net.Session, player *world.PlayerInfo, msgType uint16, accepted bool)
+	// TickSimWar 血盟戰到期自動休戰（Java: L1War.SimWarTimer 240 分鐘）。
+	TickSimWar()
 }
 
 // ActiveWar 進行中的戰爭狀態。
@@ -724,6 +728,7 @@ type ActiveWar struct {
 	AttackClans map[string]bool
 	CastleID    int32
 	StartTime   time.Time
+	EndTime     time.Time // 血盟戰自動休戰時間（Java: SimWarTimer 240 分鐘）；攻城戰為零值
 }
 
 // TrapTriggerer 處理陷阱觸發邏輯（傷害/治療/中毒/技能/傳送）。由 system.TrapSystem 實作。
