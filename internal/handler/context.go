@@ -402,6 +402,8 @@ type ItemUseManager interface {
 	UseConsumable(sess *net.Session, player *world.PlayerInfo, invItem *world.InvItem, itemInfo *data.ItemInfo) bool
 	// EnchantItem 處理衝裝卷軸使用。
 	EnchantItem(sess *net.Session, r *packet.Reader, player *world.PlayerInfo, scroll *world.InvItem, scrollInfo *data.ItemInfo)
+	// EnchantSpecialScroll 處理屬性強化／象牙塔／飾品強化卷軸（world.IsSpecialEnchantScroll）。
+	EnchantSpecialScroll(sess *net.Session, r *packet.Reader, player *world.PlayerInfo, scroll *world.InvItem, scrollInfo *data.ItemInfo)
 	// IdentifyItem 處理鑑定卷軸使用。
 	IdentifyItem(sess *net.Session, r *packet.Reader, player *world.PlayerInfo, scroll *world.InvItem)
 	// UseSpellBook 處理技能書使用。

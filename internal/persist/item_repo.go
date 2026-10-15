@@ -18,16 +18,17 @@ type ItemRow struct {
 	Equipped         bool
 	Identified       bool
 	EquipSlot        int16
-	ObjID            int32 // persisted ObjectID for shortcut bar stability
-	Durability       int16 // weapon durability (0=perfect, higher=more damaged, range 0-127)
-	AttrEnchantKind  int16 // 元素屬性種類 (0=無, 1=地, 2=火, 4=水, 8=風)
-	AttrEnchantLevel int16 // 元素屬性強化階段 (0-5)
-	InnKeyID         int32 // 旅館鑰匙 ID（0=非鑰匙）
-	InnNpcID         int32 // 旅館 NPC 模板 ID
-	InnHall          bool  // 是否為會議室鑰匙
-	InnDueTime       int64 // 租約到期時間（Unix 秒）
-	ChargeCount      int16 // 魔杖充能次數
-	LastUsedAt       int64 // delay_effect 上次使用時間（Unix 秒）
+	ObjID            int32                // persisted ObjectID for shortcut bar stability
+	Durability       int16                // weapon durability (0=perfect, higher=more damaged, range 0-127)
+	AttrEnchantKind  int16                // 元素屬性種類 (0=無, 1=地, 2=火, 4=水, 8=風)
+	AttrEnchantLevel int16                // 元素屬性強化階段 (0-5)
+	InnKeyID         int32                // 旅館鑰匙 ID（0=非鑰匙）
+	InnNpcID         int32                // 旅館 NPC 模板 ID
+	InnHall          bool                 // 是否為會議室鑰匙
+	InnDueTime       int64                // 租約到期時間（Unix 秒）
+	ChargeCount      int16                // 魔杖充能次數
+	LastUsedAt       int64                // delay_effect 上次使用時間（Unix 秒）
+	Accessory        world.AccessoryBonus // 飾品強化累積加成（acc_* 欄位）
 }
 
 type ItemRepo struct {
@@ -46,7 +47,8 @@ func (r *ItemRepo) LoadByCharID(ctx context.Context, charID int32) ([]ItemRow, e
 		        COALESCE(attr_enchant_kind, 0), COALESCE(attr_enchant_level, 0),
 		        COALESCE(inn_key_id, 0), COALESCE(inn_npc_id, 0),
 		        COALESCE(inn_hall, FALSE), COALESCE(EXTRACT(EPOCH FROM inn_due_time)::BIGINT, 0),
-		        COALESCE(charge_count, 0), COALESCE(EXTRACT(EPOCH FROM last_used_at)::BIGINT, 0)
+		        COALESCE(charge_count, 0), COALESCE(EXTRACT(EPOCH FROM last_used_at)::BIGINT, 0),
+		        acc_add_hp, acc_add_mp, acc_hpr, acc_mpr, acc_add_sp, acc_m_def, acc_earth_mr, acc_fire_mr, acc_water_mr, acc_wind_mr
 		 FROM character_items WHERE char_id = $1`, charID,
 	)
 	if err != nil {
@@ -64,6 +66,7 @@ func (r *ItemRepo) LoadByCharID(ctx context.Context, charID int32) ([]ItemRow, e
 			&it.AttrEnchantKind, &it.AttrEnchantLevel,
 			&it.InnKeyID, &it.InnNpcID, &it.InnHall, &it.InnDueTime,
 			&it.ChargeCount, &it.LastUsedAt,
+			&it.Accessory.AddHP, &it.Accessory.AddMP, &it.Accessory.HPR, &it.Accessory.MPR, &it.Accessory.AddSP, &it.Accessory.MDef, &it.Accessory.EarthMr, &it.Accessory.FireMr, &it.Accessory.WaterMr, &it.Accessory.WindMr,
 		); err != nil {
 			return nil, err
 		}
@@ -118,13 +121,16 @@ func (r *ItemRepo) SaveInventory(ctx context.Context, charID int32, inv *world.I
 			lastUsedAt = time.Unix(item.LastUsedAt, 0)
 		}
 		if _, err := tx.Exec(ctx,
-			`INSERT INTO character_items (char_id, item_id, count, enchant_lvl, bless, equipped, identified, equip_slot, obj_id, durability, attr_enchant_kind, attr_enchant_level, inn_key_id, inn_npc_id, inn_hall, inn_due_time, charge_count, last_used_at)
-			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+			`INSERT INTO character_items (char_id, item_id, count, enchant_lvl, bless, equipped, identified, equip_slot, obj_id, durability, attr_enchant_kind, attr_enchant_level, inn_key_id, inn_npc_id, inn_hall, inn_due_time, charge_count, last_used_at,
+			 acc_add_hp, acc_add_mp, acc_hpr, acc_mpr, acc_add_sp, acc_m_def, acc_earth_mr, acc_fire_mr, acc_water_mr, acc_wind_mr)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
+			         $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)`,
 			charID, item.ItemID, item.Count, int16(item.EnchantLvl), int16(item.Bless),
 			item.Equipped, item.Identified, equipSlot, item.ObjectID, int16(item.Durability),
 			int16(item.AttrEnchantKind), int16(item.AttrEnchantLevel),
 			item.InnKeyID, item.InnNpcID, item.InnHall, innDueTime,
 			item.ChargeCount, lastUsedAt,
+			item.Accessory.AddHP, item.Accessory.AddMP, item.Accessory.HPR, item.Accessory.MPR, item.Accessory.AddSP, item.Accessory.MDef, item.Accessory.EarthMr, item.Accessory.FireMr, item.Accessory.WaterMr, item.Accessory.WindMr,
 		); err != nil {
 			return err
 		}

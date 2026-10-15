@@ -51,6 +51,7 @@ type AntiCheatConfig struct {
 type EnchantConfig struct {
 	WeaponChance float64 `toml:"weapon_chance"` // success rate above safe enchant (0.0-1.0)
 	ArmorChance  float64 `toml:"armor_chance"`  // success rate above safe enchant (0.0-1.0)
+	AttrChance   float64 `toml:"attr_chance"`   // 武器屬性強化卷軸成功率 (0.0-1.0)，Eddy rates.properties AttrEnchantChance=10
 }
 
 type ServerConfig struct {
@@ -223,6 +224,7 @@ func defaults() *Config {
 		Enchant: EnchantConfig{
 			WeaponChance: 0.10, // Eddy rates.properties EnchantChanceWeapon = 10
 			ArmorChance:  0.10, // Eddy rates.properties EnchantChanceArmor = 10
+			AttrChance:   0.10, // Eddy rates.properties AttrEnchantChance = 10
 		},
 		World: WorldConfig{
 			WeatherEnabled:   false, // Java 預設不啟用隨機天氣

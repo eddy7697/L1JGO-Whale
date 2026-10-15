@@ -291,6 +291,12 @@ func buildViewName(item *world.InvItem, itemInfo *data.ItemInfo) string {
 	} else if item.EnchantLvl < 0 {
 		name = fmt.Sprintf("%d %s", item.EnchantLvl, name)
 	}
+	// 武器屬性強化前綴（Java getNumberedName：已鑑定武器 attrEnchantLevel>0 → "$6115" 等 + 空格，置於強化等級之前）
+	if item.Identified && itemInfo != nil && itemInfo.Category == data.CategoryWeapon {
+		if prefix := world.AttrEnchantNamePrefix(item.AttrEnchantKind, item.AttrEnchantLevel); prefix != "" {
+			name = prefix + " " + name
+		}
+	}
 	// Stack count suffix (Java: getNumberedName — applies to ALL stackable items)
 	if item.Count > 1 {
 		name += fmt.Sprintf(" (%d)", item.Count)
@@ -394,6 +400,17 @@ func handleUseEtcItem(sess *net.Session, r *packet.Reader, player *world.PlayerI
 			if used && itemInfo.DelayID != 0 && itemInfo.DelayTime != 0 {
 				setItemDelay(player, itemInfo.DelayID, itemInfo.DelayTime)
 			}
+		}
+		return
+	}
+
+	// 屬性強化（41429-41432）、象牙塔（49311/49312）、飾品強化（49148）卷軸：
+	// Java C_ItemUSe 依 itemId 讀取 [D targetObjID] 後分派至 Enchant.scrollOfEnchantWeaponAttr /
+	// scrollOfEnchantWeaponIvoryTower / scrollOfEnchantArmorIvoryTower / scrollOfEnchantAccessory，
+	// 不走一般 dai/zel 衝裝公式。
+	if world.IsSpecialEnchantScroll(invItem.ItemID) {
+		if deps.ItemUse != nil {
+			deps.ItemUse.EnchantSpecialScroll(sess, r, player, invItem, itemInfo)
 		}
 		return
 	}
@@ -769,26 +786,41 @@ func appendEquipSuffix(buf []byte, item *world.InvItem, info *data.ItemInfo) []b
 	if info.AddCha != 0 {
 		buf = append(buf, 13, byte(int8(info.AddCha)))
 	}
-	if info.AddHP != 0 {
+	// HP/MP/SP：模板值 + 飾品強化累積值（Java getStatusBytes: get_addhp()+getaddHp() 等）
+	acc := item.Accessory
+	if addHP := info.AddHP + int(acc.AddHP); addHP != 0 {
 		buf = append(buf, 14)
-		buf = appendUint16LE(buf, uint16(int16(info.AddHP)))
+		buf = appendUint16LE(buf, uint16(int16(addHP)))
 	}
-	if info.AddMP != 0 {
-		buf = append(buf, 32, byte(int8(info.AddMP)))
+	if addMP := info.AddMP + int(acc.AddMP); addMP != 0 {
+		buf = append(buf, 32, byte(int8(addMP)))
 	}
-	if info.AddSP != 0 {
-		buf = append(buf, 17, byte(int8(info.AddSP)))
+	if addSP := info.AddSP + int(acc.AddSP); addSP != 0 {
+		buf = append(buf, 17, byte(int8(addSP)))
 	}
 	if info.MDef != 0 {
 		buf = append(buf, 15)
 		buf = appendUint16LE(buf, uint16(int16(info.MDef)))
 	}
-	if info.AddHPR != 0 {
-		buf = append(buf, 37, byte(int8(info.AddHPR)))
+	if addHPR := info.AddHPR + int(acc.HPR); addHPR != 0 {
+		buf = append(buf, 37, byte(int8(addHPR)))
 	}
 	// MPR：Java weapon() 和 armor() 皆用 tag 38（非 tag 26）
-	if info.AddMPR != 0 {
-		buf = append(buf, 38, byte(int8(info.AddMPR)))
+	if addMPR := info.AddMPR + int(acc.MPR); addMPR != 0 {
+		buf = append(buf, 38, byte(int8(addMPR)))
+	}
+	// 元素抗性：Java tag 27 火 / 28 水 / 29 風 / 30 地（模板 defense_x + 飾品強化 xMr）
+	if v := info.DefFire + int(acc.FireMr); v != 0 {
+		buf = append(buf, 27, byte(int8(v)))
+	}
+	if v := info.DefWater + int(acc.WaterMr); v != 0 {
+		buf = append(buf, 28, byte(int8(v)))
+	}
+	if v := info.DefWind + int(acc.WindMr); v != 0 {
+		buf = append(buf, 29, byte(int8(v)))
+	}
+	if v := info.DefEarth + int(acc.EarthMr); v != 0 {
+		buf = append(buf, 30, byte(int8(v)))
 	}
 	return buf
 }

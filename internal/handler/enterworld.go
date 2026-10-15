@@ -418,6 +418,7 @@ func loadInventoryFromDB(player *world.PlayerInfo, deps *Deps) {
 				invItem.Durability = int8(row.Durability)
 				invItem.AttrEnchantKind = int8(row.AttrEnchantKind)
 				invItem.AttrEnchantLevel = int8(row.AttrEnchantLevel)
+				invItem.Accessory = row.Accessory
 				invItem.InnKeyID = row.InnKeyID
 				invItem.InnNpcID = row.InnNpcID
 				invItem.InnHall = row.InnHall

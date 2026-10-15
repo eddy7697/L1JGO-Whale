@@ -76,11 +76,35 @@ type InvItem struct {
 	AttrEnchantKind  int8
 	AttrEnchantLevel int8
 
+	// 飾品強化累積加成（Java: L1ItemInstance addHp/addMp/hpr/mpr/addSp/m_def/earthMr/fireMr/waterMr/windMr，
+	// 由飾品強化卷軸 49148 寫入，存於 character_items / warehouse_items 的 acc_* 欄位）
+	Accessory AccessoryBonus
+
 	// 旅館鑰匙額外欄位（Java: L1ItemInstance.keyId / innNpcId / isHall / dueTime）
 	InnKeyID   int32 // 鑰匙 ID（= 物品 ObjectID，用於匹配房間）
 	InnNpcID   int32 // 旅館 NPC 模板 ID
 	InnHall    bool  // 是否為會議室鑰匙
 	InnDueTime int64 // 租約到期時間（Unix 秒，0=非旅館鑰匙）
+}
+
+// AccessoryBonus 是單一物品實例的飾品強化加成（Java L1ItemInstance 的飾品欄位）。
+// 只在物品裝備中才生效，由 calcEquipStats 併入角色屬性。
+type AccessoryBonus struct {
+	AddHP   int16
+	AddMP   int16
+	HPR     int16
+	MPR     int16
+	AddSP   int16
+	MDef    int16
+	EarthMr int16
+	FireMr  int16
+	WaterMr int16
+	WindMr  int16
+}
+
+// IsZero 回傳是否沒有任何飾品強化加成。
+func (b AccessoryBonus) IsZero() bool {
+	return b == AccessoryBonus{}
 }
 
 // Inventory holds a player's in-memory item list.

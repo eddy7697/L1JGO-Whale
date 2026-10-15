@@ -214,6 +214,7 @@ func warehouseItemFromInvItem(accountName, charName string, whType int16, invIte
 		Durability:       int16(invItem.Durability),
 		AttrEnchantKind:  int16(invItem.AttrEnchantKind),
 		AttrEnchantLevel: int16(invItem.AttrEnchantLevel),
+		Accessory:        invItem.Accessory,
 		InnKeyID:         invItem.InnKeyID,
 		InnNpcID:         invItem.InnNpcID,
 		InnHall:          invItem.InnHall,
@@ -255,6 +256,7 @@ func warehouseCacheFromPersistItem(it persist.WarehouseItem, itemInfo *data.Item
 		Durability:       int8(it.Durability),
 		AttrEnchantKind:  int8(it.AttrEnchantKind),
 		AttrEnchantLevel: int8(it.AttrEnchantLevel),
+		Accessory:        it.Accessory,
 		InnKeyID:         it.InnKeyID,
 		InnNpcID:         it.InnNpcID,
 		InnHall:          it.InnHall,
@@ -278,6 +280,7 @@ func copyWarehouseCacheState(dst *world.InvItem, wc *world.WarehouseCache) {
 	dst.Durability = wc.Durability
 	dst.AttrEnchantKind = wc.AttrEnchantKind
 	dst.AttrEnchantLevel = wc.AttrEnchantLevel
+	dst.Accessory = wc.Accessory
 	dst.InnKeyID = wc.InnKeyID
 	dst.InnNpcID = wc.InnNpcID
 	dst.InnHall = wc.InnHall
