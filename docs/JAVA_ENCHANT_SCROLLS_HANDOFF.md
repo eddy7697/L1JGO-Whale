@@ -49,7 +49,7 @@ Java `scrollOfEnchantAccessory`：
 
 ### 保留的既有行為
 - 一般衝裝公式（1-10，Lua `scripts/item/enchant.lua`）未動。
-- `applySuccessEnchant` 沿用 Go 現有一般衝裝成功路徑的 GFX 2583（Java `SuccessEnchant` 無此特效）；若要嚴格對齊可移除該行。
+- `applySuccessEnchant` 沿用 Go 現有一般衝裝成功路徑的 GFX 2583（Java `SuccessEnchant` 無此特效）。**整合者決定：本批新增流程依 Java，由整合者在整合分支移除 `item_enchant_scrolls.go` 的 `sendEffectOnPlayer(sess, player.CharID, 2583)` 一行；一般 dai/zel 卷軸的既有 GFX 行為不動。** 本分支未改此行以避免重複修改。
 - Java `SuccessEnchant` 對防具另送 `S_OwnCharAttrDef`；Go 的 `RecalcEquipStats` 送狀態／能力／魔法狀態封包替代。
 
 ## 三、驗證證據
@@ -62,6 +62,7 @@ Java `scrollOfEnchantAccessory`：
 | `go vet ./...` | 通過 |
 | `go test ./internal/system/ ./internal/handler/ ./internal/world/ ./internal/data/ ./internal/persist/ ./internal/config/` | 全部 ok（system 90s） |
 | `go test ./...` | 通過（exit 0，於 `0a79f88` 執行；修正提交後重跑 handler／system 受影響測試通過） |
+| Docker/PostgreSQL 往返（整合者執行） | 通過：040 對舊資料零預設、10 個飾品欄位、武器屬性、四種倉庫、鑰匙及租約；容器已清理 |
 | `git diff --check` | 通過（僅 autocrlf 警告） |
 
 新增測試（`internal/system/item_enchant_scrolls_test.go`、`internal/handler/item_enchant_scrolls_test.go`）：
