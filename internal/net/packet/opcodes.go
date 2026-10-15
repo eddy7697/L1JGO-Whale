@@ -47,6 +47,7 @@ const (
 	S_OPCODE_HOUSELIST              byte = 156 // S_AuctionBoard（盟屋拍賣公告欄列表）
 	S_OPCODE_ACTION                 byte = 158 // S_DoActionGFX
 	S_OPCODE_ADD_SPELL              byte = 164
+	S_OPCODE_DEL_SPELL              byte = 160 // S_DelSkill
 	S_OPCODE_INVISIBLE              byte = 171
 	S_OPCODE_ABILITY_SCORES         byte = 174 // S_OwnCharAttrDef
 	S_OPCODE_NUM_CHARACTER          byte = 178 // S_CharAmount

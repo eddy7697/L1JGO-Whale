@@ -53,6 +53,11 @@ type SkillRequest struct {
 	Text       string
 }
 
+// ElfAttributeManager 處理精靈屬性選擇與重置。
+type ElfAttributeManager interface {
+	ChangeElfAttribute(sess *net.Session, player *world.PlayerInfo, npcID int32, action string)
+}
+
 // SkillManager 處理技能執行、buff 管理、buff 計時。由 system.SkillSystem 實作。
 type SkillManager interface {
 	// QueueSkill 將技能請求排入佇列（Phase 2 處理）。
@@ -782,6 +787,7 @@ type Deps struct {
 	TeleportPages    *data.TeleportPageTable
 	Combat           CombatQueue         // filled after CombatSystem is created
 	Skill            SkillManager        // filled after SkillSystem is created
+	ElfAttributes    ElfAttributeManager // filled after SkillSystem is created
 	Death            DeathManager        // filled after DeathSystem is created
 	Trade            TradeManager        // filled after TradeSystem is created
 	Party            PartyManager        // filled after PartySystem is created

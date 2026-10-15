@@ -740,6 +740,7 @@ func run() error {
 	runner.Register(combatSys)
 	skillSys := system.NewSkillSystem(deps)
 	deps.Skill = skillSys
+	deps.ElfAttributes = skillSys
 	runner.Register(skillSys)
 	deathSys := system.NewDeathSystem(deps)
 	deps.Death = deathSys

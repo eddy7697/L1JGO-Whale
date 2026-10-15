@@ -162,6 +162,10 @@ func HandleNpcAction(sess *net.Session, r *packet.Reader, deps *Deps) {
 	}
 
 	switch lowerAction {
+	case "fire", "water", "air", "earth", "init":
+		if player.MapID == npc.MapID && player.ShowID == npc.ShowID && !player.Dead && deps.ElfAttributes != nil {
+			deps.ElfAttributes.ChangeElfAttribute(sess, player, objID, lowerAction)
+		}
 	case "buy":
 		if npc.Impl == "L1Cn" {
 			handleCnShopBuy(sess, npc.NpcID, objID, deps)

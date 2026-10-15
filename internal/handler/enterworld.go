@@ -97,6 +97,7 @@ func HandleEnterWorld(sess *net.Session, r *packet.Reader, deps *Deps) {
 		ClassID:      ch.ClassID,
 		Sex:          ch.Sex,
 		ClassType:    ch.ClassType,
+		ElfAttr:      ch.ElfAttr,
 		Level:        ch.Level,
 		Lawful:       ch.Lawful,
 		Title:        ch.Title,
