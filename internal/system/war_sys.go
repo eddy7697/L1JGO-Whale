@@ -20,6 +20,9 @@ type WarSystem struct {
 	deps *handler.Deps
 	wars []*handler.ActiveWar // 進行中的戰爭
 	now  func() time.Time     // 測試可替換的時鐘
+
+	// pending 等待對方盟主回應的戰爭請求，key 為接收者（對方盟主）CharID。
+	pending map[int32]*warConsentRequest
 }
 
 // 戰爭請求類型（Java C_War type）。
@@ -42,8 +45,9 @@ const javaSimWarMinLevel = 15
 // NewWarSystem 建立戰爭系統。
 func NewWarSystem(deps *handler.Deps) *WarSystem {
 	return &WarSystem{
-		deps: deps,
-		wars: make([]*handler.ActiveWar, 0),
+		deps:    deps,
+		wars:    make([]*handler.ActiveWar, 0),
+		pending: make(map[int32]*warConsentRequest),
 	}
 }
 
@@ -238,32 +242,151 @@ func (s *WarSystem) requestSimWar(sess *net.Session, player *world.PlayerInfo, c
 		return
 	}
 
-	// Java: enemyLeader.setTempID(player.getId()) 後送 S_Message_YN
-	enemyLeader.TempID = player.CharID
+	var msgType uint16
 	switch reqType {
 	case warReqDeclare:
-		handler.SendYesNoDialog(enemyLeader.Session, warYNDeclare, clan.ClanName, player.Name)
+		msgType = warYNDeclare
 	case warReqSurrender:
-		handler.SendYesNoDialog(enemyLeader.Session, warYNSurrender, clan.ClanName)
+		msgType = warYNSurrender
 	case warReqCease:
+		msgType = warYNCease
+	default:
+		return
+	}
+
+	req := &warConsentRequest{
+		msgType:            msgType,
+		requesterCharID:    player.CharID,
+		requesterSessionID: player.SessionID,
+		requesterClanID:    clan.ClanID,
+		responderCharID:    enemyLeader.CharID,
+		responderSessionID: enemyLeader.SessionID,
+		responderClanID:    enemyClan.ClanID,
+		war:                existing, // 宣戰時為 nil；投降／休戰綁定原戰爭
+	}
+
+	// 同一接收者已有有效請求：同一請求者同類型 → 重送對話框（維持原綁定）；不同請求 → 不覆蓋
+	if old := s.pending[enemyLeader.CharID]; old != nil && s.consentRequestValid(old) {
+		if old.requesterCharID != req.requesterCharID || old.msgType != req.msgType {
+			if s.deps.Log != nil {
+				s.deps.Log.Info("對方盟主已有待回應的戰爭請求，忽略新請求",
+					zap.Uint16("pending", old.msgType), zap.Uint16("new", req.msgType),
+					zap.Int32("responder", enemyLeader.CharID))
+			}
+			return
+		}
+		req = old
+	}
+	s.pending[enemyLeader.CharID] = req
+
+	// Java: enemyLeader.setTempID(player.getId()) 後送 S_Message_YN。
+	// Go 改用專用 pending 紀錄，不佔用通用 TempID（避免被寵物改名等對話覆寫或誤用）。
+	switch msgType {
+	case warYNDeclare:
+		handler.SendYesNoDialog(enemyLeader.Session, warYNDeclare, clan.ClanName, player.Name)
+	case warYNSurrender:
+		handler.SendYesNoDialog(enemyLeader.Session, warYNSurrender, clan.ClanName)
+	case warYNCease:
 		handler.SendYesNoDialog(enemyLeader.Session, warYNCease, clan.ClanName)
 	}
 }
 
+// warConsentRequest 等待對方盟主回應的戰爭請求（取代 Java 的通用 TempID）。
+type warConsentRequest struct {
+	msgType            uint16
+	requesterCharID    int32
+	requesterSessionID uint64
+	requesterClanID    int32
+	responderCharID    int32
+	responderSessionID uint64
+	responderClanID    int32
+	war                *handler.ActiveWar // 221/222 綁定的原戰爭；217 為 nil
+}
+
+// consentRequestValid 請求是否仍有效：雙方同一 session 在線、血盟未變、仍為盟主，
+// 投降／休戰的原戰爭仍存在且雙方仍參與。
+func (s *WarSystem) consentRequestValid(req *warConsentRequest) bool {
+	requester := s.deps.World.GetByCharID(req.requesterCharID)
+	responder := s.deps.World.GetByCharID(req.responderCharID)
+	if requester == nil || responder == nil {
+		return false
+	}
+	if requester.SessionID != req.requesterSessionID || responder.SessionID != req.responderSessionID {
+		return false
+	}
+	if requester.ClanID != req.requesterClanID || responder.ClanID != req.responderClanID {
+		return false
+	}
+	reqClan := s.deps.World.Clans.GetClan(req.requesterClanID)
+	resClan := s.deps.World.Clans.GetClan(req.responderClanID)
+	if reqClan == nil || resClan == nil {
+		return false
+	}
+	if reqClan.LeaderID != requester.CharID || resClan.LeaderID != responder.CharID {
+		return false
+	}
+	if req.msgType != warYNDeclare {
+		if req.war == nil || !s.warActive(req.war) {
+			return false
+		}
+		if !s.clanInWar(req.war, reqClan.ClanName) || !s.clanInWar(req.war, resClan.ClanName) {
+			return false
+		}
+	}
+	return true
+}
+
+// warActive 戰爭實例是否仍在清單中。
+func (s *WarSystem) warActive(target *handler.ActiveWar) bool {
+	for _, w := range s.wars {
+		if w == target {
+			return true
+		}
+	}
+	return false
+}
+
+// pruneConsentRequests 清除失效的待回應請求（session 過期、換盟、原戰爭已結束）。
+func (s *WarSystem) pruneConsentRequests() {
+	for id, req := range s.pending {
+		if !s.consentRequestValid(req) {
+			delete(s.pending, id)
+		}
+	}
+}
+
 // HandleWarConsent 對方盟主回應宣戰／投降／休戰（Java: C_Attr case 217/221/222）。
+// 只有與 pending 紀錄完全相符（接收者、訊息類型、雙方血盟與盟主身分、原戰爭）的回應才會生效；
+// 每個請求只能生效一次。
 func (s *WarSystem) HandleWarConsent(sess *net.Session, player *world.PlayerInfo, msgType uint16, accepted bool) {
 	if s.deps == nil || s.deps.World == nil || s.deps.World.Clans == nil {
 		return
 	}
-	enemyLeader := s.deps.World.GetByCharID(player.TempID)
-	if enemyLeader == nil {
+	req := s.pending[player.CharID]
+	if req == nil {
 		return
 	}
-	player.TempID = 0
+	if req.msgType != msgType {
+		if s.deps.Log != nil {
+			s.deps.Log.Info("戰爭回應類型與待回應請求不符，忽略",
+				zap.Uint16("pending", req.msgType), zap.Uint16("got", msgType), zap.Int32("responder", player.CharID))
+		}
+		return
+	}
+	// 回應一經受理即消耗，重複回覆不再生效
+	delete(s.pending, player.CharID)
 
-	clan := s.deps.World.Clans.GetClan(player.ClanID)
-	enemyClan := s.deps.World.Clans.GetClan(enemyLeader.ClanID)
-	if clan == nil || enemyClan == nil {
+	if sess != nil && player.SessionID != sess.ID {
+		return
+	}
+	if !s.consentRequestValid(req) {
+		return
+	}
+
+	enemyLeader := s.deps.World.GetByCharID(req.requesterCharID)
+	clan := s.deps.World.Clans.GetClan(req.responderClanID)
+	enemyClan := s.deps.World.Clans.GetClan(req.requesterClanID)
+	if enemyLeader == nil || clan == nil || enemyClan == nil {
 		return
 	}
 	clanName := clan.ClanName
@@ -293,16 +416,10 @@ func (s *WarSystem) HandleWarConsent(sess *net.Session, player *world.PlayerInfo
 			return
 		}
 		s.startSimWar(enemyClanName, clanName)
-	case warYNSurrender, warYNCease:
-		w := s.findWarWithClan(clanName)
-		if w == nil || w.WarType != 2 {
-			return
-		}
-		if msgType == warYNSurrender {
-			s.endSimWar(w, 2, enemyClanName, clanName)
-		} else {
-			s.endSimWar(w, 3, enemyClanName, clanName)
-		}
+	case warYNSurrender:
+		s.endSimWar(req.war, 2, enemyClanName, clanName)
+	case warYNCease:
+		s.endSimWar(req.war, 3, enemyClanName, clanName)
 	}
 }
 
@@ -335,7 +452,9 @@ func (s *WarSystem) endSimWar(w *handler.ActiveWar, warType byte, clan1, clan2 s
 }
 
 // TickSimWar 血盟戰到期自動休戰（Java: L1War.SimWarTimer 240 分鐘後 CeaseWar(attack, defence)）。
+// 同時清除失效的待回應請求。
 func (s *WarSystem) TickSimWar() {
+	s.pruneConsentRequests()
 	now := s.clock()
 	for i := len(s.wars) - 1; i >= 0; i-- {
 		w := s.wars[i]
@@ -378,7 +497,13 @@ func (s *WarSystem) removeWar(target *handler.ActiveWar) {
 	for i, w := range s.wars {
 		if w == target {
 			s.wars = append(s.wars[:i], s.wars[i+1:]...)
-			return
+			break
+		}
+	}
+	// 綁定該戰爭的投降／休戰請求一併失效
+	for id, req := range s.pending {
+		if req.war == target {
+			delete(s.pending, id)
 		}
 	}
 }

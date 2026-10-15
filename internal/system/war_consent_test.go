@@ -175,8 +175,12 @@ func TestSimWarDeclareSendsYesNoInsteadOfStarting(t *testing.T) {
 	if len(env.war.GetActiveWars()) != 0 {
 		t.Fatalf("宣戰不應直接成立，wars=%d", len(env.war.GetActiveWars()))
 	}
-	if b.TempID != a.CharID {
-		t.Fatalf("對方盟主 TempID 應記錄請求者 charID，got %d", b.TempID)
+	req := env.war.pending[b.CharID]
+	if req == nil || req.requesterCharID != a.CharID || req.msgType != 217 || req.requesterClanID != 1 || req.responderClanID != 2 {
+		t.Fatalf("應記錄綁定雙方的 pending 請求，got %+v", req)
+	}
+	if b.TempID != 0 {
+		t.Fatalf("不應佔用通用 TempID，got %d", b.TempID)
 	}
 	bp := drainWarPackets(b)
 	if !containsU16(yesNoTypes(bp), 217) {
@@ -205,8 +209,8 @@ func TestSimWarConsentYesStartsWarWithEndTime(t *testing.T) {
 	if want := env.now.Add(240 * time.Minute); !w.EndTime.Equal(want) {
 		t.Fatalf("EndTime 應為 240 分鐘後 %v，got %v", want, w.EndTime)
 	}
-	if b.TempID != 0 {
-		t.Fatalf("回應後 TempID 應清零，got %d", b.TempID)
+	if env.war.pending[b.CharID] != nil {
+		t.Fatal("回應後 pending 應清除")
 	}
 	if !containsByte(warPacketTypes(drainWarPackets(a)), 1) {
 		t.Fatal("攻方盟員應收到 S_War type=1")
@@ -232,8 +236,8 @@ func TestSimWarConsentNoSends236(t *testing.T) {
 	if ids := serverMessageIDs(drainWarPackets(a)); !containsU16(ids, 236) {
 		t.Fatalf("請求者應收到 236，got %v", ids)
 	}
-	if b.TempID != 0 {
-		t.Fatalf("回應後 TempID 應清零，got %d", b.TempID)
+	if env.war.pending[b.CharID] != nil {
+		t.Fatal("回應後 pending 應清除")
 	}
 }
 
@@ -340,7 +344,7 @@ func TestSimWarDeclareWhenSelfAlreadyInWarSends234(t *testing.T) {
 	}
 }
 
-// 重複請求：第二次宣戰覆蓋 TempID，回覆只成立一場。
+// 重複請求：同一請求者同類型重送只保留一筆 pending，回覆只生效一次。
 func TestSimWarDuplicateRequestOnlyStartsOneWar(t *testing.T) {
 	env, a, b := twoClans(t)
 	env.war.DeclareWar(a.Session, a, "ClanB")
@@ -350,7 +354,7 @@ func TestSimWarDuplicateRequestOnlyStartsOneWar(t *testing.T) {
 	}
 
 	env.war.HandleWarConsent(b.Session, b, 217, true)
-	// 第二個對話框的回覆：TempID 已清零 → 忽略
+	// 第二個對話框的回覆：pending 已消耗 → 忽略
 	env.war.HandleWarConsent(b.Session, b, 217, true)
 
 	if n := len(env.war.GetActiveWars()); n != 1 {
@@ -406,10 +410,10 @@ func TestSimWarReplyAfterRequesterLeftClan(t *testing.T) {
 	}
 }
 
-// 無 TempID 的回覆（例如客戶端偽造）→ 靜默。
+// 無 pending 的回覆（例如客戶端偽造）→ 靜默。
 func TestSimWarConsentWithoutPendingRequestIgnored(t *testing.T) {
-	env, _, b := twoClans(t)
-	b.TempID = 0
+	env, a, b := twoClans(t)
+	b.TempID = a.CharID // 即使通用 TempID 被其他對話設成請求者，也不得生效
 
 	env.war.HandleWarConsent(b.Session, b, 217, true)
 
@@ -471,8 +475,8 @@ func TestSimWarCeaseRequiresConsent(t *testing.T) {
 	if yn := yesNoTypes(drainWarPackets(a)); !containsU16(yn, 222) {
 		t.Fatalf("對方應收到 222，got %v", yn)
 	}
-	if a.TempID != b.CharID {
-		t.Fatalf("TempID 應為提出者，got %d", a.TempID)
+	if req := env.war.pending[a.CharID]; req == nil || req.requesterCharID != b.CharID || req.msgType != 222 || req.war != env.war.GetActiveWars()[0] {
+		t.Fatalf("休戰請求應綁定提出者與原戰爭，got %+v", req)
 	}
 
 	env.war.HandleWarConsent(a.Session, a, 222, true)
@@ -727,5 +731,233 @@ func TestCastleWarSecondAttackerJoinsExistingWar(t *testing.T) {
 	env.war.CeaseCastleWar(1)
 	if n := len(env.war.GetActiveWars()); n != 0 {
 		t.Fatalf("CeaseCastleWar 後應清空，got %d", n)
+	}
+}
+
+// --- pending 請求綁定：錯 mode、換盟、換盟主、原戰已結束、覆蓋保護 ---
+
+// 發 221 請求卻回 222 → 不生效，且請求仍保留。
+func TestSimWarConsentWrongModeIgnored(t *testing.T) {
+	env, a, b := twoClans(t)
+	env.war.startSimWar("ClanA", "ClanB")
+	env.war.SurrenderWar(a.Session, a, "ClanB")
+	drainWarPackets(a)
+	drainWarPackets(b)
+
+	env.war.HandleWarConsent(b.Session, b, 222, true)
+	if n := len(env.war.GetActiveWars()); n != 1 {
+		t.Fatalf("錯誤 mode 不得結束戰爭，got %d", n)
+	}
+	env.war.HandleWarConsent(b.Session, b, 217, true)
+	if n := len(env.war.GetActiveWars()); n != 1 {
+		t.Fatalf("錯誤 mode 不得改動戰爭，got %d", n)
+	}
+	if env.war.pending[b.CharID] == nil {
+		t.Fatal("錯誤 mode 不應消耗 pending")
+	}
+
+	// 正確 mode 仍可生效
+	env.war.HandleWarConsent(b.Session, b, 221, true)
+	if n := len(env.war.GetActiveWars()); n != 0 {
+		t.Fatalf("正確 mode 應結束戰爭，got %d", n)
+	}
+}
+
+// 等待期間請求者換到另一個非零血盟（且成為其盟主）→ 回覆不得套用到新血盟。
+func TestSimWarConsentRequesterSwitchedToOtherClan(t *testing.T) {
+	env, a, b := twoClans(t)
+	env.war.DeclareWar(a.Session, a, "ClanB")
+	drainWarPackets(b)
+	// A 退出 ClanA 並建立 ClanC 當盟主
+	env.addClan(3, "ClanC", a, 0)
+
+	env.war.HandleWarConsent(b.Session, b, 217, true)
+
+	if n := len(env.war.GetActiveWars()); n != 0 {
+		t.Fatalf("換盟後的回覆不得成立戰爭，got %+v", env.war.GetActiveWars())
+	}
+	if env.war.IsClanInWar("ClanC") {
+		t.Fatal("不得套用到新血盟")
+	}
+}
+
+// 等待期間回應者換到另一個非零血盟 → 回覆不得生效。
+func TestSimWarConsentResponderSwitchedToOtherClan(t *testing.T) {
+	env, a, b := twoClans(t)
+	env.war.DeclareWar(a.Session, a, "ClanB")
+	drainWarPackets(b)
+	env.addClan(3, "ClanC", b, 0)
+
+	env.war.HandleWarConsent(b.Session, b, 217, true)
+
+	if n := len(env.war.GetActiveWars()); n != 0 {
+		t.Fatalf("回應者換盟後不得成立戰爭，got %+v", env.war.GetActiveWars())
+	}
+}
+
+// 等待期間請求者血盟換了盟主 → 回覆不得生效。
+func TestSimWarConsentRequesterLostLeadership(t *testing.T) {
+	env, a, b := twoClans(t)
+	env.war.DeclareWar(a.Session, a, "ClanB")
+	drainWarPackets(b)
+	newLeader := env.addPlayer(1010, "NewLeaderA", 1, 50)
+	env.ws.Clans.GetClan(1).LeaderID = newLeader.CharID
+	env.ws.Clans.GetClan(1).LeaderName = newLeader.Name
+
+	env.war.HandleWarConsent(b.Session, b, 217, true)
+
+	if n := len(env.war.GetActiveWars()); n != 0 {
+		t.Fatalf("請求者失去盟主身分後不得成立戰爭，got %d", n)
+	}
+}
+
+// 等待期間回應者血盟換了盟主 → 原回應者的回覆不得生效。
+func TestSimWarConsentResponderLostLeadership(t *testing.T) {
+	env, a, b := twoClans(t)
+	env.war.startSimWar("ClanA", "ClanB")
+	env.war.SurrenderWar(a.Session, a, "ClanB")
+	drainWarPackets(b)
+	newLeader := env.addPlayer(1011, "NewLeaderB", 2, 50)
+	env.ws.Clans.GetClan(2).LeaderID = newLeader.CharID
+
+	env.war.HandleWarConsent(b.Session, b, 221, true)
+
+	if n := len(env.war.GetActiveWars()); n != 1 {
+		t.Fatalf("前盟主的回覆不得結束戰爭，got %d", n)
+	}
+}
+
+// 原戰爭已結束又開新戰 → 舊投降請求的回覆不得套用到新戰爭。
+func TestSimWarStaleSurrenderReplyAfterNewWar(t *testing.T) {
+	env, a, b := twoClans(t)
+	env.war.startSimWar("ClanA", "ClanB")
+	oldWar := env.war.GetActiveWars()[0]
+	env.war.SurrenderWar(a.Session, a, "ClanB")
+	drainWarPackets(b)
+	// 原戰爭到期結束
+	env.now = env.now.Add(241 * time.Minute)
+	env.war.TickSimWar()
+	if n := len(env.war.GetActiveWars()); n != 0 {
+		t.Fatalf("原戰爭應已結束，got %d", n)
+	}
+	if env.war.pending[b.CharID] != nil {
+		t.Fatal("原戰爭結束後綁定的請求應清除")
+	}
+	// 立刻開新戰
+	env.war.startSimWar("ClanA", "ClanB")
+	newWar := env.war.GetActiveWars()[0]
+	if newWar == oldWar {
+		t.Fatal("測試前提：新戰爭應為不同實例")
+	}
+	drainWarPackets(a)
+	drainWarPackets(b)
+
+	env.war.HandleWarConsent(b.Session, b, 221, true)
+
+	if n := len(env.war.GetActiveWars()); n != 1 {
+		t.Fatalf("過期投降回覆不得結束新戰爭，got %d", n)
+	}
+	if pk := drainWarPackets(a); len(pk) != 0 {
+		t.Fatalf("不應送出任何封包，got %d", len(pk))
+	}
+}
+
+// 原戰爭以休戰結束後 pending 立即清除（removeWar 路徑）。
+func TestSimWarPendingClearedWhenWarRemoved(t *testing.T) {
+	env, a, b := twoClans(t)
+	env.war.startSimWar("ClanA", "ClanB")
+	env.war.SurrenderWar(a.Session, a, "ClanB")
+	if env.war.pending[b.CharID] == nil {
+		t.Fatal("測試前提：應有 pending")
+	}
+	env.war.endSimWar(env.war.GetActiveWars()[0], 3, "ClanA", "ClanB")
+	if env.war.pending[b.CharID] != nil {
+		t.Fatal("戰爭移除後 pending 應清除")
+	}
+}
+
+// 同一接收者已有有效請求時，不同請求者／不同類型不得覆蓋。
+func TestSimWarPendingNotOverwrittenByDifferentRequest(t *testing.T) {
+	env, a, b := twoClans(t)
+	c := env.addPlayer(1004, "LeaderC", 0, 50)
+	env.addClan(3, "ClanC", c, 0)
+	env.war.DeclareWar(a.Session, a, "ClanB")
+	drainWarPackets(b)
+
+	// C 也向 B 宣戰：B 已有 A 的有效請求 → 忽略，不送對話框
+	env.war.DeclareWar(c.Session, c, "ClanB")
+	if yn := yesNoTypes(drainWarPackets(b)); len(yn) != 0 {
+		t.Fatalf("已有待回應請求時不應再送對話框，got %v", yn)
+	}
+	if req := env.war.pending[b.CharID]; req == nil || req.requesterCharID != a.CharID {
+		t.Fatalf("pending 應仍為 A 的請求，got %+v", req)
+	}
+
+	// B 同意 → 成立 A-B，而非 C-B
+	env.war.HandleWarConsent(b.Session, b, 217, true)
+	if !env.war.IsWar("ClanA", "ClanB") || env.war.IsClanInWar("ClanC") {
+		t.Fatalf("應成立 A-B 戰爭，got %+v", env.war.GetActiveWars())
+	}
+}
+
+// 同一接收者的舊請求已失效（請求者離線）→ 新請求可取代。
+func TestSimWarStalePendingReplacedByNewRequest(t *testing.T) {
+	env, a, b := twoClans(t)
+	c := env.addPlayer(1004, "LeaderC", 0, 50)
+	env.addClan(3, "ClanC", c, 0)
+	env.war.DeclareWar(a.Session, a, "ClanB")
+	drainWarPackets(b)
+	env.ws.RemovePlayer(a.SessionID)
+
+	env.war.DeclareWar(c.Session, c, "ClanB")
+	if yn := yesNoTypes(drainWarPackets(b)); !containsU16(yn, 217) {
+		t.Fatalf("舊請求失效後新請求應送對話框，got %v", yn)
+	}
+	env.war.HandleWarConsent(b.Session, b, 217, true)
+	if !env.war.IsWar("ClanC", "ClanB") {
+		t.Fatalf("應成立 C-B 戰爭，got %+v", env.war.GetActiveWars())
+	}
+}
+
+// 請求者重登（session 改變）後的回覆不得生效。
+func TestSimWarConsentRequesterRelogged(t *testing.T) {
+	env, a, b := twoClans(t)
+	env.war.DeclareWar(a.Session, a, "ClanB")
+	drainWarPackets(b)
+	env.ws.RemovePlayer(a.SessionID)
+	a2 := env.addPlayer(a.CharID, a.Name, 1, 50)
+	_ = a2
+
+	env.war.HandleWarConsent(b.Session, b, 217, true)
+
+	if n := len(env.war.GetActiveWars()); n != 0 {
+		t.Fatalf("請求者重登後舊請求不得生效，got %d", n)
+	}
+}
+
+// TickSimWar 會清除失效 pending。
+func TestSimWarTickPrunesStalePending(t *testing.T) {
+	env, a, b := twoClans(t)
+	env.war.DeclareWar(a.Session, a, "ClanB")
+	a.ClanID = 0
+
+	env.war.TickSimWar()
+
+	if env.war.pending[b.CharID] != nil {
+		t.Fatal("失效 pending 應被 tick 清除")
+	}
+}
+
+// 通用 TempID 被其他對話（如寵物改名）設定不影響戰爭回應。
+func TestSimWarConsentIgnoresGenericTempID(t *testing.T) {
+	env, a, b := twoClans(t)
+	env.war.DeclareWar(a.Session, a, "ClanB")
+	drainWarPackets(b)
+	b.TempID = 99999 // 其他流程覆寫
+
+	env.war.HandleWarConsent(b.Session, b, 217, true)
+
+	if !env.war.IsWar("ClanA", "ClanB") {
+		t.Fatal("戰爭回應不應依賴通用 TempID")
 	}
 }
