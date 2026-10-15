@@ -1,8 +1,8 @@
 # 血盟戰同意流程與模擬戰自動休戰交接（audit 1-5、1-6）
 
-- 分支：`codex/java-war-consent`，worktree `E:\L1JGO-Whale-war-consent`，基準 `master` cfb990e。
+- 原實作分支：`codex/java-war-consent`，基準 `master` cfb990e；已由 `codex/java-parity-companions-elf` 統一整合。本文件保留實作依據，實機操作以獨立清單為準。
 - Java 權威：`E:\L1JTW-Eddy` 的 `l1j.server.server` 套件（`C_War`、`C_Attr` case 217/221/222、`L1War`）。`docs/l1j-fg/` 下的反編譯版不是權威，未採用其盟徽／新手保護／攻城期間暫停等額外檢查。
-- 本交接不修改 `docs/JAVA_PARITY_AUDIT.md`，由整合者統一更新。
+- 功能狀態已由整合者更新於 `docs/JAVA_PARITY_AUDIT.md`。
 
 ## 變更摘要
 
@@ -26,7 +26,7 @@
 5. 對方有城堡 → 攻城戰流程（見下）；否則血盟戰流程：
    - 對方已在戰爭：宣戰 236（帶對方盟名）；投降／休戰須同一場戰爭否則靜默；該戰爭若是攻城戰（`WarType != 2`，例如兩個無城堡攻方同在一場攻城戰）亦靜默，不建立請求。
    - 對方盟主不在線：218（帶對方盟名）。
-   - 設定對方盟主 `TempID = 請求者 CharID`，送 `S_Message_YN`：宣戰 217（盟名、角色名）、投降 221（盟名）、休戰 222（盟名）。**此時不成立戰爭。**
+   - 記錄專用請求後送 `S_Message_YN`：宣戰 217（盟名、角色名）、投降 221（盟名）、休戰 222（盟名）。**宣戰此時尚不成立；投降／休戰此時尚不結束。**
 
    - **Go 不使用通用 `TempID`**（Java 作法），改在 `WarSystem.pending`（key = 對方盟主 CharID）記錄 `warConsentRequest`：訊息類型、雙方 CharID／SessionID／ClanID，221/222 另綁定原 `ActiveWar` 實例。避免被寵物改名（325）等其他對話覆寫或誤用。
    - 同一接收者已有**有效**請求時：同一請求者同類型重送 → 重送對話框、保留原綁定；不同請求者或不同類型 → 忽略並寫 log，不覆蓋。舊請求已失效（請求者離線／換盟／原戰爭已結束）則由新請求取代。
@@ -40,7 +40,7 @@
 - `removeWar` 會清除綁定該戰爭的 pending；`TickSimWar` 每 tick 清除失效 pending。
 - 拒絕：217 → 請求者收 236（帶回應方盟名）；221/222 → 237。
 - 同意 217：建立 `WarType=2` 戰爭（攻方 = 請求者血盟、守方 = 回應者血盟），`EndTime = now + sim_war_time`，雙方線上盟員各收 `S_War(1, 攻, 守)`。
-- 同意 221/222：找回應者參與的模擬戰，結束並送 `S_War(2|3, 請求者盟, 回應者盟)` 給請求者盟員；回應者盟員另收 `S_War(4, 回應者盟, 請求者盟)`（Java `RequestSimWar`）。
+- 同意 221/222：結束綁定的原模擬戰，送 `S_War(2|3, 請求者盟, 回應者盟)` 給雙方盟員；回應者盟員另收 `S_War(4, 回應者盟, 請求者盟)`（Java `RequestSimWar`）。
 
 刻意保留／補強的差異：
 
@@ -70,14 +70,12 @@
 - `go test ./internal/system/ ./internal/handler/ ./internal/config/ -count=1` 全部通過（system 87s、handler 4.4s、config 0.5s）；`-run 'SimWar|CastleWar'` 38 個測試通過。
 - 無 DB 需求，未使用 Docker。
 
-## 實機待驗證（建議登記為第八節 V-10）
+## 實機待驗證
 
-| 編號 | 驗證步驟 | 預期結果 | 失敗時備案 | 風險 |
-|---|---|---|---|---|
-| V-10（1-5、1-6） | 1. 兩個無城堡血盟，盟主皆為 16 級以上王族並在線。2. A 盟主對 B 盟宣戰。3. B 盟主先按「否」，再由 A 重新宣戰後按「是」。4. 戰爭中 A 盟主對 B 投降，B 按「是」。5. 重新開戰後把 `sim_war_time` 設為 `"2m"` 重啟測試，等待到期。6. 以 15 級王族、對方盟主離線各試一次宣戰。 | 步驟 2 不立刻開戰，B 盟主畫面跳出「A 血盟的 X 想與你的血盟開戰，是否接受？」；按「否」A 收到「B 血盟拒絕你的宣戰」(236)；按「是」雙方盟員收到宣戰訊息且血盟成員名字變敵對色。步驟 4 B 盟主跳出「A 血盟希望投降」(221)，按「是」後雙方收到結束訊息。步驟 5 兩分鐘後雙方自動收到戰爭結束訊息，伺服器 log 有「血盟戰時間到，自動休戰」。步驟 6 分別顯示 232、218。 | 若對話框不出現：抓包確認 `S_OPCODE_YES_NO`(219) 後 H type 為 217/221/222，必要時比照 252 改帶遞增序號；若按「是」無反應：確認 `C_Attr` 送來的 mode 與 pending 類型一致（伺服器 log 會記「戰爭回應類型與待回應請求不符」），且回應者未在對話期間重登或換盟；若封包僅盟員可見有誤：改回 `BroadcastWarPacket` 全伺服器廣播。 | 中 |
+完整步驟、預期結果與備案集中於 [JAVA_PARITY_LIVE_CHECKLIST.md](JAVA_PARITY_LIVE_CHECKLIST.md) 的 V-10。必須先改短 `sim_war_time` 並重啟，再建立測試戰爭；重啟會清除未持久化的戰爭狀態。實測尚未執行。
 
-## 給整合者
+## 整合記錄
 
-- 與 `codex/java-parity-companions-elf` 的衝突點僅 `internal/handler/context.go`（我改 `WarManager` 介面與 `ActiveWar`，位於第 692-722 行附近）與 `cmd/l1jgo/main.go`（我在 `NewCastleWarTickSystem` 註冊後加一行），區塊不同，應可自動合併。
-- 提交順序：`2000759`（初版，依賴通用 TempID）→ `0b7cb61`（專用 pending 紀錄）→ 第三個提交補 `WarType == 2` guard；整合時取分支最新提交即可。
-- 未合併 `master`、未清理 worktree、未推送遠端，依協作約定交由整合者處理。
+- 提交順序：`2000759` → `0b7cb61` → `81ef17f`；整合包含全部三個提交。
+- `internal/handler/context.go`、`cmd/l1jgo/main.go` 與精靈／寵物修改自動合併，無衝突。
+- 本輪未推送遠端或部署伺服器。
