@@ -103,16 +103,23 @@ func HandleMove(sess *net.Session, r *packet.Reader, deps *Deps) {
 	// 1. 固定傳送門（DungeonTable）
 	if deps.Portals != nil {
 		if portal := deps.Portals.Get(destX, destY, player.MapID); portal != nil {
-			// 船舶碼頭需額外驗證航線時間和船票
-			isDock, allowed := CheckShipDock(destX, destY, player.MapID, player)
-			if !isDock || allowed {
-				// 一般傳送門或碼頭驗證通過 → 傳送（不移動到 destX/destY）
-				cancelTradeIfActive(player, deps)
-				applyDungeonTeleportEffect(player)
-				teleportPlayer(sess, player, portal.DstX, portal.DstY, portal.DstMapID, portal.DstHeading, deps)
-				return
+			if isInn, entered := tryInnPortal(sess, player, destX, destY, deps); isInn {
+				if entered {
+					return
+				}
+				// Java dg() returns false without a valid key; normal walking continues.
+			} else {
+				// 船舶碼頭需額外驗證航線時間和船票
+				isDock, allowed := CheckShipDock(destX, destY, player.MapID, player)
+				if !isDock || allowed {
+					// 一般傳送門或碼頭驗證通過 → 傳送（不移動到 destX/destY）
+					cancelTradeIfActive(player, deps)
+					applyDungeonTeleportEffect(player)
+					teleportPlayer(sess, player, portal.DstX, portal.DstY, portal.DstMapID, portal.DstHeading, deps)
+					return
+				}
+				// 碼頭驗證失敗 → 繼續正常移動（Java: dg() returns false）
 			}
-			// 碼頭驗證失敗 → 繼續正常移動（Java: dg() returns false）
 		}
 	}
 

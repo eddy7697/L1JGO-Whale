@@ -49,6 +49,7 @@ func HandleEnterWorld(sess *net.Session, r *packet.Reader, deps *Deps) {
 
 	sess.CharName = charName
 	sess.SetState(packet.StateInWorld)
+	returnedFromInn := resetInnLocationOnLogin(ch)
 
 	// 死亡狀態自動復活：客戶端死亡時可能自動關閉，導致角色卡在死亡位置 HP=0。
 	// 重新登入時若 HP <= 0，自動傳送到附近村莊並補滿基礎 HP/MP/飽食度。
@@ -136,8 +137,8 @@ func HandleEnterWorld(sess *net.Session, r *packet.Reader, deps *Deps) {
 
 	deps.World.AddPlayer(player)
 
-	// 死亡復活時標記 dirty，確保新位置與 HP 立刻被 batch save 持久化（避免再次崩潰仍卡舊位置）
-	if revivedOnLogin {
+	// 復活或旅館重登回城後標記 dirty，讓新位置與 HP 經 batch save 保存。
+	if revivedOnLogin || returnedFromInn {
 		player.Dirty = true
 	}
 

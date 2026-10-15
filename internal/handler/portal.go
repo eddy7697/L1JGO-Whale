@@ -12,6 +12,9 @@ import (
 // Client sends the portal tile coordinates when stepping on a dungeon entrance/exit.
 // Format: [H srcX][H srcY]
 func HandleEnterPortal(sess *net.Session, r *packet.Reader, deps *Deps) {
+	if r.Remaining() < 4 {
+		return
+	}
 	srcX := int32(r.ReadH())
 	srcY := int32(r.ReadH())
 
@@ -49,6 +52,9 @@ func HandleEnterPortal(sess *net.Session, r *packet.Reader, deps *Deps) {
 		dist = dy
 	}
 	if dist > 3 {
+		return
+	}
+	if isInn, _ := tryInnPortal(sess, player, srcX, srcY, deps); isInn {
 		return
 	}
 
