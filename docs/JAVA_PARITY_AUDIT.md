@@ -49,7 +49,7 @@
 | 1-4 | 攻城結束清理 | 刪王冠、守護塔並重生塔；開戰與奪城趕人用 `getGetBackLoc` 隨機回城點且排除 GM | 攻城結束刪除戰爭區王冠與塔後重生；`castles.yaml` 新增各城 `getback` 清單（抄自 `L1TownLocation` GETBACK_LOC_*，狄亞得用 Java 固定 3 點），趕人隨機取一、heading 5、`IsGM()` 者不趕 | 待驗證 | 2026-10-14 合併；回城點見第八節 V-2 |
 | 1-5 | 模擬戰自動休戰 | 240 分鐘後自動結束 | `war_sys.go:130-148` 無計時器 | 待辦 | |
 | 1-6 | 血盟戰同意流程 | 宣戰／投降／休戰需對方盟主 `S_Message_YN` 217/221/222 同意；檢查 Lv ≤ 15（232）、戰區內（477）、已在戰爭中（234/236） | `handler/castle.go:198` → `war_sys.go:28` 直接生效，`attr.go` 無 217/221/222 | 待辦 | |
-| 1-7 | 寵物指定攻擊目標 | `C_SelectTarget`（opcode 223）回傳目標 | `C_OPCODE_SLAVE_CONTROL=223` 未在 `handler/context.go` 註冊；`pet_mgr.go:184` 已送 `S_SelectTarget` 但回應被丟掉 | 待辦 | `S_SelectTarget` opcode Java 54 / Go 236（`companion_pack.go:432`）需實機驗證 |
+| 1-7 | 寵物指定攻擊目標 | `C_SelectTarget`（opcode 223）回傳目標 | 已註冊／解碼 223，寵物所有權與攻擊／警戒模式檢查後，指定怪物、玩家、他人寵物或召喚物；AI 逐次重驗地圖／ShowID／安區與目標狀態；`S_SelectTarget` 改 Java opcode 54 + D + 三個 C(0) | 待驗證 | `6dd2163`；封包、四類目標、保護／反射／死亡與比賽回歸通過；見獨立清單 V-11。保留既有簡化戰鬥數值；非怪物 NPC、食物、全域 NonPvP 與召喚物反擊寵物仍未擴張 |
 | 1-8 | 屬性強化卷軸 | 41429-41432 走 `scrollOfEnchantWeaponAttr` | `data/yaml/etcitem_list.yaml:32228` 標 `use_type: dai`，被當一般武器卷軸；屬性值只有存檔欄位 | 待辦 | |
 | 1-9 | 象牙塔與飾品卷軸 | 49312 等象牙塔卷軸、49148 飾品卷軸各有獨立流程 | 49312 標 `dai`；49148 標 `del` 無處理 | 待辦 | |
 | 1-10 | 武器衝裝成功率 | `(100+3C)/3`，+9 以上 `/6`；排除象牙塔裝備、試煉之劍、幻象武器 40128 | `scripts/item/enchant.lua` 改回 Java 固定值 `(100+3C)/3`、+9 以上 `/6`；`weapon_chance`／`armor_chance` 預設改為 0.10 對應 Eddy `rates.properties` 的 10 | 完成 | 2026-10-14 使用者拍板對齊；`scripting/enchant_rate_test.go` |
@@ -215,4 +215,3 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 | 2026-10-14 | 1-27 補齊：依使用者拍板移除 Go「攻擊／施法時自動解除隱身」，改為 Java 隱身中忽略攻擊、非 `CAST_WITH_INVIS` 技能靜默拒絕。 |
 | 2026-10-14 | 1-21、1-10 依使用者拍板對齊 Java：PK 不再扣 karma；武器衝裝改回 Java 固定值公式，衝裝係數預設改為 Eddy 設定的 10。 |
 | 2026-10-14 | 經驗／公式叢集 1-15～1-18：高等級經驗懲罰、Java 組隊／仇恨／寵物經驗分配、AC／MR 衍生公式、地圖與單品掉落倍率（新增 `drop_item.yaml`、`[rates] high_level_exp_divisors`）。1-15、1-16、1-18 完成；1-17 待驗證（第八節 V-8）。 |
-
