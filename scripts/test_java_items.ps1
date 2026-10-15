@@ -31,4 +31,3 @@ try {
         if ($LASTEXITCODE -ne 0) { Write-Warning "Test container cleanup failed: $taskContainerName" }
     }
 }
-
