@@ -86,7 +86,7 @@ type PetInfo struct {
 	ArmorObjID  int32
 
 	// AI state (same pattern as SummonInfo)
-	AggroTarget   int32 // NPC object ID of hate target (0 = no target)
+	AggroTarget   int32 // NPC, pet, or summon object ID of hate target (0 = no target)
 	AggroPlayerID int32 // CharID of player target (for PvP; 0 = none)
 	AggroPetID    int32 // 寵物比賽：目標寵物的 object ID（0 = 無）
 	AttackTimer   int   // ticks until next attack (cooldown)

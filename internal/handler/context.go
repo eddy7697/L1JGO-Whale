@@ -273,6 +273,8 @@ type PetLifecycleManager interface {
 	UsePetCollar(sess *net.Session, player *world.PlayerInfo, invItem *world.InvItem)
 	// HandlePetAction 處理寵物控制指令（攻擊/防禦/待機/解放等）。
 	HandlePetAction(sess *net.Session, player *world.PlayerInfo, pet *world.PetInfo, action string)
+	// SelectPetTarget validates and sets the target selected by C_SelectTarget.
+	SelectPetTarget(sess *net.Session, player *world.PlayerInfo, pet *world.PetInfo, targetID int32)
 	// HandlePetNameChange 處理寵物改名。
 	HandlePetNameChange(sess *net.Session, player *world.PlayerInfo, petID int32, newName string)
 	// DismissPet 解放寵物（轉為野生 NPC）。
@@ -1313,6 +1315,11 @@ func RegisterAll(reg *packet.Registry, deps *Deps) {
 	)
 
 	// Pet
+	reg.Register(packet.C_OPCODE_SLAVE_CONTROL, inWorldStates,
+		func(sess any, r *packet.Reader) {
+			HandleSelectTarget(sess.(*net.Session), r, deps)
+		},
+	)
 	reg.Register(packet.C_OPCODE_CHECK_INVENTORY, inWorldStates,
 		func(sess any, r *packet.Reader) {
 			HandlePetMenu(sess.(*net.Session), r, deps)

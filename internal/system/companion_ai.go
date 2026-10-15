@@ -571,12 +571,13 @@ func (s *CompanionAISystem) tickPets() {
 			pet.MoveTimer--
 		}
 
-		// Check if on same map as master
-		if pet.MapID != master.MapID {
+		// Moving between maps/instances also drops combat targets.
+		if pet.MapID != master.MapID || pet.ShowID != master.ShowID {
+			pet.AggroTarget, pet.AggroPlayerID, pet.AggroPetID = 0, 0, 0
 			s.companionTeleportToMaster(pet.ID, master, func(id int32, x, y int32, h int16) {
-				ws.UpdatePetPosition(id, x, y, h)
+				ws.TeleportPet(id, x, y, master.MapID, h)
 			})
-			pet.MapID = master.MapID
+			pet.ShowID = master.ShowID
 			return
 		}
 
@@ -614,6 +615,12 @@ func (s *CompanionAISystem) tickPets() {
 				}
 				break
 			}
+			if pet.AggroPlayerID != 0 {
+				if pet.AttackTimer <= 0 {
+					s.petAttackSelectedTarget(pet, pet.AggroPlayerID)
+				}
+				break
+			}
 			// Attack nearest NPC if no target
 			if pet.AggroTarget == 0 {
 				s.petScanForTarget(pet)
@@ -621,7 +628,7 @@ func (s *CompanionAISystem) tickPets() {
 			if pet.AggroTarget != 0 && pet.AttackTimer <= 0 {
 				s.petAttackTarget(pet)
 			}
-			if dist > 2 && pet.MoveTimer <= 0 {
+			if pet.AggroTarget == 0 && dist > 2 && pet.MoveTimer <= 0 {
 				s.companionMoveToward(pet.ID, pet.X, pet.Y, pet.MapID, pet.ShowID, master.X, master.Y,
 					func(id int32, x, y int32, h int16) { ws.UpdatePetPosition(id, x, y, h) })
 				pet.MoveTimer = 2
@@ -629,6 +636,12 @@ func (s *CompanionAISystem) tickPets() {
 
 		case world.PetStatusDefensive:
 			// Only counterattack (aggro set by being attacked)
+			if pet.AggroPlayerID != 0 {
+				if pet.AttackTimer <= 0 {
+					s.petAttackSelectedTarget(pet, pet.AggroPlayerID)
+				}
+				break
+			}
 			if pet.AggroTarget != 0 && pet.AttackTimer <= 0 {
 				s.petAttackTarget(pet)
 			}
@@ -649,6 +662,12 @@ func (s *CompanionAISystem) tickPets() {
 			}
 
 		case world.PetStatusAlert:
+			if pet.AggroPlayerID != 0 {
+				if pet.AttackTimer <= 0 {
+					s.petAttackSelectedTarget(pet, pet.AggroPlayerID)
+				}
+				break
+			}
 			// Guard position: attack nearby, return to home if drifted
 			homeDist := chebyshev32(pet.X, pet.Y, pet.HomeX, pet.HomeY)
 			if homeDist > 1 && pet.AggroTarget == 0 && pet.MoveTimer <= 0 {
@@ -702,7 +721,7 @@ func (s *CompanionAISystem) petScanForTarget(pet *world.PetInfo) {
 	nearby := s.world.GetNearbyNpcs(pet.X, pet.Y, pet.MapID)
 	var bestDist int32 = 999
 	for _, npc := range nearby {
-		if npc.Dead || npc.Impl != "L1Monster" {
+		if resolvePetTarget(s.deps, s.world, pet, npc.ID) == nil {
 			continue
 		}
 		d := chebyshev32(pet.X, pet.Y, npc.X, npc.Y)
@@ -716,20 +735,17 @@ func (s *CompanionAISystem) petScanForTarget(pet *world.PetInfo) {
 // petAttackTarget makes the pet attack its current target NPC.
 func (s *CompanionAISystem) petAttackTarget(pet *world.PetInfo) {
 	ws := s.world
-	targetNpc := ws.GetNpc(pet.AggroTarget)
-	if targetNpc == nil || targetNpc.Dead {
+	target := resolvePetTarget(s.deps, ws, pet, pet.AggroTarget)
+	if target == nil {
 		pet.AggroTarget = 0
 		return
 	}
-
-	dist := chebyshev32(pet.X, pet.Y, targetNpc.X, targetNpc.Y)
-	if dist > int32(pet.Ranged) || (dist > 1 && pet.Ranged <= 1) {
-		// Move toward target
-		if pet.MoveTimer <= 0 {
-			s.companionMoveToward(pet.ID, pet.X, pet.Y, pet.MapID, pet.ShowID, targetNpc.X, targetNpc.Y,
-				func(id int32, x, y int32, h int16) { ws.UpdatePetPosition(id, x, y, h) })
-			pet.MoveTimer = 2
-		}
+	if target.npc == nil {
+		s.petAttackSelectedTarget(pet, pet.AggroTarget)
+		return
+	}
+	targetNpc := target.npc
+	if !s.petReachTarget(pet, targetNpc.X, targetNpc.Y) {
 		return
 	}
 
@@ -831,7 +847,7 @@ func (s *CompanionAISystem) petAttackTarget(pet *world.PetInfo) {
 func (s *CompanionAISystem) petAttackPetTarget(pet *world.PetInfo) {
 	ws := s.world
 	target := ws.GetPet(pet.AggroPetID)
-	if target == nil || target.Dead {
+	if target == nil || target.Dead || target.MapID != pet.MapID || target.ShowID != pet.ShowID {
 		pet.AggroPetID = 0
 		return
 	}
