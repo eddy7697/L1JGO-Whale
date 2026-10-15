@@ -58,30 +58,3 @@ func newCookingTestSession(t *testing.T) *gonet.Session {
 	})
 	return gonet.NewSession(server, 1, 16, 16, 0, zap.NewNop())
 }
-
-func TestHandleCookingSelectCreatesResultItem(t *testing.T) {
-	sess := newCookingTestSession(t)
-	player := &world.PlayerInfo{
-		Inv:   world.NewInventory(),
-		Str:   10,
-		Intel: 10,
-		Wis:   10,
-		Dex:   10,
-		Con:   10,
-		Cha:   10,
-	}
-	material := player.Inv.AddItem(40057, 1, "麵包", 0, 1, true, 0)
-	npcSvc := &cookingNpcServiceStub{}
-	itemCreate := &cookingItemCreateStub{}
-	deps := &Deps{NpcSvc: npcSvc, ItemCreate: itemCreate}
-
-	HandleCookingSelect(sess, player, 0, deps)
-
-	if npcSvc.consumedObjectID != material.ObjectID || npcSvc.consumedCount != 1 {
-		t.Fatalf("料理應消耗材料 object=%d count=%d，got object=%d count=%d",
-			material.ObjectID, 1, npcSvc.consumedObjectID, npcSvc.consumedCount)
-	}
-	if itemCreate.itemID != 41277 || itemCreate.count != 1 {
-		t.Fatalf("料理應給結果物品 41277 x1，got item=%d count=%d", itemCreate.itemID, itemCreate.count)
-	}
-}

@@ -494,7 +494,11 @@ func handleUseEtcItem(sess *net.Session, r *packet.Reader, player *world.PlayerI
 
 	// 料理書（41255-41259）
 	if IsCookingBook(invItem.ItemID) {
-		HandleCookingBook(sess, player, invItem, deps)
+		handleCookingBookUse(sess, r, player, invItem, deps)
+		return
+	}
+	if invItem.ItemID == campfireItemID {
+		handleCookingFirewood(sess, player, invItem, deps)
 		return
 	}
 
