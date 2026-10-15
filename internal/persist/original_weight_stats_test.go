@@ -63,6 +63,8 @@ func TestOriginalWeightStatsPostgresRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	apply("037_original_weight_stats.sql")
+	apply("038_hell_time.sql")
+	apply("039_elf_attribute.sql")
 	repo := NewCharacterRepo(&DB{Pool: pool})
 	assertOriginal := func(name string, str, con int16) CharacterRow {
 		t.Helper()

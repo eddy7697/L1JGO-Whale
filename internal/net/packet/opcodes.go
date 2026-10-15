@@ -47,6 +47,7 @@ const (
 	S_OPCODE_HOUSELIST              byte = 156 // S_AuctionBoard（盟屋拍賣公告欄列表）
 	S_OPCODE_ACTION                 byte = 158 // S_DoActionGFX
 	S_OPCODE_ADD_SPELL              byte = 164
+	S_OPCODE_DEL_SPELL              byte = 160 // S_DelSkill
 	S_OPCODE_INVISIBLE              byte = 171
 	S_OPCODE_ABILITY_SCORES         byte = 174 // S_OwnCharAttrDef
 	S_OPCODE_NUM_CHARACTER          byte = 178 // S_CharAmount
@@ -59,7 +60,7 @@ const (
 	S_OPCODE_MESSAGE                byte = 243 // S_GlobalChat
 	S_OPCODE_EVENT                  byte = 250 // S_PacketBox
 	S_OPCODE_HP_METER               byte = 237 // S_HPMeter (NPC HP bar)
-	S_OPCODE_SELECT_TARGET          byte = 236 // S_SelectTarget (pet attack targeting)
+	S_OPCODE_SELECT_TARGET          byte = 54  // S_SelectTarget (pet attack targeting)
 	S_OPCODE_STRUP                  byte = 166 // S_Strup (STR buff icon)
 	S_OPCODE_DEXUP                  byte = 188 // S_Dexup (DEX buff icon)
 	S_OPCODE_SKILLICONSHIELD        byte = 216 // S_SkillIconShield (AC buff icon)

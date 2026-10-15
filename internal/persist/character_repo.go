@@ -15,6 +15,7 @@ type CharacterRow struct {
 	AccountName string
 	Name        string
 	ClassType   int16
+	ElfAttr     int16
 	Sex         int16
 	ClassID     int32
 	Str         int16
@@ -101,7 +102,7 @@ func (r *CharacterRepo) LoadByAccount(ctx context.Context, accountName string) (
 		        x, y, map_id, heading,
 		        lawful, title, clan_id, clan_name, clan_rank,
 		        pk_count, karma, bonus_stats, elixir_stats, partner_id,
-		        food, high_level, access_level, birthday, deleted_at, original_str, original_con, hell_time
+		        food, high_level, access_level, birthday, deleted_at, original_str, original_con, hell_time, elf_attr
 		 FROM characters
 		 WHERE account_name = $1 AND deleted_at IS NULL
 		 ORDER BY id`, accountName,
@@ -122,7 +123,7 @@ func (r *CharacterRepo) LoadByAccount(ctx context.Context, accountName string) (
 			&c.Lawful, &c.Title, &c.ClanID, &c.ClanName, &c.ClanRank,
 			&c.PKCount, &c.Karma, &c.BonusStats, &c.ElixirStats, &c.PartnerID,
 			&c.Food, &c.HighLevel, &c.AccessLevel, &c.Birthday, &c.DeletedAt,
-			&c.OriginalStr, &c.OriginalCon, &c.HellTime,
+			&c.OriginalStr, &c.OriginalCon, &c.HellTime, &c.ElfAttr,
 		); err != nil {
 			return nil, err
 		}
@@ -140,11 +141,11 @@ func (r *CharacterRepo) Create(ctx context.Context, c *CharacterRow) error {
 			x, y, map_id, heading,
 			lawful, title, clan_id, clan_name, clan_rank,
 			pk_count, karma, bonus_stats, elixir_stats, partner_id,
-			food, high_level, access_level, birthday, original_str, original_con, hell_time
+			food, high_level, access_level, birthday, original_str, original_con, hell_time, elf_attr
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,
 			$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,
-			$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39
+			$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40
 		) RETURNING id`,
 		c.AccountName, c.Name, c.ClassType, c.Sex, c.ClassID,
 		c.Str, c.Dex, c.Con, c.Wis, c.Cha, c.Intel,
@@ -153,7 +154,7 @@ func (r *CharacterRepo) Create(ctx context.Context, c *CharacterRow) error {
 		c.Lawful, c.Title, c.ClanID, c.ClanName, c.ClanRank,
 		c.PKCount, c.Karma, c.BonusStats, c.ElixirStats, c.PartnerID,
 		c.Food, c.HighLevel, c.AccessLevel, c.Birthday,
-		c.Str, c.Con, c.HellTime,
+		c.Str, c.Con, c.HellTime, c.ElfAttr,
 	).Scan(&c.ID)
 }
 
@@ -221,7 +222,7 @@ func (r *CharacterRepo) SaveCharacter(ctx context.Context, c *CharacterRow) erro
 			title = $23, karma = $24, pk_count = $25, food = $26,
 			original_str = CASE WHEN $28 > 0 THEN $28 ELSE original_str END,
 			original_con = CASE WHEN $29 > 0 THEN $29 ELSE original_con END,
-			hell_time = $30
+			hell_time = $30, elf_attr = $31
 		WHERE name = $27`,
 		c.Level, c.Exp, c.HP, c.MP, c.MaxHP, c.MaxMP,
 		c.X, c.Y, c.MapID, c.Heading,
@@ -230,9 +231,34 @@ func (r *CharacterRepo) SaveCharacter(ctx context.Context, c *CharacterRow) erro
 		c.ClanID, c.ClanName, c.ClanRank,
 		c.Title, c.Karma, c.PKCount, c.Food,
 		c.Name,
-		c.OriginalStr, c.OriginalCon, c.HellTime,
+		c.OriginalStr, c.OriginalCon, c.HellTime, c.ElfAttr,
 	)
 	return err
+}
+
+// SaveElfAttribute atomically saves element selection and the spell list after
+// reset. A normal autosave must also retain ElfAttr in CharacterRow.
+func (r *CharacterRepo) SaveElfAttribute(ctx context.Context, name string, attr int16, spells []int32) error {
+	if attr != 0 && attr != 1 && attr != 2 && attr != 4 && attr != 8 {
+		return fmt.Errorf("invalid elf attribute %d", attr)
+	}
+	if spells == nil {
+		spells = []int32{}
+	}
+	encoded, err := json.Marshal(spells)
+	if err != nil {
+		return err
+	}
+	result, err := r.db.Pool.Exec(ctx,
+		`UPDATE characters SET elf_attr=$1, known_spells=$2
+		 WHERE name=$3 AND class_type=2 AND deleted_at IS NULL`, attr, encoded, name)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() != 1 {
+		return pgx.ErrNoRows
+	}
+	return nil
 }
 
 // BookmarkRow represents a single bookmark in the JSONB bookmarks column.
@@ -398,7 +424,7 @@ func (r *CharacterRepo) LoadByName(ctx context.Context, name string) (*Character
 		        x, y, map_id, heading,
 		        lawful, title, clan_id, clan_name, clan_rank,
 		        pk_count, karma, bonus_stats, elixir_stats, partner_id,
-		        food, high_level, access_level, birthday, deleted_at, original_str, original_con, hell_time
+		        food, high_level, access_level, birthday, deleted_at, original_str, original_con, hell_time, elf_attr
 		 FROM characters WHERE name = $1 AND deleted_at IS NULL`, name,
 	).Scan(
 		&c.ID, &c.AccountName, &c.Name, &c.ClassType, &c.Sex, &c.ClassID,
@@ -408,7 +434,7 @@ func (r *CharacterRepo) LoadByName(ctx context.Context, name string) (*Character
 		&c.Lawful, &c.Title, &c.ClanID, &c.ClanName, &c.ClanRank,
 		&c.PKCount, &c.Karma, &c.BonusStats, &c.ElixirStats, &c.PartnerID,
 		&c.Food, &c.HighLevel, &c.AccessLevel, &c.Birthday, &c.DeletedAt,
-		&c.OriginalStr, &c.OriginalCon, &c.HellTime,
+		&c.OriginalStr, &c.OriginalCon, &c.HellTime, &c.ElfAttr,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil

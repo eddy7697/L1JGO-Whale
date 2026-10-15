@@ -47,9 +47,9 @@
 | 1-2 | 攻城排程在啟動時停住 | `WarTimeController.checkWarTime`：結束時間已過且不在戰爭中 → 下次攻城 = 現在 + WarInterval | `TickWar` 新增過期分支，推到 `now + WarInterval` 並寫回 DB；結束時間以 WarTime 推算 | 完成 | Java 此分支把結束時間設成與開始相同（實際永遠開不了戰），Go 不照抄。Java 的 `WarUpdate` 在推進時同時重設稅率 10%／寶庫歸零，Go 只推進時間，是否照抄需使用者拍板 |
 | 1-3 | 攻城間隔 | `WarInterval` 預設 4 天、`WarTime` 預設 2 小時 | 新增 `[gameplay] war_interval`（預設 `"96h"`）與 `war_time`（預設 `"2h"`），零值回退 Java 預設 | 完成 | Go 設定以 Duration 字串表示，`4d` 須寫成 `96h` |
 | 1-4 | 攻城結束清理 | 刪王冠、守護塔並重生塔；開戰與奪城趕人用 `getGetBackLoc` 隨機回城點且排除 GM | 攻城結束刪除戰爭區王冠與塔後重生；`castles.yaml` 新增各城 `getback` 清單（抄自 `L1TownLocation` GETBACK_LOC_*，狄亞得用 Java 固定 3 點），趕人隨機取一、heading 5、`IsGM()` 者不趕 | 待驗證 | 2026-10-14 合併；回城點見第八節 V-2 |
-| 1-5 | 模擬戰自動休戰 | 240 分鐘後自動結束 | `war_sys.go:130-148` 無計時器 | 待辦 | |
-| 1-6 | 血盟戰同意流程 | 宣戰／投降／休戰需對方盟主 `S_Message_YN` 217/221/222 同意；檢查 Lv ≤ 15（232）、戰區內（477）、已在戰爭中（234/236） | `handler/castle.go:198` → `war_sys.go:28` 直接生效，`attr.go` 無 217/221/222 | 待辦 | |
-| 1-7 | 寵物指定攻擊目標 | `C_SelectTarget`（opcode 223）回傳目標 | `C_OPCODE_SLAVE_CONTROL=223` 未在 `handler/context.go` 註冊；`pet_mgr.go:184` 已送 `S_SelectTarget` 但回應被丟掉 | 待辦 | `S_SelectTarget` opcode Java 54 / Go 236（`companion_pack.go:432`）需實機驗證 |
+| 1-5 | 模擬戰自動休戰 | 240 分鐘後自動結束 | 新增 `ActiveWar.EndTime` 與 `SimWarTickSystem`；`[gameplay] sim_war_time` 預設 `"240m"`，嚴格超過期限的第一個 tick 自動休戰，不影響攻城戰 | 完成 | `2000759`；可替換時鐘測試確認 240 分鐘邊界、僅結束一次及攻城隔離；客戶端通知併入 V-10 |
+| 1-6 | 血盟戰同意流程 | 宣戰／投降／休戰需對方盟主 `S_Message_YN` 217/221/222 同意；檢查 Lv ≤ 15（232）、戰區內（477）、已在戰爭中（234/236） | 已接 217/221/222 同意流程與 Java 檢查順序；專用 pending 綁雙方角色／連線／血盟／盟主資格、訊息類型及原模擬戰，拒絕過期、重複與錯類型回應；攻城仍直接生效 | 待驗證 | `2000759`、`0b7cb61`、`81ef17f`；38 個戰爭測試通過，見獨立清單 V-10。保留 Go 攻城單一攻方投降只移除該攻方的既有語意；共同攻方互送模擬戰投降／休戰不得影響攻城戰 |
+| 1-7 | 寵物指定攻擊目標 | `C_SelectTarget`（opcode 223）回傳目標 | 已註冊／解碼 223，寵物所有權與攻擊／警戒模式檢查後，指定怪物、玩家、他人寵物或召喚物；AI 逐次重驗地圖／ShowID／安區與目標狀態；`S_SelectTarget` 改 Java opcode 54 + D + 三個 C(0) | 待驗證 | `6dd2163`；封包、四類目標、保護／反射／死亡與比賽回歸通過；見獨立清單 V-11。保留既有簡化戰鬥數值；非怪物 NPC、食物、全域 NonPvP 與召喚物反擊寵物仍未擴張 |
 | 1-8 | 屬性強化卷軸 | 41429-41432 走 `scrollOfEnchantWeaponAttr` | `data/yaml/etcitem_list.yaml:32228` 標 `use_type: dai`，被當一般武器卷軸；屬性值只有存檔欄位 | 待辦 | |
 | 1-9 | 象牙塔與飾品卷軸 | 49312 等象牙塔卷軸、49148 飾品卷軸各有獨立流程 | 49312 標 `dai`；49148 標 `del` 無處理 | 待辦 | |
 | 1-10 | 武器衝裝成功率 | `(100+3C)/3`，+9 以上 `/6`；排除象牙塔裝備、試煉之劍、幻象武器 40128 | `scripts/item/enchant.lua` 改回 Java 固定值 `(100+3C)/3`、+9 以上 `/6`；`weapon_chance`／`armor_chance` 預設改為 0.10 對應 Eddy `rates.properties` 的 10 | 完成 | 2026-10-14 使用者拍板對齊；`scripting/enchant_rate_test.go` |
@@ -75,7 +75,7 @@
 
 | # | 系統 | Java 位置 | Go 現況 | 狀態 | 備註 |
 |---|---|---|---|---|---|
-| 2-1 | 精靈屬性 | `C_NPCAction` fire/water/air/earth/init；`MSG_ELF`（PacketBox 15）；`S_DelSkill`（op 160） | `ElfAttr` 無任何寫入點（`world/state.go:30`）；`skill.go:471`、`skill_summon.go:304` 等全被 `ElfAttr==0` 擋住 | 待辦 | 連帶屬性魔法、召喚精靈不可用 |
+| 2-1 | 精靈屬性 | `C_NPCAction` fire/water/air/earth/init；`MSG_ELF`（PacketBox 15）；`S_DelSkill`（op 160） | 已接 NPC 選擇／重置：僅精靈且須先清除舊屬性；重置移除 129–176 中屬性技能、還原單屬性防禦（147）；新增 migration 039 的 `elf_attr`，屬性與魔法清單原子保存，登入、選角、斷線、定時與 GM 存檔皆保留 | 待驗證 | `6219364`；NPC 路由／四屬性／重置／失敗不改狀態回歸及 PostgreSQL 往返通過；客戶端訊息、技能視窗與召喚見獨立清單 V-12 |
 | 2-2 | 無限大戰 UB | `L1UltimateBattle`、`L1UbSpawn`、`L1UbPattern`、`UbTimeController`、`ub_*` 表、`C_ExitGhost`、`L1PcGhostMonitor`、NPC 動作 par/info/sco | 無 | 待辦 | |
 | 2-3 | 屠龍副本 | `L1DragonSlayer`：龍之鑰匙 → 龍門 → 地圖 1005/1011 三階段 → 隱藏之谷；`L1DragonPortalInstance` | `dragondoor_sys.go` 是另一套（雷歐門衛開橋）；`npc_list.yaml` 有 13 筆 `L1DragonPortal` 無處理 | 待辦 | |
 | 2-4 | Boss 循環生成 | `L1BossCycle`、`L1BossSpawn`、`BossCycle.xml`、`spawnlist_boss` | 無 | 待辦 | |
@@ -106,7 +106,7 @@
 
 | Java 封包 | Go 位置 | 缺少 | 狀態 |
 |---|---|---|---|
-| `C_Attr` | `handler/attr.go:19` | 217/221/222（盟戰同意）、738（經驗回復）、1256（寵物競速）；223 聯盟為 stub | 待辦 |
+| `C_Attr` | `handler/attr.go` | 738（經驗回復）、1256（寵物競速）；223 聯盟為 stub。217/221/222 盟戰同意已接，見 1-6 | 待辦 |
 | `C_Chat` | `handler/chat.go:24` | 頻道 13（聯合血盟）、14（聊天組隊）、17（王族公告）；聯盟頻道 Go 用 15、Java 用 13 | 待辦 |
 | `C_Door` | `handler/door.go:11` | 鑰匙門 6006/6007（消耗 40163/40313，5 秒自動關）、水晶洞窟 5001-5010、本盟小屋判斷（`door.go:31` TODO） | 待辦 |
 | `C_GiveItem` | `handler/pet_tame.go:14` | 交給一般 NPC／守衛／傳送師（`onGetItem`）、負重 942、娃娃 1181；馴服是消耗而非轉移物品 | 待辦 |
@@ -127,8 +127,8 @@
 |---|---|---|
 | `S_Disconnect` | 只有 GM 踢人（`gmcommand_admin.go:247`）；封鎖帳號、加速器、刪角計時器未送 | 待辦 |
 | `S_ChatPacket` | 缺 14、17；聯盟頻道號不一致 | 待辦 |
-| `S_Message_YN` | 缺 217/221/222/738/1256 | 待辦 |
-| `S_PacketBox` 子碼 | 缺 12（LEVEL_OVER）、15（ELF）、21、168、176；80（WAR_IS_GOING_ALL）改逐城送 | 待辦 |
+| `S_Message_YN` | 缺 738/1256；217/221/222 已接（1-6，V-10） | 待辦 |
+| `S_PacketBox` 子碼 | 缺 21、168、176；12（LEVEL_OVER）、15（ELF）已接（V-6、V-12）；80（WAR_IS_GOING_ALL）改逐城送 | 待辦 |
 | `S_OwnCharStatus2`（155）、`S_NpcChangeShape`（230） | Go 以完整版替代，影響小 | 保留差異 |
 | `S_Exp`（Go 113，每次擊殺送） | Java 無此封包（opcode 無效並已註解） | 待辦 | 需確認 3.81 客戶端是否接受 113 |
 
@@ -146,6 +146,7 @@
 
 | 項目 | Go 現況 | 缺少 | 狀態 |
 |---|---|---|---|
+| 寵物／召喚物戰鬥剩餘對齊 | 1-7 已接手動指定怪物、玩家、寵物與召喚物；保留既有簡化傷害 | 非怪物 NPC 的手動目標、完整命中／傷害公式、召喚物反擊寵物 AI；食物與全域 NonPvP 仍分別見第五／六節 | 待辦 |
 | 釣魚 | `fishing_sys.go:28-126` | 掉落 7 種（Java 23 種、分母 215）；每次 2×RATE_XP 經驗；訊息 1517；閃爍鱗片 47104 停止；負重停止並掉地 | 待辦 |
 | 地面物品清除 | 每件物品各自 TTL | 全服 10 秒預告與完成廣播（166）；排除精靈之石 | 低優先 |
 | Getback | `scripts/world/respawn.lua:4-129` | 死亡重生僅 6 張地圖、回家約 40 張；Java `getback` 398 筆含區域矩形、職業專屬村莊、3 點隨機；`getback_restart` 215 筆全缺 | 待辦 |
@@ -187,25 +188,13 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 - `C_ItemUSe`（Java 5,425 行）只確認主分派路由，未逐分支比對。
 - `C_NPCAction` 依 NPC ID 的任務分支，只確認 NPC 存在於 Go 程式或 YAML。
 - `C_Trade` 系列、`C_UseSkill`、`C_LoginToServer`、`C_SkillBuy/OK`、`C_EnterPortal` 標「已實作」僅因處理器存在，未檢視內部邏輯。
-- `S_Exp` 113 與 `S_SelectTarget` 236 的 opcode 數值是否符合 3.81 客戶端，需實機驗證。
+- `S_Exp` 113 與 `S_SelectTarget` 54（本輪改採 Java 值，舊 Go 為 236）的 opcode 數值是否符合 3.81 客戶端，需實機驗證；寵物封包備案見 V-11。
 
 ## 八、實機待驗證清單
 
-狀態為 `待驗證` 的項目在此集中列出，供實機測試時一次執行。每列須寫明可直接操作的步驟與可觀察的預期結果，測試者不需回頭讀程式。驗證通過後填「結果」並把對應項目改為 `完成`；失敗則依備案修正後重新列入。
+完整步驟、預期結果、風險、失敗時備案與結果欄已獨立移至 [JAVA_PARITY_LIVE_CHECKLIST.md](JAVA_PARITY_LIVE_CHECKLIST.md)。保留原 V-1～V-9 編號，新增本輪項目，第一至三節的既有引用仍適用。
 
-| 編號 | 驗證步驟 | 預期結果 | 失敗時備案 | 風險 | 結果 |
-|---|---|---|---|---|---|
-| V-1（1-1、1-4） | 1. 將 `war_time`、`war_interval` 暫設為短值（如 `"5m"`、`"30m"`），把肯特 `castles.war_time` 設為一分鐘後。2. 以已宣戰的非城盟角色在開戰後打掉守護塔（81111）。3. 不去點王冠，等攻城結束。 | 塔死亡後原地出現王冠；攻城結束廣播後王冠消失、塔屍體消失，同一座標立刻出現滿血守護塔；伺服器 log 有「守護塔已重生」。亞丁城則主塔與 4 座子塔同時重生。 | 若塔屍體殘留或新塔看不到：檢查 `removeWarNpc` 的 `NpcCorpseCleanup`／`SetImpassable` 與 `spawnWarNpc` 的 `SendNpcPack` 範圍，必要時改用 `GetNearbyPlayersInShow`。 | 中 | |
-| V-2（1-4） | 1. 開戰前讓三個角色站在肯特旗內：城盟成員、一般非城盟、GM（`AccessLevel 200`、未 `.gm off`）。2. 等攻城開始。3. 另以奪城流程（點王冠）再測一次。 | 一般非城盟角色被傳到肯特村回城點之一（如 33048,32750 地圖 4），面向 5；城盟成員與 GM 留在原地；多次測試落點在 `castles.yaml` 的 `getback` 清單內隨機變化。 | 若落點不可站立：核對 `castles.yaml` 該城 `getback` 座標與 Java `GETBACK_LOC_*` 是否抄錯；若 GM 仍被趕：確認角色 `AccessLevel` 與 `GMModeOff`。 | 中 | |
-| V-4（1-11） | 1. 使用致盲藥水（Java `Potion.useBlindPotion` 對應道具）。 | 畫面出現致盲遮罩（只看到自己），效果到期後解除；伺服器無斷線。 | 若畫面無反應：比對封包抓包 `47 01 00`；若客戶端斷線：改回 PacketBox 版並記錄客戶端版本。 | 高 | |
-| V-5（1-12） | 1. 使用伊娃的祝福（水底呼吸）藥水。2. 再喝一瓶確認時間疊加。 | 狀態列出現水底呼吸圖示並顯示剩餘秒數；第二瓶後秒數累加（上限 7200）。 | 若圖示不出現：抓包確認 opcode 126 + D objectId + H time；若客戶端斷線：改回 PacketBox 44 並記錄客戶端版本。 | 高 | |
-| V-6（1-13） | 1. 以等級高於道具 `max_level` 的角色使用該道具（如 `max_level: 49` 的新手道具，用 52 級角色）。 | 客戶端顯示「此道具只能在 49 等級以下使用」類訊息；道具未被消耗。 | 若無訊息：確認道具 `max_level` 在 0-49 內（Java 註明範圍外不顯示）；若仍無訊息再抓包比對 `FA 0C 00 31`。 | 中 | |
-| V-3（1-1） | 1. 攻城中以已宣戰的盟主（君主）打掉塔後點王冠奪城。 | 王冠消失、城主轉移，塔立刻重生為新城主的守護塔，非新城盟玩家被趕回回城點，城門修復。 | 若塔未重生：檢查 `HandleCrownClick` 是否在 `removeWarNpc` 後呼叫 `SpawnTower`。 | 中 | |
-| V-9（1-22） | 1. 以 PK 次數 9 的角色（可用 GM 指令設 `pk_count`）擊殺一名藍名玩家。2. 在地獄中按重新開始或重登。3. 等倒數結束（可先把 DB `hell_time` 改為 10 秒再登入）。 | 擊殺後立刻傳到地獄地圖 666 (32701,32777)，畫面中央紅字「PK 次數達到 10…反省 5 分鐘」；重登／重生後仍在地獄並顯示「必須停留 N 秒」；倒數結束自動傳到火田村（地圖 4）且 DB `hell_time` 歸 0。 | 若未傳送：檢查 `processPKKill` 是否走到 `BeginHell`、Lua `pk.lua` 的 `punish` 門檻；若紅字不顯示：抓包確認 opcode 105、msg 552/637 參數數量；若地圖 666 載入失敗：確認客戶端有該地圖檔。 | 中 | |
-| V-8（1-17） | 1. 以 1 級新角色（記下職業、DEX、WIS）登入，開啟角色視窗。2. 練到 4 級以上（DEX 18 每 4 級 AC -1；DEX 13-15 每 6 級）。3. 穿脫一件有 AC 的防具、喝一瓶增加精神的藥水或施放淨化精神。 | 登入時 AC 為 10 減等級換算值、MR 為職業值（王族 10、騎士 0、妖精 25、法師 15、黑妖 10、龍騎 18、幻術 20）加精神換算加等級/2；升級後 AC／MR 依表變化且不需重登；穿脫裝備與 buff 到期後 AC／MR 回到原值，不累積漂移。 | 若客戶端顯示值與伺服器不同：抓包比對 `S_OwnCharStatus` 的 AC 與 `S_SPMR` 的 MR；若出現漂移：檢查 `ResetBaseMR` 是否在 `applyEquipStats`／buff 套用與還原兩端都被呼叫。 | 中 | |
-| V-7（登入器輔助） | 1. 用已更換的新版 Login38 登入器（`E:\lin-golang\Login38-v1.2.0-win-x86` 1.2.0 或 `Login38-v1.2.1-debugtoggle.20261013.1-win-x86` 1.2.1，先以 `launcher.exe` 檔案版本確認不是 1.1.0）啟動遊戲。2. 不啟用輔助：點擊地圖遠處移動、按住攻擊原生連續攻擊怪物各一次。3. 按 Home 啟用輔助（不開狩獵），重做步驟 2。 | 兩種情境下角色都連續走到目的地、連續攻擊不中斷；伺服器 log 無 `C_MOVE` 丟棄或攻擊被拒。 | 若啟用輔助後仍中斷：核對遊戲目錄 `launcher.exe` 版本是否為 1.2.x，並確認 `HuntTask.Tick()` 已含 1.2.0 的功能檢查；若未啟用輔助也中斷：回到 README 2026-10-13 的伺服器移動／攻擊驗證紀錄重新比對。 | 中 | |
-
-風險值：`高`（opcode／封包格式錯誤可能造成客戶端斷線或畫面異常，須單獨測試）、`中`（行為錯誤但不影響連線）、`低`（僅訊息文字或圖示差異）。
+需要客戶端確認的項目保持「待驗證」；實測通過後，同時更新本表狀態及獨立清單的結果。
 
 ## 建議順序
 
@@ -227,3 +216,4 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 | 2026-10-14 | 1-27 補齊：依使用者拍板移除 Go「攻擊／施法時自動解除隱身」，改為 Java 隱身中忽略攻擊、非 `CAST_WITH_INVIS` 技能靜默拒絕。 |
 | 2026-10-14 | 1-21、1-10 依使用者拍板對齊 Java：PK 不再扣 karma；武器衝裝改回 Java 固定值公式，衝裝係數預設改為 Eddy 設定的 10。 |
 | 2026-10-14 | 經驗／公式叢集 1-15～1-18：高等級經驗懲罰、Java 組隊／仇恨／寵物經驗分配、AC／MR 衍生公式、地圖與單品掉落倍率（新增 `drop_item.yaml`、`[rates] high_level_exp_divisors`）。1-15、1-16、1-18 完成；1-17 待驗證（第八節 V-8）。 |
+| 2026-10-15 | 與 Claude 協作完成本輪 1-5、1-6、1-7、2-1：模擬戰計時／盟戰同意、寵物指定四類目標、精靈屬性選擇與重置及持久化。1-5 完成，其餘待客戶端驗證；實機清單獨立為 `JAVA_PARITY_LIVE_CHECKLIST.md`（保留 V-1～V-9，新增 V-10～V-12）。寵物完整戰鬥公式等剩餘差異另列待辦，不以實機通過視為已實作。 |

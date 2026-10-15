@@ -53,6 +53,11 @@ type SkillRequest struct {
 	Text       string
 }
 
+// ElfAttributeManager 處理精靈屬性選擇與重置。
+type ElfAttributeManager interface {
+	ChangeElfAttribute(sess *net.Session, player *world.PlayerInfo, npcID int32, action string)
+}
+
 // SkillManager 處理技能執行、buff 管理、buff 計時。由 system.SkillSystem 實作。
 type SkillManager interface {
 	// QueueSkill 將技能請求排入佇列（Phase 2 處理）。
@@ -268,6 +273,8 @@ type PetLifecycleManager interface {
 	UsePetCollar(sess *net.Session, player *world.PlayerInfo, invItem *world.InvItem)
 	// HandlePetAction 處理寵物控制指令（攻擊/防禦/待機/解放等）。
 	HandlePetAction(sess *net.Session, player *world.PlayerInfo, pet *world.PetInfo, action string)
+	// SelectPetTarget validates and sets the target selected by C_SelectTarget.
+	SelectPetTarget(sess *net.Session, player *world.PlayerInfo, pet *world.PetInfo, targetID int32)
 	// HandlePetNameChange 處理寵物改名。
 	HandlePetNameChange(sess *net.Session, player *world.PlayerInfo, petID int32, newName string)
 	// DismissPet 解放寵物（轉為野生 NPC）。
@@ -708,6 +715,10 @@ type WarManager interface {
 	GetActiveWars() []*ActiveWar
 	// CheckCastleWar 登入時通知攻城戰狀態。
 	CheckCastleWar(sess *net.Session)
+	// HandleWarConsent 對方盟主回應宣戰／投降／休戰（Java: C_Attr case 217/221/222）。
+	HandleWarConsent(sess *net.Session, player *world.PlayerInfo, msgType uint16, accepted bool)
+	// TickSimWar 血盟戰到期自動休戰（Java: L1War.SimWarTimer 240 分鐘）。
+	TickSimWar()
 }
 
 // ActiveWar 進行中的戰爭狀態。
@@ -717,6 +728,7 @@ type ActiveWar struct {
 	AttackClans map[string]bool
 	CastleID    int32
 	StartTime   time.Time
+	EndTime     time.Time // 血盟戰自動休戰時間（Java: SimWarTimer 240 分鐘）；攻城戰為零值
 }
 
 // TrapTriggerer 處理陷阱觸發邏輯（傷害/治療/中毒/技能/傳送）。由 system.TrapSystem 實作。
@@ -782,6 +794,7 @@ type Deps struct {
 	TeleportPages    *data.TeleportPageTable
 	Combat           CombatQueue         // filled after CombatSystem is created
 	Skill            SkillManager        // filled after SkillSystem is created
+	ElfAttributes    ElfAttributeManager // filled after SkillSystem is created
 	Death            DeathManager        // filled after DeathSystem is created
 	Trade            TradeManager        // filled after TradeSystem is created
 	Party            PartyManager        // filled after PartySystem is created
@@ -1307,6 +1320,11 @@ func RegisterAll(reg *packet.Registry, deps *Deps) {
 	)
 
 	// Pet
+	reg.Register(packet.C_OPCODE_SLAVE_CONTROL, inWorldStates,
+		func(sess any, r *packet.Reader) {
+			HandleSelectTarget(sess.(*net.Session), r, deps)
+		},
+	)
 	reg.Register(packet.C_OPCODE_CHECK_INVENTORY, inWorldStates,
 		func(sess any, r *packet.Reader) {
 			HandlePetMenu(sess.(*net.Session), r, deps)

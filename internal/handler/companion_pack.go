@@ -425,15 +425,15 @@ func sendPetList(sess *net.Session, amulets []*world.InvItem) {
 	sess.Send(w.Bytes())
 }
 
-// sendSelectTarget sends S_SelectTarget (opcode 236) to client.
+// sendSelectTarget sends S_SelectTarget (opcode 54) to client.
 // Prompts the client to enter target selection mode for pet attack command.
-// Java: S_SelectTarget — D(petID) C(0) C(0) C(2).
+// Java: S_SelectTarget — D(petID) C(0) C(0) C(0).
 func sendSelectTarget(sess *net.Session, petID int32) {
 	w := packet.NewWriterWithOpcode(packet.S_OPCODE_SELECT_TARGET)
 	w.WriteD(petID)
 	w.WriteC(0) // reserved
 	w.WriteC(0) // reserved
-	w.WriteC(2) // type (2 = pet targeting)
+	w.WriteC(0) // reserved
 	sess.Send(w.Bytes())
 }
 
