@@ -223,7 +223,6 @@ func (s *ItemUseSystem) applySuccessEnchant(sess *net.Session, player *world.Pla
 	target.EnchantLvl += int8(amount)
 	handler.SendItemStatusUpdate(sess, target, targetInfo)
 	handler.SendItemNameUpdate(sess, target, targetInfo)
-	sendEffectOnPlayer(sess, player.CharID, 2583) // 與一般衝裝卷軸成功路徑一致
 
 	if target.Equipped && s.deps.Equip != nil {
 		s.deps.Equip.RecalcEquipStats(sess, player)
