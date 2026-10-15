@@ -75,7 +75,7 @@
 
 | # | 系統 | Java 位置 | Go 現況 | 狀態 | 備註 |
 |---|---|---|---|---|---|
-| 2-1 | 精靈屬性 | `C_NPCAction` fire/water/air/earth/init；`MSG_ELF`（PacketBox 15）；`S_DelSkill`（op 160） | `ElfAttr` 無任何寫入點（`world/state.go:30`）；`skill.go:471`、`skill_summon.go:304` 等全被 `ElfAttr==0` 擋住 | 待辦 | 連帶屬性魔法、召喚精靈不可用 |
+| 2-1 | 精靈屬性 | `C_NPCAction` fire/water/air/earth/init；`MSG_ELF`（PacketBox 15）；`S_DelSkill`（op 160） | 已接 NPC 選擇／重置：僅精靈且須先清除舊屬性；重置移除 129–176 中屬性技能、還原單屬性防禦（147）；新增 migration 039 的 `elf_attr`，屬性與魔法清單原子保存，登入、選角、斷線、定時與 GM 存檔皆保留 | 待驗證 | `6219364`；NPC 路由／四屬性／重置／失敗不改狀態回歸及 PostgreSQL 往返通過；客戶端訊息、技能視窗與召喚見獨立清單 V-12 |
 | 2-2 | 無限大戰 UB | `L1UltimateBattle`、`L1UbSpawn`、`L1UbPattern`、`UbTimeController`、`ub_*` 表、`C_ExitGhost`、`L1PcGhostMonitor`、NPC 動作 par/info/sco | 無 | 待辦 | |
 | 2-3 | 屠龍副本 | `L1DragonSlayer`：龍之鑰匙 → 龍門 → 地圖 1005/1011 三階段 → 隱藏之谷；`L1DragonPortalInstance` | `dragondoor_sys.go` 是另一套（雷歐門衛開橋）；`npc_list.yaml` 有 13 筆 `L1DragonPortal` 無處理 | 待辦 | |
 | 2-4 | Boss 循環生成 | `L1BossCycle`、`L1BossSpawn`、`BossCycle.xml`、`spawnlist_boss` | 無 | 待辦 | |
@@ -191,21 +191,9 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 
 ## 八、實機待驗證清單
 
-狀態為 `待驗證` 的項目在此集中列出，供實機測試時一次執行。每列須寫明可直接操作的步驟與可觀察的預期結果，測試者不需回頭讀程式。驗證通過後填「結果」並把對應項目改為 `完成`；失敗則依備案修正後重新列入。
+完整步驟、預期結果、風險、失敗時備案與結果欄已獨立移至 [JAVA_PARITY_LIVE_CHECKLIST.md](JAVA_PARITY_LIVE_CHECKLIST.md)。保留原 V-1～V-9 編號，新增本輪項目，第一至三節的既有引用仍適用。
 
-| 編號 | 驗證步驟 | 預期結果 | 失敗時備案 | 風險 | 結果 |
-|---|---|---|---|---|---|
-| V-1（1-1、1-4） | 1. 將 `war_time`、`war_interval` 暫設為短值（如 `"5m"`、`"30m"`），把肯特 `castles.war_time` 設為一分鐘後。2. 以已宣戰的非城盟角色在開戰後打掉守護塔（81111）。3. 不去點王冠，等攻城結束。 | 塔死亡後原地出現王冠；攻城結束廣播後王冠消失、塔屍體消失，同一座標立刻出現滿血守護塔；伺服器 log 有「守護塔已重生」。亞丁城則主塔與 4 座子塔同時重生。 | 若塔屍體殘留或新塔看不到：檢查 `removeWarNpc` 的 `NpcCorpseCleanup`／`SetImpassable` 與 `spawnWarNpc` 的 `SendNpcPack` 範圍，必要時改用 `GetNearbyPlayersInShow`。 | 中 | |
-| V-2（1-4） | 1. 開戰前讓三個角色站在肯特旗內：城盟成員、一般非城盟、GM（`AccessLevel 200`、未 `.gm off`）。2. 等攻城開始。3. 另以奪城流程（點王冠）再測一次。 | 一般非城盟角色被傳到肯特村回城點之一（如 33048,32750 地圖 4），面向 5；城盟成員與 GM 留在原地；多次測試落點在 `castles.yaml` 的 `getback` 清單內隨機變化。 | 若落點不可站立：核對 `castles.yaml` 該城 `getback` 座標與 Java `GETBACK_LOC_*` 是否抄錯；若 GM 仍被趕：確認角色 `AccessLevel` 與 `GMModeOff`。 | 中 | |
-| V-4（1-11） | 1. 使用致盲藥水（Java `Potion.useBlindPotion` 對應道具）。 | 畫面出現致盲遮罩（只看到自己），效果到期後解除；伺服器無斷線。 | 若畫面無反應：比對封包抓包 `47 01 00`；若客戶端斷線：改回 PacketBox 版並記錄客戶端版本。 | 高 | |
-| V-5（1-12） | 1. 使用伊娃的祝福（水底呼吸）藥水。2. 再喝一瓶確認時間疊加。 | 狀態列出現水底呼吸圖示並顯示剩餘秒數；第二瓶後秒數累加（上限 7200）。 | 若圖示不出現：抓包確認 opcode 126 + D objectId + H time；若客戶端斷線：改回 PacketBox 44 並記錄客戶端版本。 | 高 | |
-| V-6（1-13） | 1. 以等級高於道具 `max_level` 的角色使用該道具（如 `max_level: 49` 的新手道具，用 52 級角色）。 | 客戶端顯示「此道具只能在 49 等級以下使用」類訊息；道具未被消耗。 | 若無訊息：確認道具 `max_level` 在 0-49 內（Java 註明範圍外不顯示）；若仍無訊息再抓包比對 `FA 0C 00 31`。 | 中 | |
-| V-3（1-1） | 1. 攻城中以已宣戰的盟主（君主）打掉塔後點王冠奪城。 | 王冠消失、城主轉移，塔立刻重生為新城主的守護塔，非新城盟玩家被趕回回城點，城門修復。 | 若塔未重生：檢查 `HandleCrownClick` 是否在 `removeWarNpc` 後呼叫 `SpawnTower`。 | 中 | |
-| V-9（1-22） | 1. 以 PK 次數 9 的角色（可用 GM 指令設 `pk_count`）擊殺一名藍名玩家。2. 在地獄中按重新開始或重登。3. 等倒數結束（可先把 DB `hell_time` 改為 10 秒再登入）。 | 擊殺後立刻傳到地獄地圖 666 (32701,32777)，畫面中央紅字「PK 次數達到 10…反省 5 分鐘」；重登／重生後仍在地獄並顯示「必須停留 N 秒」；倒數結束自動傳到火田村（地圖 4）且 DB `hell_time` 歸 0。 | 若未傳送：檢查 `processPKKill` 是否走到 `BeginHell`、Lua `pk.lua` 的 `punish` 門檻；若紅字不顯示：抓包確認 opcode 105、msg 552/637 參數數量；若地圖 666 載入失敗：確認客戶端有該地圖檔。 | 中 | |
-| V-8（1-17） | 1. 以 1 級新角色（記下職業、DEX、WIS）登入，開啟角色視窗。2. 練到 4 級以上（DEX 18 每 4 級 AC -1；DEX 13-15 每 6 級）。3. 穿脫一件有 AC 的防具、喝一瓶增加精神的藥水或施放淨化精神。 | 登入時 AC 為 10 減等級換算值、MR 為職業值（王族 10、騎士 0、妖精 25、法師 15、黑妖 10、龍騎 18、幻術 20）加精神換算加等級/2；升級後 AC／MR 依表變化且不需重登；穿脫裝備與 buff 到期後 AC／MR 回到原值，不累積漂移。 | 若客戶端顯示值與伺服器不同：抓包比對 `S_OwnCharStatus` 的 AC 與 `S_SPMR` 的 MR；若出現漂移：檢查 `ResetBaseMR` 是否在 `applyEquipStats`／buff 套用與還原兩端都被呼叫。 | 中 | |
-| V-7（登入器輔助） | 1. 用已更換的新版 Login38 登入器（`E:\lin-golang\Login38-v1.2.0-win-x86` 1.2.0 或 `Login38-v1.2.1-debugtoggle.20261013.1-win-x86` 1.2.1，先以 `launcher.exe` 檔案版本確認不是 1.1.0）啟動遊戲。2. 不啟用輔助：點擊地圖遠處移動、按住攻擊原生連續攻擊怪物各一次。3. 按 Home 啟用輔助（不開狩獵），重做步驟 2。 | 兩種情境下角色都連續走到目的地、連續攻擊不中斷；伺服器 log 無 `C_MOVE` 丟棄或攻擊被拒。 | 若啟用輔助後仍中斷：核對遊戲目錄 `launcher.exe` 版本是否為 1.2.x，並確認 `HuntTask.Tick()` 已含 1.2.0 的功能檢查；若未啟用輔助也中斷：回到 README 2026-10-13 的伺服器移動／攻擊驗證紀錄重新比對。 | 中 | |
-
-風險值：`高`（opcode／封包格式錯誤可能造成客戶端斷線或畫面異常，須單獨測試）、`中`（行為錯誤但不影響連線）、`低`（僅訊息文字或圖示差異）。
+需要客戶端確認的項目保持「待驗證」；實測通過後，同時更新本表狀態及獨立清單的結果。
 
 ## 建議順序
 
@@ -227,3 +215,4 @@ Java `altsettings` / `rates` / `charsettings` / `fights` 約 140 鍵，Go `confi
 | 2026-10-14 | 1-27 補齊：依使用者拍板移除 Go「攻擊／施法時自動解除隱身」，改為 Java 隱身中忽略攻擊、非 `CAST_WITH_INVIS` 技能靜默拒絕。 |
 | 2026-10-14 | 1-21、1-10 依使用者拍板對齊 Java：PK 不再扣 karma；武器衝裝改回 Java 固定值公式，衝裝係數預設改為 Eddy 設定的 10。 |
 | 2026-10-14 | 經驗／公式叢集 1-15～1-18：高等級經驗懲罰、Java 組隊／仇恨／寵物經驗分配、AC／MR 衍生公式、地圖與單品掉落倍率（新增 `drop_item.yaml`、`[rates] high_level_exp_divisors`）。1-15、1-16、1-18 完成；1-17 待驗證（第八節 V-8）。 |
+
