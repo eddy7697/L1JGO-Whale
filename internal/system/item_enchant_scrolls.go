@@ -128,7 +128,8 @@ func (s *ItemUseSystem) enchantIvoryTower(sess *net.Session, player *world.Playe
 	return true
 }
 
-// accessoryEnchantChance 飾品強化成功率（Java：(50 + lvl) / (lvl + 1) + 35，整數除法；+0 85% … +9 40%）。
+// accessoryEnchantChance 飾品強化成功門檻（Java：(50 + lvl) / (lvl + 1) + 35，整數除法）。
+// 判定為 roll(1-100) < 門檻（嚴格小於），故實際成功率 = 門檻 - 1 個百分點：+0 門檻 85 → 實際 84%，+9 門檻 40 → 實際 39%。
 func accessoryEnchantChance(enchantLevel int) int {
 	return (50+enchantLevel)/(enchantLevel+1) + 35
 }
@@ -161,7 +162,7 @@ func (s *ItemUseSystem) enchantAccessory(sess *net.Session, player *world.Player
 		return false
 	}
 
-	if roll >= accessoryEnchantChance(int(target.EnchantLvl)) {
+	if roll >= accessoryEnchantChance(int(target.EnchantLvl)) { // Java: rnd < chance 才成功
 		// 失敗：飾品消失
 		s.applyFailureEnchant(sess, player, target, targetInfo)
 		s.consumeUsedItem(sess, player, scroll)

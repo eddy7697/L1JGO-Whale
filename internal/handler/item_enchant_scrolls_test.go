@@ -56,7 +56,7 @@ func TestStatusBytesIncludeAccessoryEnchantBonuses(t *testing.T) {
 	ring := &world.InvItem{ItemID: 20282, Name: info.Name, Count: 1, Identified: true}
 	base := buildStatusBytes(ring, info)
 
-	ring.Accessory = world.AccessoryBonus{AddMP: 2, AddSP: 1, AddHP: 4, HPR: 1, MPR: 1, FireMr: 3, WaterMr: 3, WindMr: 3, EarthMr: 3}
+	ring.Accessory = world.AccessoryBonus{AddMP: 2, AddSP: 1, AddHP: 4, HPR: 1, MPR: 1, MDef: 1, FireMr: 3, WaterMr: 3, WindMr: 3, EarthMr: 3}
 	got := buildStatusBytes(ring, info)
 	if bytes.Equal(base, got) {
 		t.Fatal("飾品加成應改變 status bytes")
@@ -68,6 +68,7 @@ func TestStatusBytesIncludeAccessoryEnchantBonuses(t *testing.T) {
 		{17, byte(info.AddSP + 1)},
 		{37, byte(info.AddHPR + 1)},
 		{38, byte(info.AddMPR + 1)},
+		{15, byte(info.MDef + 1), 0}, // MR uint16（Java getMr 含飾品 m_def）
 		{27, byte(info.DefFire + 3)},
 		{28, byte(info.DefWater + 3)},
 		{29, byte(info.DefWind + 3)},
@@ -76,6 +77,18 @@ func TestStatusBytesIncludeAccessoryEnchantBonuses(t *testing.T) {
 		if !bytes.Contains(suffix, tlv) {
 			t.Errorf("status bytes 缺少 TLV %v: %v", tlv, got)
 		}
+	}
+}
+
+func TestArmorStatusHeaderSendsJavaGradeByte(t *testing.T) {
+	items := loadEnchantScrollItemTable(t)
+	ring := &world.InvItem{ItemID: 20282, Count: 1, Identified: true}
+	if got := buildStatusBytes(ring, items.Get(20282)); len(got) < 4 || got[0] != 19 || got[3] != 2 {
+		t.Fatalf("grade 2 飾品 header 第 4 位元組應為 2，got=%v", got[:4])
+	}
+	helm := &world.InvItem{ItemID: 20028, Count: 1, Identified: true}
+	if got := buildStatusBytes(helm, items.Get(20028)); len(got) < 4 || got[3] != 0xFF {
+		t.Fatalf("非飾品 header grade 應為 -1(0xFF)，got=%v", got[:4])
 	}
 }
 

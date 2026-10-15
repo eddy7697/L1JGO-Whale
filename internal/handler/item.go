@@ -711,11 +711,12 @@ func buildStatusBytes(item *world.InvItem, info *data.ItemInfo) []byte {
 
 	case data.CategoryArmor:
 		// [C 19][C abs(ac)][C material][C grade][D weight]
+		// grade：Java getStatusBytes 送 getGrade()，非飾品／不可強化為 -1（0xFF），飾品 0:上等 1:中等 2:初等 3:特等
 		ac := info.AC
 		if ac < 0 {
 			ac = -ac
 		}
-		buf = append(buf, 19, byte(ac), material, 0) // grade=0
+		buf = append(buf, 19, byte(ac), material, byte(int8(info.Grade)))
 		buf = appendInt32LE(buf, calcItemWeight(item, info))
 		buf = appendEquipSuffix(buf, item, info)
 
@@ -798,9 +799,10 @@ func appendEquipSuffix(buf []byte, item *world.InvItem, info *data.ItemInfo) []b
 	if addSP := info.AddSP + int(acc.AddSP); addSP != 0 {
 		buf = append(buf, 17, byte(int8(addSP)))
 	}
-	if info.MDef != 0 {
+	// MR：Java tag 15 = getMr()（模板 m_def + 飾品強化 m_def）
+	if mr := info.MDef + int(acc.MDef); mr != 0 {
 		buf = append(buf, 15)
-		buf = appendUint16LE(buf, uint16(int16(info.MDef)))
+		buf = appendUint16LE(buf, uint16(int16(mr)))
 	}
 	if addHPR := info.AddHPR + int(acc.HPR); addHPR != 0 {
 		buf = append(buf, 37, byte(int8(addHPR)))
